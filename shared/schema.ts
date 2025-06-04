@@ -136,3 +136,25 @@ export type AutomationSetting = typeof automationSettings.$inferSelect;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+export interface ActivityLog {
+  id: number;
+  type: 'generation' | 'upload' | 'error' | 'system';
+  title: string;
+  description: string;
+  timestamp: string;
+  status: 'success' | 'error' | 'warning' | 'info';
+  metadata?: Record<string, any>;
+}
+
+export interface PipelineLog {
+  id: number;
+  jobId: number;
+  step: string;
+  status: 'starting' | 'progress' | 'completed' | 'error';
+  message: string;
+  details?: string;
+  progress?: number;
+  timestamp: string;
+  metadata?: Record<string, any>;
+}

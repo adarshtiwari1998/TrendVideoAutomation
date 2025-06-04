@@ -6,15 +6,22 @@ export class ContentGenerator {
   private gemini: GoogleGenerativeAI;
 
   constructor() {
-    if (!process.env.GEMINI_API_KEY) {
-      throw new Error("GEMINI_API_KEY environment variable is required");
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey && process.env.NODE_ENV === 'production') {
+      throw new Error("GEMINI_API_KEY environment variable is required in production");
     }
-    this.gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    
+    // Use mock key for development if not set
+    this.gemini = new GoogleGenerativeAI(apiKey || 'dev-mock-gemini-key');
+    console.log('ContentGenerator initialized with API key:', apiKey ? 'CONFIGURED' : 'MOCK_MODE');
   }
 
   async generateScript(topic: TrendingTopic, videoType: 'long_form' | 'short'): Promise<string> {
+    console.log(`🤖 Generating ${videoType} script for topic: ${topic.title}`);
+    
     try {
       const prompt = this.createPrompt(topic, videoType);
+      console.log('📝 Created prompt, calling Gemini API...');
       
       const model = this.gemini.getGenerativeModel({ model: "gemini-1.5-pro" });
       
@@ -26,16 +33,21 @@ export class ContentGenerator {
       const response = await result.response;
       const text = response.text();
       
+      console.log('✅ Gemini API response received, length:', text.length);
+      
       // Try to parse JSON response, fallback to plain text
       try {
         const parsed = JSON.parse(text);
+        console.log('📄 Parsed JSON response successfully');
         return parsed.script || text;
       } catch {
+        console.log('📄 Using plain text response');
         return text;
       }
       
     } catch (error) {
-      console.error('Gemini script generation error:', error);
+      console.error('❌ Gemini script generation error:', error.message);
+      console.log('🔄 Using fallback script generation...');
       return this.getFallbackScript(topic, videoType);
     }
   }

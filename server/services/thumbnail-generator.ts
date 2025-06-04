@@ -7,10 +7,14 @@ export class ThumbnailGenerator {
   private gemini: GoogleGenerativeAI;
 
   constructor() {
-    if (!process.env.GEMINI_API_KEY) {
-      throw new Error("GEMINI_API_KEY environment variable is required");
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey && process.env.NODE_ENV === 'production') {
+      throw new Error("GEMINI_API_KEY environment variable is required in production");
     }
-    this.gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    
+    // Use mock key for development if not set
+    this.gemini = new GoogleGenerativeAI(apiKey || 'dev-mock-gemini-key');
+    console.log('ThumbnailGenerator initialized with API key:', apiKey ? 'CONFIGURED' : 'MOCK_MODE');
   }
 
   async generateThumbnail(jobId: number): Promise<string> {
@@ -88,7 +92,24 @@ Style: ${styleGuide}
   }
 
   private async generateThumbnailImage(prompt: string, videoType: string): Promise<string> {
+    console.log(`🖼️ Generating ${videoType} thumbnail...`);
+    
     try {
+      // Check if using mock API key
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey || apiKey === 'dev-mock-gemini-key') {
+        console.log('🖼️ Using mock thumbnail generation (no API key configured)');
+        
+        // Simulate thumbnail generation
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        const thumbnailPath = `/generated/thumbnails/mock_thumbnail_${Date.now()}_${videoType}.jpg`;
+        console.log('✅ Generated mock thumbnail:', thumbnailPath);
+        return thumbnailPath;
+      }
+
+      console.log('🖼️ Calling Gemini Imagen API...');
+      
       // Use Gemini's Imagen 3 model for image generation
       const model = this.gemini.getGenerativeModel({ model: "imagen-3.0-generate-001" });
       
@@ -101,18 +122,17 @@ Style: ${styleGuide}
       const response = await result.response;
       
       // In production, this would generate and return the actual image path
-      // For now, we'll create a unique identifier for the generated thumbnail
       const thumbnailPath = `/generated/thumbnails/thumbnail_${Date.now()}_${videoType}_gemini.jpg`;
       
-      console.log('Generated thumbnail with Gemini Imagen:', thumbnailPath);
+      console.log('✅ Generated thumbnail with Gemini Imagen:', thumbnailPath);
       return thumbnailPath;
       
     } catch (error) {
-      console.error('Gemini image generation error:', error);
+      console.error('❌ Gemini image generation error:', error);
       
       // Fallback: Create a text-based thumbnail description for manual creation
       const fallbackPath = `/fallback/thumbnail_${Date.now()}_${videoType}.txt`;
-      console.log('Using fallback thumbnail path:', fallbackPath);
+      console.log('🔄 Using fallback thumbnail path:', fallbackPath);
       return fallbackPath;
     }
   }

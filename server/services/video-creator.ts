@@ -97,7 +97,7 @@ export class VideoCreator {
     }
   }
 
-  private async generateTTSAudio(job: ContentJob): Promise<string> {
+  private private async generateTTSAudio(job: ContentJob): Promise<string> {
     const audioDir = path.join(process.cwd(), 'generated', 'audio');
     if (!fs.existsSync(audioDir)) {
       fs.mkdirSync(audioDir, { recursive: true });
@@ -117,6 +117,33 @@ export class VideoCreator {
     });
 
     try {
+      // Check if we have real API key or in development mode
+      if (this.elevenLabsApiKey === 'dev-mock-key') {
+        console.log('🎙️ Using mock TTS audio generation (no API key configured)');
+        
+        // Simulate TTS generation process
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Create mock audio file
+        const mockContent = `Mock TTS audio for: ${job.title}`;
+        fs.writeFileSync(audioPath, Buffer.from(mockContent));
+        
+        await storage.createPipelineLog({
+          jobId: job.id,
+          step: 'audio_generation',
+          status: 'completed',
+          message: 'Mock TTS audio generated (development mode)',
+          details: 'Using fallback audio generation for development',
+          progress: 45,
+          metadata: { audioPath, mode: 'development' }
+        });
+
+        console.log('✅ Generated mock voiceover:', audioPath);
+        return audioPath;
+      }
+
+      console.log('🎙️ Calling ElevenLabs API for TTS generation...');
+      
       // Use ElevenLabs for human-like voice generation
       const response = await axios.post(
         'https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM', // Professional Indian English voice
@@ -139,7 +166,7 @@ export class VideoCreator {
         }
       );
 
-      // In a real implementation, save the audio buffer to file
+      // Save the audio buffer to file
       fs.writeFileSync(audioPath, Buffer.from(response.data));
       
       await storage.createPipelineLog({
@@ -152,10 +179,10 @@ export class VideoCreator {
         metadata: { audioPath, voiceModel: 'eleven_multilingual_v2' }
       });
 
-      console.log('Generated voiceover:', audioPath);
+      console.log('✅ Generated voiceover:', audioPath);
       return audioPath;
     } catch (error) {
-      console.error('Voiceover generation error:', error);
+      console.error('❌ Voiceover generation error:', error);
       
       await storage.createPipelineLog({
         jobId: job.id,

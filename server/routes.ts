@@ -284,13 +284,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/automation/reset-system", async (req, res) => {
     try {
       console.log("System reset initiated");
-      
+
       // Clear all stuck jobs and reset system
       await automationScheduler.resetAndStart();
-      
+
       // Clear all content jobs and trending topics
       await storage.clearAllData();
-      
+
       res.json({ success: true, message: "System reset completed and started fresh" });
     } catch (error) {
       console.error("System reset error:", error);
@@ -453,6 +453,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Channel ID fetch error:', error);
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Pipeline routes
+  app.post('/api/pipeline/start', async (req, res) => {
+    try {
+      const { topicId, videoType } = req.body;
+
+      if (!topicId || !videoType) {
+        return res.status(400).json({ error: 'Topic ID and video type are required' });
+      }
+
+      const job = await automationPipeline.processTrendingTopic(topicId, videoType);
+      res.json(job);
+    } catch (error) {
+      console.error('Pipeline start error:', error);
+      res.status(500).json({ error: 'Failed to start pipeline' });
+    }
+  });
+
+  app.get('/api/pipeline/logs', async (req, res) => {
+    try {
+      const jobId = req.query.jobId ? parseInt(req.query.jobId as string) : undefined;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
+
+      const logs = await storage.getPipelineLogs(jobId, limit);
+      res.json(logs);
+    } catch (error) {
+      console.error('Pipeline logs error:', error);
+      res.status(500).json({ error: 'Failed to fetch pipeline logs' });
     }
   });
 
