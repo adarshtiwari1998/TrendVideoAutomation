@@ -1,14 +1,16 @@
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import axios from 'axios';
 import { storage } from '../storage';
 import type { ContentJob } from '@shared/schema';
 
 export class VideoCreator {
-  private runwayApiKey: string;
-  private elevenLabsApiKey: string;
+  private gemini: GoogleGenerativeAI;
 
   constructor() {
-    this.runwayApiKey = process.env.RUNWAY_API_KEY || process.env.OPENAI_API_KEY || '';
-    this.elevenLabsApiKey = process.env.ELEVENLABS_API_KEY || process.env.GEMINI_API_KEY || '';
+    if (!process.env.GEMINI_API_KEY) {
+      throw new Error("GEMINI_API_KEY environment variable is required");
+    }
+    this.gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
   }
 
   async createVideo(jobId: number): Promise<string> {

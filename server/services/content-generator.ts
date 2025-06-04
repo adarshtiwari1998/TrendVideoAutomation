@@ -16,29 +16,26 @@ export class ContentGenerator {
     try {
       const prompt = this.createPrompt(topic, videoType);
       
-      // Use OpenAI GPT-4o (the newest OpenAI model released May 13, 2024. do not change this unless explicitly requested by the user)
-      const response = await this.openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content: this.getSystemPrompt(videoType)
-          },
-          {
-            role: "user",
-            content: prompt
-          }
-        ],
-        response_format: { type: "json_object" },
-        max_tokens: videoType === 'long_form' ? 4000 : 1000,
-        temperature: 0.7
-      });
-
-      const result = JSON.parse(response.choices[0].message.content || '{}');
-      return result.script || this.getFallbackScript(topic, videoType);
+      const model = this.gemini.getGenerativeModel({ model: "gemini-1.5-pro" });
+      
+      const result = await model.generateContent([
+        this.getSystemPrompt(videoType),
+        prompt
+      ]);
+      
+      const response = await result.response;
+      const text = response.text();
+      
+      // Try to parse JSON response, fallback to plain text
+      try {
+        const parsed = JSON.parse(text);
+        return parsed.script || text;
+      } catch {
+        return text;
+      }
       
     } catch (error) {
-      console.error('OpenAI script generation error:', error);
+      console.error('Gemini script generation error:', error);
       return this.getFallbackScript(topic, videoType);
     }
   }
