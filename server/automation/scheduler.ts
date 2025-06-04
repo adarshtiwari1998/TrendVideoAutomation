@@ -9,7 +9,7 @@ export class AutomationScheduler {
 
   init(): void {
     console.log('Initializing automation scheduler...');
-    
+
     // Daily trending analysis at 6:00 AM IST (00:30 UTC)
     this.scheduleJob('trending-analysis', '30 0 * * *', async () => {
       await trendingAnalyzer.analyzeTrendingTopics();
@@ -127,20 +127,20 @@ export class AutomationScheduler {
 
   async resetAndStart(): Promise<void> {
     console.log('Resetting automation system and starting fresh...');
-    
+
     // Stop all current jobs
     this.stop();
-    
+
     // Clear any stuck jobs
     await storage.clearStuckJobs();
-    
+
     // Reset system status
     await storage.setAutomationSetting({
       key: 'system_status',
       value: 'active',
       description: 'System reset and restarted by user'
     });
-    
+
     // Log the reset
     await storage.createActivityLog({
       type: 'system',
@@ -153,14 +153,15 @@ export class AutomationScheduler {
         resetBy: 'user'
       }
     });
-    
+
     // Start fresh
     this.start();
-    
+
     console.log('Automation system reset and restarted successfully');
   }
 
   getStatus(): any {
+    try {
     const status = {};
     this.jobs.forEach((job, name) => {
       status[name] = {
@@ -169,6 +170,13 @@ export class AutomationScheduler {
       };
     });
     return status;
+  } catch (error) {
+      console.error('Scheduler getStatus error:', error);
+      return {
+        isRunning: false,
+        jobs: []
+      };
+    }
   }
 
   private async performHealthCheck(): Promise<void> {
@@ -181,7 +189,7 @@ export class AutomationScheduler {
       };
 
       const allHealthy = Object.values(checks).every(check => check.status === 'healthy');
-      
+
       await storage.createActivityLog({
         type: 'system',
         title: 'System Health Check',
@@ -223,11 +231,11 @@ export class AutomationScheduler {
     try {
       const usage = await storageManager.getStorageUsage();
       const usageGB = parseFloat(usage);
-      
+
       if (usageGB > 90) { // More than 90GB used
         return { status: 'warning', message: `High storage usage: ${usage}` };
       }
-      
+
       return { status: 'healthy', message: `Storage usage: ${usage}` };
     } catch (error) {
       return { status: 'unhealthy', message: `Storage error: ${error.message}` };
@@ -248,7 +256,7 @@ export class AutomationScheduler {
     try {
       const today = new Date().toISOString().split('T')[0];
       const existingStats = await storage.getTodayStats();
-      
+
       // Get actual counts from database
       const activeJobs = await storage.getActiveContentJobs();
       const completedToday = await storage.getContentJobs(100); // Get more to filter by date

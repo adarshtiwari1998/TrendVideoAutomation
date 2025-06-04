@@ -93,7 +93,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/dashboard/system-status", async (req, res) => {
     try {
-      const schedulerStatus = automationScheduler.getStatus();
+      let schedulerStatus;
+      try {
+        schedulerStatus = automationScheduler.getStatus();
+      } catch (schedulerError) {
+        console.error("Scheduler status error:", schedulerError);
+        schedulerStatus = { isRunning: false, jobs: [] };
+      }
+
       const activeJobs = await storage.getActiveContentJobs();
       const settings = await storage.getAllAutomationSettings();
 
@@ -101,13 +108,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         { name: 'Trending API', status: 'online', health: 'healthy' },
         { name: 'Gemini AI', status: 'online', health: 'healthy' },
         { name: 'Video Generator', status: activeJobs.length > 2 ? 'high_load' : 'online', health: 'healthy' },
-        { name: 'Google Drive', status: 'online', health: 'healthy' },
+        { name: 'Google Drive', status: 'warning', health: 'needs_setup' },
         { name: 'YouTube API', status: 'online', health: 'healthy' },
         { name: 'Cron Scheduler', status: schedulerStatus?.isRunning ? 'active' : 'paused', health: 'healthy' }
       ];
 
-      const systemStatusSetting = settings.find(s => s.key === 'system_status');
-      const healthCheckSetting = settings.find(s => s.key === 'system_health');
+      const systemStatusSetting = settings.find(s => s?.key === 'system_status');
+      const healthCheckSetting = settings.find(s => s?.key === 'system_health');
 
       res.json({
         components: systemComponents,

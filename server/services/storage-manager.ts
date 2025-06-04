@@ -64,6 +64,30 @@ export class StorageManager {
       return { videoUrl, thumbnailUrl };
     } catch (error) {
       console.error('Storage organization error:', error);
+      
+      // Fallback to mock URLs if Google Drive API is not configured
+      if (error.message?.includes('Google Drive API has not been used')) {
+        console.log('Google Drive API not configured, using mock storage');
+        
+        const mockVideoUrl = `mock-video-${jobId}-${Date.now()}.mp4`;
+        const mockThumbnailUrl = `mock-thumbnail-${jobId}-${Date.now()}.jpg`;
+        
+        await storage.createActivityLog({
+          type: 'upload',
+          title: 'Files Organized (Mock Storage)',
+          description: `Mock storage used - Google Drive API needs to be enabled`,
+          status: 'warning',
+          metadata: { 
+            jobId, 
+            videoUrl: mockVideoUrl,
+            thumbnailUrl: mockThumbnailUrl,
+            note: 'Google Drive API not configured'
+          }
+        });
+        
+        return { videoUrl: mockVideoUrl, thumbnailUrl: mockThumbnailUrl };
+      }
+      
       await storage.createActivityLog({
         type: 'error',
         title: 'File Organization Failed',
