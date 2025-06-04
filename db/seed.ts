@@ -1,6 +1,5 @@
 
 import { Pool } from 'pg';
-import bcrypt from 'bcryptjs';
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -132,44 +131,58 @@ async function seedInitialData() {
   const client = await pool.connect();
   
   try {
-    console.log('🌱 Seeding initial data...');
+    console.log('🌱 Seeding initial production settings...');
 
-    // Insert automation settings
-    await client.query(`
-      INSERT INTO automation_settings (key, value, description) 
-      VALUES 
-        ('system_status', 'active', 'Overall system status'),
-        ('automation_enabled', 'true', 'Whether automation is enabled'),
-        ('daily_video_target', '1', 'Number of daily videos to generate'),
-        ('daily_short_target', '1', 'Number of daily shorts to generate'),
-        ('trending_analysis_frequency', '4', 'Hours between trending analysis runs'),
-        ('upload_schedule_long', '18:30', 'Upload time for long-form videos (IST)'),
-        ('upload_schedule_short', '20:30', 'Upload time for shorts (IST)'),
-        ('google_tts_voice', 'en-IN-Standard-D', 'Google TTS voice for Indian accent'),
-        ('video_quality', '1080p', 'Default video quality'),
-        ('thumbnail_style', 'modern', 'Thumbnail generation style')
-      ON CONFLICT (key) DO NOTHING;
-    `);
+    // Clear existing data for fresh start
+    await client.query('DELETE FROM automation_settings;');
+    await client.query('DELETE FROM activity_logs;');
+    await client.query('DELETE FROM system_stats;');
+    
+    // Insert production automation settings
+    const settings = [
+      { key: 'video_upload_time', value: '18:30', description: 'Daily long-form video upload time (24h format)' },
+      { key: 'shorts_upload_time', value: '20:30', description: 'Daily shorts upload time (24h format)' },
+      { key: 'trending_analysis_frequency', value: '60', description: 'How often to analyze trending topics (minutes)' },
+      { key: 'video_generation_enabled', value: 'true', description: 'Enable automatic video generation' },
+      { key: 'auto_upload_enabled', value: 'false', description: 'Enable automatic YouTube uploads (set to true when ready)' },
+      { key: 'max_daily_videos', value: '2', description: 'Maximum videos to create per day' },
+      { key: 'content_language', value: 'en-IN', description: 'Content language and voice locale' },
+      { key: 'video_quality', value: '1080p', description: 'Default video quality for generation' },
+      { key: 'thumbnail_style', value: 'clickbait', description: 'Thumbnail generation style' },
+      { key: 'google_drive_folder', value: 'YouTube_Automation', description: 'Google Drive folder for storing videos' }
+    ];
 
-    // Insert initial system stats for today
+    for (const setting of settings) {
+      await client.query(`
+        INSERT INTO automation_settings (key, value, description)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (key) DO UPDATE SET 
+          value = EXCLUDED.value,
+          description = EXCLUDED.description,
+          updated_at = NOW();
+      `, [setting.key, setting.value, setting.description]);
+    }
+
+    // Insert current system stats
     const today = new Date().toISOString().split('T')[0];
     await client.query(`
-      INSERT INTO system_stats (date, videos_created, shorts_created, videos_published, success_rate, storage_used, trending_topics_found, system_status)
-      VALUES ($1, 0, 0, 0, 100, '0 GB', 0, 'active')
-      ON CONFLICT (date) DO NOTHING;
+      INSERT INTO system_stats (date, system_status)
+      VALUES ($1, 'active')
+      ON CONFLICT (date) DO UPDATE SET system_status = 'active';
     `, [today]);
 
     // Insert initial activity log
     await client.query(`
       INSERT INTO activity_logs (type, title, description, status, metadata)
-      VALUES ('system', 'System Initialized', 'Production system started successfully', 'success', $1);
+      VALUES ('system', 'Production System Initialized', 'YouTube automation system started and ready for production use', 'success', $1);
     `, [JSON.stringify({ 
       timestamp: new Date().toISOString(),
       version: '1.0.0',
-      environment: 'production'
+      environment: 'production',
+      features: ['trending_analysis', 'video_generation', 'thumbnail_creation', 'google_drive_storage', 'youtube_upload']
     })]);
 
-    console.log('✅ Initial data seeded successfully!');
+    console.log('✅ Production settings configured successfully!');
 
   } catch (error) {
     console.error('❌ Error seeding data:', error);
@@ -181,16 +194,21 @@ async function seedInitialData() {
 
 async function seed() {
   try {
-    console.log('🚀 Starting database seeding process...');
+    console.log('🚀 Starting production database setup...');
     
     await createTables();
     await seedInitialData();
     
-    console.log('🎉 Database seeding completed successfully!');
-    console.log('📊 Production system is ready to use');
+    console.log('🎉 Database setup completed successfully!');
+    console.log('📊 Production YouTube automation system is ready!');
+    console.log('');
+    console.log('Next steps:');
+    console.log('1. Set up environment variables (Google TTS API, YouTube API, etc.)');
+    console.log('2. Add your YouTube channel via the dashboard');
+    console.log('3. Enable auto-upload when ready');
     
   } catch (error) {
-    console.error('❌ Seeding failed:', error);
+    console.error('❌ Setup failed:', error);
     throw error;
   } finally {
     await pool.end();
@@ -199,6 +217,6 @@ async function seed() {
 }
 
 seed().catch((error) => {
-  console.error('Seeding failed:', error);
+  console.error('Database setup failed:', error);
   process.exit(1);
 });
