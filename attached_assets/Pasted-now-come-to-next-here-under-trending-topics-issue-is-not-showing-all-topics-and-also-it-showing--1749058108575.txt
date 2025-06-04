@@ -1,0 +1,65 @@
+now come to next
+
+here
+under
+
+/trending-topics
+
+issue is not showing all topics and also it showing same topics and it fetch same topics
+
+what I want is I want to fetch topics realted to
+
+global news and india News
+India Politics and Global Politics
+cricket
+fact
+nature
+dont fetch all news topic make sure fetch algo work in advanced mode
+
+and also all the news related to the niche I added is current of 24 hours because my video are based on the current
+
+so make sure dont fetch duplication fetch unique and only 10 topics and also add tags and category of each card based on the conten and also I want ot see the original soruce link so see the original source
+
+make sure add the bulk delete options also right now only single delte options there
+
+see image 2
+
+this not showing any data and also when I click on trigger automation nothing happened
+
+I just go to
+/settings
+
+so see image 3
+
+what the use of this if I add this all in frontned or I addd this all in backend
+
+and I have a doubt regarding the
+
+GOOGLE_APPLICATION_CREDENTIALS
+Google Cloud credentials for Text-to-Speech API
+I already mentiond this in the secret file
+
+GOOGLE_APPLICATION_CREDENTIALS="./credentials.json"
+
+so under the credenntials.json I alreay added this
+
+{
+"type": "service_account",
+"project_id": "magnetic-racer-442915-u4",
+"private_key_id": "3fd7d7a6bf0130d1f",
+"private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCYMv/IJG6vqW51\n/fh8EJVF9QgrTdYK2hj\n-----END PRIVATE KEY-----\n",
+"client_email": "youtube-automation@magnetic-racer-442915-u4.iam.gserviceaccount.com",
+"client_id": "1002569489",
+"auth_uri": "https://accounts.google.com/o/oauth2/auth",
+"token_uri": "https://oauth2.googleapis.com/token",
+"auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+"client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/youtube-automation%40magnetic-racer-442915-u4.iam.gserviceaccount.com",
+"universe_domain": "googleapis.com"
+}
+
+but I use the logic to upload on the google drive also so I created another service accoutn for google drive and there is another json fole there for that so I enabled google drive service on google cloud and also enabled text to sppech so I need to add the google drive json also here or it is not requried
+
+becasue still the file upload not work
+
+also why the video creation model and the thumnnai creation model not work why
+`
