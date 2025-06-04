@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { useNavigate } from "react-router-dom";
+import { useLocation } from "wouter";
 import { 
   TrendingUp, 
   RotateCcw, 
@@ -35,7 +35,7 @@ interface TrendingTopicsProps {
 export function TrendingTopics({ onRefresh }: TrendingTopicsProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
 
   const { data: topics, isLoading, error } = useQuery({
     queryKey: ['/api/dashboard/trending-topics'],
@@ -284,7 +284,7 @@ export function TrendingTopics({ onRefresh }: TrendingTopicsProps) {
             <Button 
               variant="outline" 
               className="w-full mt-4"
-              onClick={() => navigate('/trending-topics')}
+              onClick={() => setLocation('/trending-topics')}
             >
               View All Topics
             </Button>
