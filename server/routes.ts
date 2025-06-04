@@ -103,16 +103,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         { name: 'Video Generator', status: activeJobs.length > 2 ? 'high_load' : 'online', health: 'healthy' },
         { name: 'Google Drive', status: 'online', health: 'healthy' },
         { name: 'YouTube API', status: 'online', health: 'healthy' },
-        { name: 'Cron Scheduler', status: 'active', health: 'healthy' }
+        { name: 'Cron Scheduler', status: schedulerStatus?.isRunning ? 'active' : 'paused', health: 'healthy' }
       ];
+
+      const systemStatusSetting = settings.find(s => s.key === 'system_status');
+      const healthCheckSetting = settings.find(s => s.key === 'system_health');
 
       res.json({
         components: systemComponents,
-        scheduler: schedulerStatus,
-        systemStatus: settings.find(s => s.key === 'system_status')?.value || 'active',
-        lastHealthCheck: settings.find(s => s.key === 'system_health')?.updatedAt || new Date()
+        scheduler: schedulerStatus || { isRunning: false, jobs: [] },
+        systemStatus: systemStatusSetting?.value || 'active',
+        lastHealthCheck: healthCheckSetting?.updatedAt || new Date()
       });
     } catch (error) {
+      console.error("System status error:", error);
       res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
@@ -283,9 +287,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/trending/clear", async (req, res) => {
     try {
       await storage.clearTrendingTopics();
+      await storage.createActivityLog({
+        type: 'system',
+        title: 'Trending Topics Cleared',
+        description: 'User manually cleared all trending topics',
+        status: 'info',
+        metadata: { action: 'clear_trending', timestamp: new Date().toISOString() }
+      });
       res.json({ success: true, message: "Trending topics cleared" });
     } catch (error) {
       console.error("Clear trending topics error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Clear active pipeline jobs
+  app.post("/api/pipeline/clear", async (req, res) => {
+    try {
+      await storage.clearContentJobs();
+      await storage.createActivityLog({
+        type: 'system',
+        title: 'Pipeline Cleared',
+        description: 'User manually cleared all active pipeline jobs',
+        status: 'info',
+        metadata: { action: 'clear_pipeline', timestamp: new Date().toISOString() }
+      });
+      res.json({ success: true, message: "Pipeline cleared" });
+    } catch (error) {
+      console.error("Clear pipeline error:", error);
       res.status(500).json({ error: error.message });
     }
   });

@@ -131,6 +131,42 @@ export default function Dashboard() {
     },
   });
 
+  const clearPipelineMutation = useMutation({
+    mutationFn: () => apiRequest('POST', '/api/pipeline/clear'),
+    onSuccess: () => {
+      toast({
+        title: "Pipeline Cleared",
+        description: "All active pipeline jobs have been cleared.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to clear pipeline: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const clearTrendingMutation = useMutation({
+    mutationFn: () => apiRequest('POST', '/api/trending/clear'),
+    onSuccess: () => {
+      toast({
+        title: "Trending Topics Cleared",
+        description: "All trending topics have been deleted.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to clear trending topics: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
   const clearStuckJobsMutation = useMutation({
     mutationFn: () => apiRequest('POST', '/api/automation/clear-stuck-jobs'),
     onSuccess: () => {
@@ -265,8 +301,28 @@ export default function Dashboard() {
             </div>
 
             <div className="border-t pt-4">
-              <h4 className="text-sm font-medium text-muted-foreground mb-3">System Reset Controls</h4>
-              <div className="flex flex-wrap gap-3">
+              <h4 className="text-sm font-medium text-muted-foreground mb-3">Pipeline & Data Controls</h4>
+              <div className="flex flex-wrap gap-3 mb-3">
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={() => clearPipelineMutation.mutate()}
+                  disabled={clearPipelineMutation.isPending}
+                  className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                >
+                  Clear Active Pipeline
+                </Button>
+                
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={() => clearTrendingMutation.mutate()}
+                  disabled={clearTrendingMutation.isPending}
+                  className="border-purple-300 text-purple-700 hover:bg-purple-50"
+                >
+                  Clear Trending Topics
+                </Button>
+                
                 <Button 
                   variant="outline"
                   size="sm"
@@ -276,7 +332,10 @@ export default function Dashboard() {
                 >
                   Clear Stuck Jobs
                 </Button>
-                
+              </div>
+              
+              <div className="border-t pt-3">
+                <h4 className="text-sm font-medium text-muted-foreground mb-3">System Reset</h4>
                 <Button 
                   variant="outline"
                   size="sm"
@@ -284,12 +343,13 @@ export default function Dashboard() {
                   disabled={resetSystemMutation.isPending}
                   className="border-red-300 text-red-700 hover:bg-red-50"
                 >
+                  <Trash2 className="w-4 h-4 mr-2" />
                   Reset System & Clear All Data
                 </Button>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Individual controls: Clear pipeline jobs, trending topics, or stuck jobs. Full reset clears everything.
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Use "Clear Stuck Jobs" to unstuck processing jobs, or "Reset System" to clear all data and start fresh.
-              </p>
             </div>
           </div>
         </div>
