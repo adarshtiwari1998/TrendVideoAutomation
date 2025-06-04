@@ -5,6 +5,7 @@ import {
   activityLogs, 
   automationSettings, 
   users,
+  youtubeChannels,
   type TrendingTopic, 
   type InsertTrendingTopic,
   type ContentJob, 
@@ -311,6 +312,38 @@ export class DatabaseStorage implements IStorage {
     `);
 
     console.log('Cleared stuck jobs from previous sessions');
+  }
+
+  async clearAllData(): Promise<void> {
+    try {
+      // Clear all content jobs
+      await db.execute(sql`DELETE FROM content_jobs`);
+      
+      // Clear all trending topics
+      await db.execute(sql`DELETE FROM trending_topics`);
+      
+      // Clear activity logs (keep recent system logs)
+      await db.execute(sql`
+        DELETE FROM activity_logs 
+        WHERE created_at < NOW() - INTERVAL '1 day'
+        OR type NOT IN ('system')
+      `);
+      
+      console.log('Cleared all content data for fresh start');
+    } catch (error) {
+      console.error('Error clearing data:', error);
+      throw error;
+    }
+  }
+
+  async clearTrendingTopics(): Promise<void> {
+    await db.execute(sql`DELETE FROM trending_topics`);
+    console.log('Cleared all trending topics');
+  }
+
+  async clearContentJobs(): Promise<void> {
+    await db.execute(sql`DELETE FROM content_jobs`);
+    console.log('Cleared all content jobs');
   }
 }
 

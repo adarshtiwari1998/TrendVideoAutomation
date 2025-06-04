@@ -1,77 +1,55 @@
+import { Home, TrendingUp, Video, Clock, BarChart3, Cloud, Settings, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
-import { 
-  BarChart3, 
-  TrendingUp, 
-  Video, 
-  Calendar,
-  Settings,
-  Cloud,
-  User,
-  Youtube
-} from "lucide-react";
+import { useLocation } from "wouter";
 
-interface SidebarProps {
-  className?: string;
-}
+const navigation = [
+  { name: 'Dashboard', href: '/', icon: Home },
+  { name: 'Trending Topics', href: '/trending-topics', icon: TrendingUp },
+  { name: 'Video Pipeline', href: '/video-pipeline', icon: Video },
+  { name: 'Scheduler', href: '/scheduler', icon: Clock },
+  { name: 'Analytics', href: '/analytics', icon: BarChart3 },
+  { name: 'Cloud Storage', href: '/cloud-storage', icon: Cloud },
+  { name: 'Settings', href: '/settings', icon: Settings },
+];
 
-export function Sidebar({ className }: SidebarProps) {
-  const navigation = [
-    { name: 'Dashboard', icon: BarChart3, current: true },
-    { name: 'Trending Topics', icon: TrendingUp, current: false },
-    { name: 'Video Pipeline', icon: Video, current: false },
-    { name: 'Scheduler', icon: Calendar, current: false },
-    { name: 'Analytics', icon: BarChart3, current: false },
-    { name: 'Cloud Storage', icon: Cloud, current: false },
-    { name: 'Settings', icon: Settings, current: false },
-  ];
+export function Sidebar() {
+  const [location, setLocation] = useLocation();
 
   return (
-    <aside className={cn("w-64 bg-card shadow-lg flex flex-col border-r border-border", className)}>
-      <div className="p-6 border-b border-border">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-primary to-purple-600 rounded-lg flex items-center justify-center">
-            <Youtube className="text-primary-foreground w-5 h-5" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-foreground">YT Studio</h1>
-            <p className="text-sm text-muted-foreground">Automation Hub</p>
-          </div>
+    <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
+      <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-card px-6 py-4 border-r border-border">
+        <div className="flex h-16 shrink-0 items-center">
+          <Video className="h-8 w-8 text-primary" />
+          <span className="ml-2 text-xl font-bold text-foreground">YouTube AI</span>
         </div>
-      </div>
-
-      <nav className="flex-1 p-4">
-        <ul className="space-y-2">
-          {navigation.map((item) => (
-            <li key={item.name}>
-              <a
-                href="#"
-                className={cn(
-                  "flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors",
-                  item.current
-                    ? "text-primary-foreground bg-primary"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                )}
-              >
-                <item.icon className="mr-3 h-5 w-5" />
-                {item.name}
-              </a>
+        <nav className="flex flex-1 flex-col">
+          <ul role="list" className="flex flex-1 flex-col gap-y-7">
+            <li>
+              <ul role="list" className="-mx-2 space-y-1">
+                {navigation.map((item) => (
+                  <li key={item.name}>
+                    <button
+                      onClick={() => setLocation(item.href)}
+                      className={cn(
+                        location === item.href
+                          ? 'bg-primary text-primary-foreground'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-muted',
+                        'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-medium transition-colors duration-200 w-full text-left'
+                      )}
+                    >
+                      <item.icon
+                        className="h-6 w-6 shrink-0"
+                        aria-hidden="true"
+                      />
+                      {item.name}
+                    </button>
+                  </li>
+                ))}
+              </ul>
             </li>
-          ))}
-        </ul>
-      </nav>
-
-      <div className="p-4 border-t border-border">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
-            <User className="w-4 h-4 text-muted-foreground" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground">Content Creator</p>
-            <p className="text-xs text-muted-foreground">Administrator</p>
-          </div>
-        </div>
+          </ul>
+        </nav>
       </div>
-    </aside>
+    </div>
   );
 }

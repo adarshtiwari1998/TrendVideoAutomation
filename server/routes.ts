@@ -250,6 +250,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Reset system and clear all data
+  app.post("/api/automation/reset-system", async (req, res) => {
+    try {
+      console.log("System reset initiated");
+      
+      // Clear all stuck jobs and reset system
+      await automationScheduler.resetAndStart();
+      
+      // Clear all content jobs and trending topics
+      await storage.clearAllData();
+      
+      res.json({ success: true, message: "System reset completed and started fresh" });
+    } catch (error) {
+      console.error("System reset error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Clear stuck jobs only
+  app.post("/api/automation/clear-stuck-jobs", async (req, res) => {
+    try {
+      await storage.clearStuckJobs();
+      res.json({ success: true, message: "Stuck jobs cleared" });
+    } catch (error) {
+      console.error("Clear stuck jobs error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Clear trending topics
+  app.post("/api/trending/clear", async (req, res) => {
+    try {
+      await storage.clearTrendingTopics();
+      res.json({ success: true, message: "Trending topics cleared" });
+    } catch (error) {
+      console.error("Clear trending topics error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // YouTube Channel Management
   app.post("/api/channels/add", async (req, res) => {
     try {

@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Play, Pause, RotateCcw } from "lucide-react";
+import { Play, Pause, RotateCcw, Trash2 } from "lucide-react";
 import { useState, useEffect } from "react";
 
 export default function Dashboard() {
@@ -113,6 +113,42 @@ export default function Dashboard() {
     },
   });
 
+  const resetSystemMutation = useMutation({
+    mutationFn: () => apiRequest('POST', '/api/automation/reset-system'),
+    onSuccess: () => {
+      toast({
+        title: "System Reset Complete",
+        description: "All data cleared and system restarted fresh.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to reset system: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const clearStuckJobsMutation = useMutation({
+    mutationFn: () => apiRequest('POST', '/api/automation/clear-stuck-jobs'),
+    onSuccess: () => {
+      toast({
+        title: "Stuck Jobs Cleared",
+        description: "All stuck processing jobs have been cleared.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to clear stuck jobs: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleToggleAutomation = () => {
     if (isAutomationRunning) {
       pauseAutomationMutation.mutate();
@@ -196,7 +232,7 @@ export default function Dashboard() {
           <div className="mt-6 bg-card rounded-xl shadow-sm p-6 border border-border">
             <h3 className="text-lg font-semibold text-foreground mb-4">Quick Actions</h3>
             
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-3 mb-4">
               <Button 
                 variant="outline" 
                 onClick={() => refreshTrendsMutation.mutate()}
@@ -226,6 +262,34 @@ export default function Dashboard() {
                   Open YouTube Studio
                 </a>
               </Button>
+            </div>
+
+            <div className="border-t pt-4">
+              <h4 className="text-sm font-medium text-muted-foreground mb-3">System Reset Controls</h4>
+              <div className="flex flex-wrap gap-3">
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={() => clearStuckJobsMutation.mutate()}
+                  disabled={clearStuckJobsMutation.isPending}
+                  className="border-yellow-300 text-yellow-700 hover:bg-yellow-50"
+                >
+                  Clear Stuck Jobs
+                </Button>
+                
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={() => resetSystemMutation.mutate()}
+                  disabled={resetSystemMutation.isPending}
+                  className="border-red-300 text-red-700 hover:bg-red-50"
+                >
+                  Reset System & Clear All Data
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Use "Clear Stuck Jobs" to unstuck processing jobs, or "Reset System" to clear all data and start fresh.
+              </p>
             </div>
           </div>
         </div>
