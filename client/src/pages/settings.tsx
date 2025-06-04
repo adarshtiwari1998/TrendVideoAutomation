@@ -34,23 +34,23 @@ export default function SettingsPage() {
       key: '',
       status: 'disconnected',
       icon: Brain,
-      description: 'Google Gemini AI for content generation',
+      description: 'Google Gemini AI for content generation and Veo-2 video creation',
       required: true
     },
     {
-      name: 'ELEVEN_LABS_API_KEY', 
+      name: 'GOOGLE_APPLICATION_CREDENTIALS', 
       key: '',
       status: 'disconnected',
       icon: Mic,
-      description: 'ElevenLabs for text-to-speech generation',
+      description: 'Google Cloud credentials for Text-to-Speech API',
       required: true
     },
     {
-      name: 'RUNWAY_API_KEY',
+      name: 'GOOGLE_CLOUD_PROJECT_ID',
       key: '',
       status: 'disconnected', 
       icon: Video,
-      description: 'Runway ML for video generation',
+      description: 'Google Cloud Project ID for TTS services',
       required: true
     },
     {
