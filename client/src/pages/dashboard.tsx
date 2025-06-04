@@ -43,8 +43,8 @@ export default function Dashboard() {
     onSuccess: () => {
       setIsAutomationRunning(true);
       toast({
-        title: "Automation Started",
-        description: "The YouTube automation system is now active.",
+        title: "Automation Reset & Started",
+        description: "The automation system has been reset and is now running fresh.",
       });
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard'] });
     },
@@ -119,6 +119,10 @@ export default function Dashboard() {
     } else {
       startAutomationMutation.mutate();
     }
+  };
+
+  const handleStartFreshAutomation = () => {
+    startAutomationMutation.mutate();
   };
 
   return (

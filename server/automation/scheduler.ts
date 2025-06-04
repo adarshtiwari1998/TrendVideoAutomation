@@ -125,6 +125,41 @@ export class AutomationScheduler {
     });
   }
 
+  async resetAndStart(): Promise<void> {
+    console.log('Resetting automation system and starting fresh...');
+    
+    // Stop all current jobs
+    this.stop();
+    
+    // Clear any stuck jobs
+    await storage.clearStuckJobs();
+    
+    // Reset system status
+    await storage.setAutomationSetting({
+      key: 'system_status',
+      value: 'active',
+      description: 'System reset and restarted by user'
+    });
+    
+    // Log the reset
+    await storage.createActivityLog({
+      type: 'system',
+      title: 'Automation System Reset',
+      description: 'System was reset and restarted with fresh state',
+      status: 'success',
+      metadata: { 
+        action: 'reset_start',
+        timestamp: new Date().toISOString(),
+        resetBy: 'user'
+      }
+    });
+    
+    // Start fresh
+    this.start();
+    
+    console.log('Automation system reset and restarted successfully');
+  }
+
   getStatus(): any {
     const status = {};
     this.jobs.forEach((job, name) => {

@@ -298,6 +298,20 @@ export class DatabaseStorage implements IStorage {
       .set({ ...updates, updatedAt: new Date() })
       .where(eq(youtubeChannels.channelId, channelId));
   }
+
+  async clearStuckJobs(): Promise<void> {
+    // Reset any jobs that are stuck in processing states
+    await db.execute(sql`
+      UPDATE content_jobs 
+      SET status = 'failed', 
+          progress = 0,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE status IN ('script_generation', 'video_creation', 'thumbnail_generation', 'uploading')
+      AND updated_at < NOW() - INTERVAL '1 hour'
+    `);
+
+    console.log('Cleared stuck jobs from previous sessions');
+  }
 }
 
 export const storage = new DatabaseStorage();
