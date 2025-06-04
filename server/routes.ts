@@ -1,8 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { automationScheduler } from "./automation/scheduler";
 import { automationPipeline } from "./automation/pipeline";
+import { youtubeChannelManager } from "./services/youtube-channel-manager";
 import { trendingAnalyzer } from "./services/trending-analyzer";
 import { contentGenerator } from "./services/content-generator";
 
@@ -16,7 +16,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const todayStats = await storage.getTodayStats();
       const weeklyStats = await storage.getWeeklyStats();
-      
+
       const stats = {
         todayVideos: todayStats?.videosCreated || 0,
         todayShorts: todayStats?.shortsCreated || 0,
@@ -27,7 +27,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         systemStatus: todayStats?.systemStatus || "active",
         weeklyTrend: weeklyStats.length
       };
-      
+
       res.json(stats);
     } catch (error) {
       res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
@@ -56,7 +56,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const scheduledJobs = await storage.getScheduledContentJobs();
       const activeJobs = await storage.getActiveContentJobs();
-      
+
       const scheduled = scheduledJobs.map(job => ({
         id: job.id,
         title: job.title,
@@ -95,7 +95,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const schedulerStatus = automationScheduler.getStatus();
       const activeJobs = await storage.getActiveContentJobs();
       const settings = await storage.getAllAutomationSettings();
-      
+
       const systemComponents = [
         { name: 'Trending API', status: 'online', health: 'healthy' },
         { name: 'Gemini AI', status: 'online', health: 'healthy' },
@@ -164,7 +164,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!topicId || !videoType) {
         return res.status(400).json({ error: 'topicId and videoType are required' });
       }
-      
+
       const job = await automationPipeline.processTrendingTopic(topicId, videoType);
       res.json({ success: true, jobId: job.id, message: 'Content generation started' });
     } catch (error) {
@@ -229,11 +229,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!key || !value) {
         return res.status(400).json({ error: 'key and value are required' });
       }
-      
+
       const setting = await storage.setAutomationSetting({ key, value, description });
       res.json(setting);
     } catch (error) {
       res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
+
+  // Force pipeline execution for testing
+  app.post("/api/automation/force-run", async (req, res) => {
+    try {
+      console.log("Manual pipeline execution triggered");
+      await automationPipeline.runDailyAutomation();
+      res.json({ success: true, message: "Pipeline execution started" });
+    } catch (error) {
+      console.error("Pipeline execution error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // YouTube Channel Management
+  app.post("/api/channels/add", async (req, res) => {
+    try {
+      const { channelName } = req.body;
+      if (!channelName) {
+        return res.status(400).json({ error: "Channel name is required" });
+      }
+
+      const result = await youtubeChannelManager.addChannelByName(channelName);
+      res.json({ 
+        success: true, 
+        message: "Channel added successfully",
+        data: result 
+      });
+    } catch (error) {
+      console.error("Add channel error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/channels", async (req, res) => {
+    try {
+      const channels = await youtubeChannelManager.getActiveChannels();
+      res.json(channels);
+    } catch (error) {
+      console.error("Get channels error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.put("/api/channels/:channelId", async (req, res) => {
+    try {
+      const { channelId } = req.params;
+      const updates = req.body;
+
+      await youtubeChannelManager.updateChannelSettings(channelId, updates);
+      res.json({ success: true, message: "Channel updated successfully" });
+    } catch (error) {
+      console.error("Update channel error:", error);
+      res.status(500).json({ error: error.message });
     }
   });
 

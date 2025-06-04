@@ -72,6 +72,20 @@ export const automationSettings = pgTable("automation_settings", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+export const youtubeChannels = pgTable("youtube_channels", {
+  id: serial("id").primaryKey(),
+  channelName: text("channel_name").notNull(),
+  channelId: text("channel_id").notNull().unique(),
+  channelUrl: text("channel_url"),
+  accessToken: text("access_token"),
+  refreshToken: text("refresh_token"),
+  isActive: boolean("is_active").notNull().default(true),
+  uploadScheduleLong: text("upload_schedule_long").notNull().default("18:30"),
+  uploadScheduleShort: text("upload_schedule_short").notNull().default("20:30"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 // Insert schemas
 export const insertTrendingTopicSchema = createInsertSchema(trendingTopics).omit({
   id: true,

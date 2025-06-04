@@ -2,15 +2,27 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import axios from 'axios';
 import { storage } from '../storage';
 import type { ContentJob } from '@shared/schema';
+import path from 'path';
+import fs from 'fs';
 
 export class VideoCreator {
   private gemini: GoogleGenerativeAI;
+  private elevenLabsApiKey: string;
+  private runwayApiKey: string;
 
   constructor() {
     if (!process.env.GEMINI_API_KEY) {
       throw new Error("GEMINI_API_KEY environment variable is required");
     }
+    if (!process.env.ELEVEN_LABS_API_KEY) {
+      throw new Error("ELEVEN_LABS_API_KEY environment variable is required");
+    }
+    if (!process.env.RUNWAY_API_KEY) {
+      throw new Error("RUNWAY_API_KEY environment variable is required");
+    }
     this.gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    this.elevenLabsApiKey = process.env.ELEVEN_LABS_API_KEY;
+    this.runwayApiKey = process.env.RUNWAY_API_KEY;
   }
 
   async createVideo(jobId: number): Promise<string> {
@@ -18,42 +30,53 @@ export class VideoCreator {
       const job = await storage.getContentJobById(jobId);
       if (!job) throw new Error('Job not found');
 
+      if (!job.script) {
+        throw new Error('No script available for video creation');
+      }
+
       await storage.updateContentJob(jobId, { 
         status: 'video_creation', 
-        progress: 50 
+        progress: 30 
       });
 
-      // Step 1: Generate voiceover
-      const audioPath = await this.generateVoiceover(job.script!, job.videoType);
-      
-      // Step 2: Create video with animations and effects
-      const videoPath = await this.generateProfessionalVideo(job, audioPath);
-      
-      // Step 3: Add logo overlay
-      const finalVideoPath = await this.addLogoOverlay(videoPath);
+      console.log(`Creating ${job.videoType} video for job ${jobId}: ${job.title}`);
+
+      // Step 1: Generate TTS audio
+      const audioPath = await this.generateTTSAudio(job);
+
+      await storage.updateContentJob(jobId, { progress: 50 });
+
+      // Step 2: Create video using script and audio
+      const videoPath = await this.generateVideo(job, audioPath);
 
       await storage.updateContentJob(jobId, { 
-        videoPath: finalVideoPath,
-        status: 'video_creation',
-        progress: 75 
+        videoPath,
+        progress: 70 
       });
 
       await storage.createActivityLog({
         type: 'generation',
         title: 'Video Created Successfully',
-        description: `Generated ${job.videoType} video: "${job.title}"`,
+        description: `Generated ${job.videoType} video: ${job.title}`,
         status: 'success',
-        metadata: { jobId, videoPath: finalVideoPath, duration: this.getVideoDuration(job.videoType) }
+        metadata: { 
+          jobId, 
+          videoType: job.videoType,
+          title: job.title,
+          videoPath,
+          audioPath,
+          duration: this.getVideoDuration(job.videoType)
+        }
       });
 
-      return finalVideoPath;
+      return videoPath;
     } catch (error) {
       console.error('Video creation error:', error);
       await storage.updateContentJob(jobId, { 
         status: 'failed',
         errorMessage: error.message 
       });
-      
+
       await storage.createActivityLog({
         type: 'error',
         title: 'Video Creation Failed',
@@ -61,18 +84,27 @@ export class VideoCreator {
         status: 'error',
         metadata: { jobId, error: error.message }
       });
-      
+
       throw error;
     }
   }
 
-  private async generateVoiceover(script: string, videoType: string): Promise<string> {
+  private async generateTTSAudio(job: ContentJob): Promise<string> {
+    const audioDir = path.join(process.cwd(), 'generated', 'audio');
+    if (!fs.existsSync(audioDir)) {
+      fs.mkdirSync(audioDir, { recursive: true });
+    }
+
+    const audioPath = path.join(audioDir, `${job.id}_audio.mp3`);
+
+    console.log(`Generating TTS audio for job ${job.id}`);
+
     try {
       // Use ElevenLabs for human-like voice generation
       const response = await axios.post(
         'https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM', // Professional Indian English voice
         {
-          text: script,
+          text: job.script,
           voice_settings: {
             stability: 0.75,
             similarity_boost: 0.85,
@@ -90,21 +122,21 @@ export class VideoCreator {
         }
       );
 
-      const audioPath = `/tmp/voiceover_${Date.now()}.mp3`;
       // In a real implementation, save the audio buffer to file
+      fs.writeFileSync(audioPath, Buffer.from(response.data));
       console.log('Generated voiceover:', audioPath);
       return audioPath;
     } catch (error) {
       console.error('Voiceover generation error:', error);
-      return this.getMockAudioPath(videoType);
+      return this.getMockAudioPath(job.videoType);
     }
   }
 
-  private async generateProfessionalVideo(job: ContentJob, audioPath: string): Promise<string> {
+  private async generateVideo(job: ContentJob, audioPath: string): Promise<string> {
     try {
       // Use Runway ML or similar for professional video generation
       const videoConfig = this.getVideoConfig(job);
-      
+
       const response = await axios.post(
         'https://api.runwayml.com/v1/generate',
         {
@@ -135,7 +167,7 @@ export class VideoCreator {
   private createVideoPrompt(job: ContentJob): string {
     const category = job.metadata?.category || 'general';
     const basePrompt = `Professional ${job.videoType} video about ${job.title}. `;
-    
+
     const categoryPrompts = {
       technology: 'Modern tech office, screens showing data, futuristic animations, clean corporate style',
       sports: 'Dynamic sports imagery, action shots, energetic transitions, stadium atmosphere',
@@ -147,7 +179,7 @@ export class VideoCreator {
     };
 
     const stylePrompt = categoryPrompts[category] || 'Professional news presentation style';
-    
+
     return `${basePrompt}${stylePrompt}. Include smooth transitions, professional animations, text overlays for key points, and visual effects that enhance understanding. Style: broadcast quality, engaging visuals, appropriate pacing for ${job.videoType} content.`;
   }
 
@@ -171,7 +203,7 @@ export class VideoCreator {
     try {
       // Add logo overlay in top-right corner
       const outputPath = videoPath.replace('.mp4', '_with_logo.mp4');
-      
+
       // In a real implementation, use ffmpeg or similar to add logo overlay
       console.log('Added logo overlay to video:', outputPath);
       return outputPath;

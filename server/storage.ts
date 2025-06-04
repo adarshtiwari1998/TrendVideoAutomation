@@ -250,6 +250,54 @@ export class DatabaseStorage implements IStorage {
   async getAllAutomationSettings(): Promise<AutomationSetting[]> {
     return await db.select().from(automationSettings);
   }
+
+  // User methods
+  async createUser(userData: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values(userData).returning();
+    return user;
+  }
+
+  async getUserByUsername(username: string): Promise<User | null> {
+    const [user] = await db.select().from(users).where(eq(users.username, username)).limit(1);
+    return user || null;
+  }
+
+  // YouTube Channel methods
+  async addYouTubeChannel(channelData: {
+    channelName: string;
+    channelId: string;
+    channelUrl?: string;
+    isActive?: boolean;
+    uploadScheduleLong?: string;
+    uploadScheduleShort?: string;
+  }): Promise<any> {
+    const [channel] = await db.insert(youtubeChannels).values({
+      ...channelData,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }).returning();
+    return channel;
+  }
+
+  async getActiveYouTubeChannels(): Promise<any[]> {
+    return await db.select().from(youtubeChannels).where(eq(youtubeChannels.isActive, true));
+  }
+
+  async getYouTubeChannelById(channelId: string): Promise<any | null> {
+    const [channel] = await db.select().from(youtubeChannels)
+      .where(eq(youtubeChannels.channelId, channelId)).limit(1);
+    return channel || null;
+  }
+
+  async updateYouTubeChannel(channelId: string, updates: {
+    uploadScheduleLong?: string;
+    uploadScheduleShort?: string;
+    isActive?: boolean;
+  }): Promise<void> {
+    await db.update(youtubeChannels)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(youtubeChannels.channelId, channelId));
+  }
 }
 
 export const storage = new DatabaseStorage();
