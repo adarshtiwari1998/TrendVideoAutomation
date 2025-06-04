@@ -505,6 +505,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/pipeline/logs/:jobId', async (req, res) => {
+    try {
+      const jobId = parseInt(req.params.jobId);
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
+
+      const logs = await storage.getPipelineLogs(jobId, limit);
+      res.json(logs);
+    } catch (error) {
+      console.error('Pipeline logs error:', error);
+      res.status(500).json({ error: 'Failed to fetch pipeline logs' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

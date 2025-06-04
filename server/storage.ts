@@ -53,6 +53,18 @@ export interface IStorage {
   createActivityLog(log: InsertActivityLog): Promise<ActivityLog>;
   getRecentActivityLogs(limit?: number): Promise<ActivityLog[]>;
 
+  // Pipeline Logs
+  createPipelineLog(log: {
+    jobId: number;
+    step: string;
+    status: 'starting' | 'progress' | 'completed' | 'error';
+    message: string;
+    details?: string;
+    progress?: number;
+    metadata?: any;
+  }): Promise<any>;
+  getPipelineLogs(jobId?: number, limit?: number): Promise<any[]>;
+
   // Automation Settings
   getAutomationSetting(key: string): Promise<AutomationSetting | undefined>;
   setAutomationSetting(setting: InsertAutomationSetting): Promise<AutomationSetting>;
@@ -358,6 +370,73 @@ export class DatabaseStorage implements IStorage {
   async clearContentJobs(): Promise<void> {
     await db.execute(sql`DELETE FROM content_jobs`);
     console.log('Cleared all content jobs');
+  }
+
+  // Pipeline Logs (using activity logs table for now)
+  async createPipelineLog(log: {
+    jobId: number;
+    step: string;
+    status: 'starting' | 'progress' | 'completed' | 'error';
+    message: string;
+    details?: string;
+    progress?: number;
+    metadata?: any;
+  }): Promise<any> {
+    const activityLog = await this.createActivityLog({
+      type: 'system',
+      title: `Pipeline: ${log.step}`,
+      description: log.message,
+      status: log.status === 'error' ? 'error' : 
+             log.status === 'completed' ? 'success' : 'info',
+      metadata: {
+        jobId: log.jobId,
+        step: log.step,
+        details: log.details,
+        progress: log.progress,
+        ...log.metadata
+      }
+    });
+
+    console.log(`Pipeline Log [Job ${log.jobId}] ${log.step}: ${log.message}`);
+    return activityLog;
+  }
+
+  async getPipelineLogs(jobId?: number, limit = 50): Promise<any[]> {
+    let query = db
+      .select()
+      .from(activityLogs)
+      .where(sql`${activityLogs.title} LIKE 'Pipeline:%'`)
+      .orderBy(desc(activityLogs.createdAt))
+      .limit(limit);
+
+    if (jobId) {
+      query = db
+        .select()
+        .from(activityLogs)
+        .where(
+          and(
+            sql`${activityLogs.title} LIKE 'Pipeline:%'`,
+            sql`${activityLogs.metadata}->>'jobId' = ${jobId.toString()}`
+          )
+        )
+        .orderBy(desc(activityLogs.createdAt))
+        .limit(limit);
+    }
+
+    const logs = await query;
+    
+    return logs.map(log => ({
+      id: log.id,
+      jobId: log.metadata?.jobId || 0,
+      step: log.metadata?.step || 'unknown',
+      status: log.status === 'success' ? 'completed' : 
+              log.status === 'error' ? 'error' : 'progress',
+      message: log.description,
+      details: log.metadata?.details,
+      progress: log.metadata?.progress,
+      timestamp: log.createdAt.toISOString(),
+      metadata: log.metadata
+    }));
   }
 }
 
