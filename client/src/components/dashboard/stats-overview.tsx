@@ -189,7 +189,7 @@ export function StatsOverview({ stats, isLoading }: StatsOverviewProps) {
               </div>
             </div>
           </CardContent>
-        ))}
+        </Card>
       </div>
     </div>
   );

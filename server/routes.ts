@@ -30,7 +30,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(stats);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
@@ -39,7 +39,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const topics = await storage.getTrendingTopics(10);
       res.json(topics);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
@@ -48,7 +48,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const pipelineStatus = await automationPipeline.getActivePipelineStatus();
       res.json(pipelineStatus);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
@@ -77,7 +77,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({ scheduled, processing });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
@@ -86,7 +86,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const activities = await storage.getRecentActivityLogs(20);
       res.json(activities);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
@@ -112,7 +112,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lastHealthCheck: settings.find(s => s.key === 'system_health')?.updatedAt || new Date()
       });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
@@ -129,7 +129,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       res.json({ success: true, message: 'Automation started' });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
@@ -145,7 +145,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       res.json({ success: true, message: 'Automation paused' });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
@@ -154,7 +154,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await automationScheduler.triggerTrendingAnalysis();
       res.json({ success: true, message: 'Trending analysis started' });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
@@ -168,7 +168,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const job = await automationPipeline.processTrendingTopic(topicId, videoType);
       res.json({ success: true, jobId: job.id, message: 'Content generation started' });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
@@ -177,7 +177,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await automationScheduler.triggerDailyAutomation();
       res.json({ success: true, message: 'Daily automation triggered' });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
@@ -186,7 +186,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await automationScheduler.triggerUploadCheck();
       res.json({ success: true, message: 'Upload check triggered' });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
@@ -199,7 +199,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json(job);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
@@ -209,7 +209,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const jobs = await storage.getContentJobs(limit);
       res.json(jobs);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
@@ -219,7 +219,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const settings = await storage.getAllAutomationSettings();
       res.json(settings);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
@@ -233,7 +233,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const setting = await storage.setAutomationSetting({ key, value, description });
       res.json(setting);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 

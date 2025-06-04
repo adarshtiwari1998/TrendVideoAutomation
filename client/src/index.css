@@ -76,11 +76,11 @@
   }
   
   .pipeline-step.completed {
-    @apply bg-success/10 border border-success/20;
+    @apply bg-green-50 border border-green-200;
   }
   
   .pipeline-step.active {
-    @apply bg-primary/10 border-2 border-primary/30;
+    @apply bg-blue-50 border-2 border-blue-300;
   }
   
   .pipeline-step.pending {
