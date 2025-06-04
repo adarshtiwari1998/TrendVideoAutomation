@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useNavigate } from "react-router-dom";
 import { 
   TrendingUp, 
   RotateCcw, 
@@ -34,6 +35,7 @@ interface TrendingTopicsProps {
 export function TrendingTopics({ onRefresh }: TrendingTopicsProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const { data: topics, isLoading, error } = useQuery({
     queryKey: ['/api/dashboard/trending-topics'],
@@ -238,11 +240,11 @@ export function TrendingTopics({ onRefresh }: TrendingTopicsProps) {
                         </div>
                       </div>
                     </div>
-                    <div className="flex flex-col space-y-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex flex-col space-y-1 opacity-70 group-hover:opacity-100 transition-opacity">
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-6 px-2 text-xs bg-green-50 hover:bg-green-100 border-green-200"
+                        className="h-7 px-2 text-xs bg-green-50 hover:bg-green-100 border-green-200"
                         onClick={() => handleGenerateContent(topic.id, 'long_form')}
                         disabled={generateContentMutation.isPending}
                       >
@@ -252,7 +254,7 @@ export function TrendingTopics({ onRefresh }: TrendingTopicsProps) {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-6 px-2 text-xs bg-blue-50 hover:bg-blue-100 border-blue-200"
+                        className="h-7 px-2 text-xs bg-blue-50 hover:bg-blue-100 border-blue-200"
                         onClick={() => handleGenerateContent(topic.id, 'short')}
                         disabled={generateContentMutation.isPending}
                       >
@@ -262,9 +264,14 @@ export function TrendingTopics({ onRefresh }: TrendingTopicsProps) {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-6 px-2 text-xs bg-red-50 hover:bg-red-100 border-red-200 text-red-600"
-                        onClick={() => handleDeleteTopic(topic.id)}
+                        className="h-7 px-2 text-xs bg-red-50 hover:bg-red-100 border-red-200 text-red-600 hover:text-red-700"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleDeleteTopic(topic.id);
+                        }}
                         disabled={deleteMutation.isPending}
+                        title="Delete this topic"
                       >
                         <Trash2 className="w-3 h-3" />
                       </Button>
@@ -277,7 +284,7 @@ export function TrendingTopics({ onRefresh }: TrendingTopicsProps) {
             <Button 
               variant="outline" 
               className="w-full mt-4"
-              onClick={onRefresh}
+              onClick={() => navigate('/trending-topics')}
             >
               View All Topics
             </Button>
