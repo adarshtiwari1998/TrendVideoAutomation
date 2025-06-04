@@ -1,16 +1,15 @@
-import OpenAI from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { storage } from '../storage';
 import type { TrendingTopic, ContentJob } from '@shared/schema';
 
 export class ContentGenerator {
-  private openai: OpenAI;
-  private geminiApiKey: string;
+  private gemini: GoogleGenerativeAI;
 
   constructor() {
-    this.openai = new OpenAI({ 
-      apiKey: process.env.OPENAI_API_KEY || process.env.GEMINI_API_KEY || 'fallback-key'
-    });
-    this.geminiApiKey = process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY || '';
+    if (!process.env.GEMINI_API_KEY) {
+      throw new Error("GEMINI_API_KEY environment variable is required");
+    }
+    this.gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
   }
 
   async generateScript(topic: TrendingTopic, videoType: 'long_form' | 'short'): Promise<string> {
