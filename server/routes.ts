@@ -328,6 +328,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Bulk delete trending topics
+  app.post("/api/trending/bulk-delete", async (req, res) => {
+    try {
+      const { topicIds } = req.body;
+      if (!topicIds || !Array.isArray(topicIds) || topicIds.length === 0) {
+        return res.status(400).json({ error: 'topicIds array is required' });
+      }
+
+      for (const topicId of topicIds) {
+        await storage.deleteTrendingTopic(topicId);
+      }
+
+      await storage.createActivityLog({
+        type: 'system',
+        title: 'Bulk Delete Trending Topics',
+        description: `User deleted ${topicIds.length} trending topics`,
+        status: 'info',
+        metadata: { action: 'bulk_delete_topics', count: topicIds.length, timestamp: new Date().toISOString() }
+      });
+
+      res.json({ success: true, message: `${topicIds.length} trending topics deleted` });
+    } catch (error) {
+      console.error("Bulk delete trending topics error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Clear trending topics
   app.post("/api/trending/clear", async (req, res) => {
     try {

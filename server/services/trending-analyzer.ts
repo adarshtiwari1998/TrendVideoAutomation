@@ -20,14 +20,14 @@ export class TrendingAnalyzer {
       // Step 1: Clean up old topics (older than 24 hours)
       await this.cleanupOldTopics();
       
-      // Step 2: Get current trending topics
-      const [googleTrends, newsTopics, globalTopics] = await Promise.all([
-        this.getGoogleTrends(),
-        this.getNewsTopics(),
-        this.getMockIndiaTopics() // Renamed for global focus
+      // Step 2: Get current trending topics from specific niches
+      const [globalNews, factsAndNature, indiaSpecific] = await Promise.all([
+        this.getMockGlobalNews(),
+        this.getMockFactsAndNature(), 
+        this.getMockIndiaSpecific()
       ]);
 
-      const allTopics = [...googleTrends, ...newsTopics, ...globalTopics];
+      const allTopics = [...globalNews, ...factsAndNature, ...indiaSpecific];
       
       // Step 3: Filter out topics similar to existing content
       const filteredTopics = await this.filterExistingContent(allTopics);
@@ -151,85 +151,141 @@ export class TrendingAnalyzer {
     }
   }
 
-  private getMockGoogleTrends(): InsertTrendingTopic[] {
+  private getMockGlobalNews(): InsertTrendingTopic[] {
     const today = new Date().toISOString().split('T')[0];
     const currentHour = new Date().getHours();
     const timeStamp = `${today}_${currentHour}`;
     
     return [
       {
-        title: `Breaking: Global Climate Summit Reaches Historic Agreement - ${today}`,
-        description: "World leaders unite on unprecedented climate action plan with immediate implementation targets",
+        title: `Breaking: Global Summit Announces Major Climate Action Plan - ${today}`,
+        description: "World leaders unite on unprecedented climate action with immediate targets for carbon reduction and renewable energy transition",
         searchVolume: 4200000,
         priority: "high",
-        category: "environment",
+        category: "global_news",
         source: "google_trends",
-        trending_data: { date: today, region: 'Global', timestamp: timeStamp, contentType: 'breaking_news' },
+        trending_data: { 
+          date: today, 
+          region: 'Global', 
+          timestamp: timeStamp, 
+          contentType: 'breaking_news',
+          sourceUrl: 'https://example.com/climate-summit-2024',
+          tags: ['climate', 'environment', 'politics', 'global']
+        },
         status: "pending"
       },
       {
-        title: `Scientific Discovery: New Quantum Computing Breakthrough Changes Everything - ${today}`,
-        description: "Scientists achieve quantum supremacy milestone that could revolutionize computing and AI forever",
+        title: `India Politics: Parliament Passes Historic Education Reform Bill - ${today}`,
+        description: "Indian Parliament approves comprehensive education reform affecting millions of students across the country",
         searchVolume: 3800000,
         priority: "high",
-        category: "science",
+        category: "india_politics", 
         source: "google_trends",
-        trending_data: { date: today, region: 'Global', timestamp: timeStamp, contentType: 'science_fact' },
+        trending_data: { 
+          date: today, 
+          region: 'India', 
+          timestamp: timeStamp, 
+          contentType: 'political_news',
+          sourceUrl: 'https://example.com/india-education-reform',
+          tags: ['india', 'politics', 'education', 'parliament']
+        },
         status: "pending"
       },
       {
-        title: `Economic Alert: Global Markets React to Unexpected Policy Changes - ${today}`,
-        description: "Major economies announce coordinated financial policies affecting millions worldwide",
-        searchVolume: 3200000,
+        title: `Cricket: India vs Australia Test Series Breaks Viewership Records - ${today}`,
+        description: "Historic cricket match draws record-breaking global audience as India leads the series with exceptional performance",
+        searchVolume: 5200000,
         priority: "high",
-        category: "business",
+        category: "cricket",
         source: "google_trends",
-        trending_data: { date: today, region: 'Global', timestamp: timeStamp, contentType: 'economic_news' },
+        trending_data: { 
+          date: today, 
+          region: 'Global', 
+          timestamp: timeStamp, 
+          contentType: 'sports_news',
+          sourceUrl: 'https://example.com/ind-vs-aus-cricket',
+          tags: ['cricket', 'india', 'australia', 'sports', 'test_series']
+        },
         status: "pending"
       }
     ];
   }
 
-  private getMockNewsTopics(): InsertTrendingTopic[] {
+  private getMockFactsAndNature(): InsertTrendingTopic[] {
     const today = new Date().toISOString().split('T')[0];
     const currentHour = new Date().getHours();
     const timeStamp = `${today}_${currentHour}`;
     
     return [
       {
-        title: `Amazing Fact: Ocean Discovery Reveals Hidden Ecosystem - ${today}`,
-        description: "Marine biologists discover previously unknown deep-sea creatures with extraordinary survival abilities",
+        title: `Amazing Fact: Scientists Discover Animals That Never Age - ${today}`,
+        description: "Researchers identify immortal species that could hold the key to understanding aging and longevity in humans",
         searchVolume: 2800000,
         priority: "high",
-        category: "science",
+        category: "facts",
         source: "news_api",
-        trending_data: { date: today, breaking: true, timestamp: timeStamp, contentType: 'amazing_fact' },
+        trending_data: { 
+          date: today, 
+          breaking: true, 
+          timestamp: timeStamp, 
+          contentType: 'amazing_fact',
+          sourceUrl: 'https://example.com/immortal-animals-discovery',
+          tags: ['science', 'nature', 'animals', 'longevity', 'research']
+        },
         status: "pending"
       },
       {
-        title: `Health Breakthrough: Revolutionary Treatment Shows 95% Success Rate - ${today}`,
-        description: "Medical researchers announce groundbreaking therapy that could change treatment forever",
+        title: `Nature Wonder: Rare Himalayan Flowers Bloom After 12 Years - ${today}`,
+        description: "Magnificent Himalayan blue poppies create stunning natural display, last seen over a decade ago",
+        searchVolume: 2100000,
+        priority: "medium",
+        category: "nature",
+        source: "news_api",
+        trending_data: { 
+          date: today, 
+          timestamp: timeStamp, 
+          contentType: 'nature_phenomenon',
+          sourceUrl: 'https://example.com/himalayan-blue-poppies',
+          tags: ['nature', 'himalaya', 'flowers', 'rare', 'botanical']
+        },
+        status: "pending"
+      },
+      {
+        title: `Mind-Blowing Fact: Ocean Currents Found to Control Global Weather - ${today}`,
+        description: "New research reveals how deep ocean currents directly influence weather patterns across all continents",
         searchVolume: 3100000,
         priority: "high",
-        category: "health",
+        category: "facts",
         source: "news_api",
-        trending_data: { date: today, urgent: true, timestamp: timeStamp, contentType: 'health_news' },
+        trending_data: { 
+          date: today, 
+          timestamp: timeStamp, 
+          contentType: 'science_fact',
+          sourceUrl: 'https://example.com/ocean-currents-weather',
+          tags: ['ocean', 'weather', 'climate', 'science', 'research']
+        },
         status: "pending"
       },
       {
-        title: `Mind-Blowing Fact: Space Telescope Captures Impossible Image - ${today}`,
-        description: "NASA releases stunning photographs that challenge our understanding of the universe",
-        searchVolume: 2600000,
+        title: `Global Politics: UN Security Council Votes on Revolutionary Climate Treaty - ${today}`,
+        description: "Historic vote could establish binding international climate laws affecting all 195 member nations",
+        searchVolume: 3900000,
         priority: "high",
-        category: "science",
+        category: "global_politics",
         source: "news_api",
-        trending_data: { date: today, timestamp: timeStamp, contentType: 'space_fact' },
+        trending_data: { 
+          date: today, 
+          timestamp: timeStamp, 
+          contentType: 'political_news',
+          sourceUrl: 'https://example.com/un-climate-treaty-vote',
+          tags: ['politics', 'UN', 'climate', 'treaty', 'international']
+        },
         status: "pending"
       }
     ];
   }
 
-  private getMockIndiaTopics(): InsertTrendingTopic[] {
+  private getMockIndiaSpecific(): InsertTrendingTopic[] {
     const today = new Date().toISOString().split('T')[0];
     const currentHour = new Date().getHours();
     const timeStamp = `${today}_${currentHour}`;
@@ -303,7 +359,7 @@ export class TrendingAnalyzer {
 
     return Array.from(uniqueTopics.values())
       .sort((a, b) => b.searchVolume - a.searchVolume)
-      .slice(0, 15); // Keep top 15 topics
+      .slice(0, 10); // Keep top 10 topics
   }
 }
 
