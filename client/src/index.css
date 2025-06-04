@@ -104,15 +104,15 @@
   }
   
   .status-indicator.online {
-    @apply bg-success;
+    @apply bg-green-500;
   }
   
   .status-indicator.warning {
-    @apply bg-warning;
+    @apply bg-yellow-500;
   }
   
   .status-indicator.offline {
-    @apply bg-destructive;
+    @apply bg-red-500;
   }
 }
 
