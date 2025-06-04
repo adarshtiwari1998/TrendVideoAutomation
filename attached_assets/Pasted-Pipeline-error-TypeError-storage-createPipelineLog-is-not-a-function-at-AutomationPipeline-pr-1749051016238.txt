@@ -1,0 +1,110 @@
+Pipeline error: TypeError: storage.createPipelineLog is not a function
+    at AutomationPipeline.processTrendingTopic (/home/runner/workspace/server/automation/pipeline.ts:19:21)
+    at AutomationPipeline.processTopicsForDay (/home/runner/workspace/server/automation/pipeline.ts:272:22)
+    at AutomationPipeline.runDailyAutomation (/home/runner/workspace/server/automation/pipeline.ts:233:20)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async AutomationScheduler.triggerDailyAutomation (/home/runner/workspace/server/automation/scheduler.ts:324:5)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:208:7)
+Starting pipeline for topic 80, type: short
+Pipeline error: TypeError: storage.createPipelineLog is not a function
+    at AutomationPipeline.processTrendingTopic (/home/runner/workspace/server/automation/pipeline.ts:19:21)
+    at AutomationPipeline.processTopicsForDay (/home/runner/workspace/server/automation/pipeline.ts:278:22)
+    at AutomationPipeline.runDailyAutomation (/home/runner/workspace/server/automation/pipeline.ts:233:20)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async AutomationScheduler.triggerDailyAutomation (/home/runner/workspace/server/automation/scheduler.ts:324:5)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:208:7)
+Daily automation error: TypeError: storage.createPipelineLog is not a function
+    at AutomationPipeline.processTrendingTopic (/home/runner/workspace/server/automation/pipeline.ts:19:21)
+    at AutomationPipeline.processTopicsForDay (/home/runner/workspace/server/automation/pipeline.ts:272:22)
+    at AutomationPipeline.runDailyAutomation (/home/runner/workspace/server/automation/pipeline.ts:233:20)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async AutomationScheduler.triggerDailyAutomation (/home/runner/workspace/server/automation/scheduler.ts:324:5)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:208:7)
+3:29:16 PM [express] POST /api/automation/trigger-daily 200 in 1195ms :: {"success":true,"message":"…
+3:29:19 PM [express] GET /api/dashboard/active-pipeline 304 in 477ms :: {"active":[],"scheduled":[],…
+3:29:50 PM [express] GET /api/dashboard/trending-topics 304 in 1716ms :: [{"id":79,"title":"EPL 4 | …
+Starting scheduled task: upload-check
+Starting scheduled task: health-check
+Checking 0 scheduled jobs for upload
+Completed scheduled task: upload-check
+3:30:01 PM [express] GET /api/dashboard/stats 304 in 696ms :: {"todayVideos":0,"todayShorts":0,"succ…
+Error getting storage usage: GaxiosError: invalid_grant: Invalid JWT Signature.
+    at Gaxios._request (/home/runner/workspace/node_modules/gaxios/src/gaxios.ts:146:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async GoogleToken._GoogleToken_requestToken (/home/runner/workspace/node_modules/gtoken/build/src/index.js:241:19)
+    at async GoogleToken._GoogleToken_getTokenAsync (/home/runner/workspace/node_modules/gtoken/build/src/index.js:160:16)
+    at async JWT.refreshTokenNoCache (/home/runner/workspace/node_modules/google-auth-library/build/src/auth/jwtclient.js:173:23)
+    at async JWT.getRequestMetadataAsync (/home/runner/workspace/node_modules/google-auth-library/build/src/auth/oauth2client.js:333:17)
+    at async JWT.requestAsync (/home/runner/workspace/node_modules/google-auth-library/build/src/auth/oauth2client.js:418:23)
+    at async StorageManager.getStorageUsage (/home/runner/workspace/server/services/storage-manager.ts:236:24)
+    at async AutomationScheduler.checkStorage (/home/runner/workspace/server/automation/scheduler.ts:247:21)
+    at async AutomationScheduler.performHealthCheck (/home/runner/workspace/server/automation/scheduler.ts:201:18)
+    at async <anonymous> (/home/runner/workspace/server/automation/scheduler.ts:35:7)
+    at async cron.schedule.scheduled (/home/runner/workspace/server/automation/scheduler.ts:50:9)
+    at async Timeout._onTimeout (/home/runner/workspace/node_modules/node-cron/src/scheduler/runner.ts:100:30) {
+  config: {
+    method: 'POST',
+    url: 'https://www.googleapis.com/oauth2/v4/token',
+    data: {
+      grant_type: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      assertion: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.'
+    },
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'User-Agent': 'google-api-nodejs-client/9.15.1',
+      'x-goog-api-client': 'gl-node/20.18.1',
+      Accept: 'application/json'
+    },
+    responseType: 'json',
+    retryConfig: {
+      httpMethodsToRetry: [Array],
+      currentRetryAttempt: 0,
+      retry: 3,
+      noResponseRetries: 2,
+      retryDelayMultiplier: 2,
+      timeOfFirstRequest: 1749051001594,
+      totalTimeout: 9007199254740991,
+      maxRetryDelay: 9007199254740991,
+      statusCodesToRetry: [Array]
+    },
+    paramsSerializer: [Function: paramsSerializer],
+    body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+    validateStatus: [Function: validateStatus],
+    errorRedactor: [Function: defaultErrorRedactor]
+  },
+  response: {
+    config: {
+      method: 'POST',
+      url: 'https://www.googleapis.com/oauth2/v4/token',
+      data: [Object],
+      headers: [Object],
+      responseType: 'json',
+      retryConfig: [Object],
+      paramsSerializer: [Function: paramsSerializer],
+      body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      validateStatus: [Function: validateStatus],
+      errorRedactor: [Function: defaultErrorRedactor]
+    },
+    data: {
+      error: 'invalid_grant',
+      error_description: 'Invalid JWT Signature.'
+    },
+    headers: {
+      'content-encoding': 'gzip',
+      'content-type': 'application/json; charset=UTF-8',
+      date: 'Wed, 04 Jun 2025 15:30:01 GMT',
+      server: 'scaffolding on HTTPServer2',
+      'transfer-encoding': 'chunked',
+      vary: 'Origin, X-Origin, Referer',
+      'x-content-type-options': 'nosniff',
+      'x-frame-options': 'SAMEORIGIN',
+      'x-xss-protection': '0'
+    },
+    status: 400,
+    statusText: 'Bad Request',
+    request: { responseURL: 'https://www.googleapis.com/oauth2/v4/token' }
+  },
+  error: undefined,
+  status: 400,
+  [Symbol(gaxios-gaxios-error)]: '6.7.1'
+}
