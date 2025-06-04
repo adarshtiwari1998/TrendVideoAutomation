@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { automationPipeline } from "./automation/pipeline";
+import { automationScheduler } from "./automation/scheduler";
 import { youtubeChannelManager } from "./services/youtube-channel-manager";
 import { trendingAnalyzer } from "./services/trending-analyzer";
 import { contentGenerator } from "./services/content-generator";
