@@ -10,6 +10,10 @@ deploymentTarget = "cloudrun"
 run = ["sh", "-c", "npm run dev"]
 
 [[ports]]
+localPort = 3000
+externalPort = 3000
+
+[[ports]]
 localPort = 5000
 externalPort = 80
 
@@ -36,7 +40,7 @@ args = "npm run dev"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd client && npm run dev"
+args = "npm run dev:client"
 
 [[workflows.workflow]]
 name = "Full Stack Dev"
