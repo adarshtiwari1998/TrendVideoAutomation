@@ -101,50 +101,52 @@ export class TrendingAnalyzer {
   }
 
   private getMockGoogleTrends(): InsertTrendingTopic[] {
+    const today = new Date().toISOString().split('T')[0];
     return [
       {
-        title: "AI Revolution in Indian Healthcare 2024",
-        description: "How artificial intelligence is transforming healthcare delivery across India",
-        searchVolume: 2500000,
+        title: `Breaking: Major Tech Breakthrough Announced - ${today}`,
+        description: "Revolutionary AI technology unveiled today with potential to transform multiple industries",
+        searchVolume: 3500000,
         priority: "high",
         category: "technology",
         source: "google_trends",
-        trending_data: {},
+        trending_data: { date: today, region: 'IN' },
         status: "pending"
       },
       {
-        title: "Digital India Initiative Progress Report",
-        description: "Latest updates on Digital India's impact on rural connectivity and digital literacy",
-        searchVolume: 1800000,
+        title: `India's Economic Growth Milestone Reached Today`,
+        description: "Historic economic indicators show unprecedented growth in key sectors",
+        searchVolume: 2800000,
         priority: "high",
-        category: "technology",
+        category: "business",
         source: "google_trends",
-        trending_data: {},
+        trending_data: { date: today, region: 'IN' },
         status: "pending"
       }
     ];
   }
 
   private getMockNewsTopics(): InsertTrendingTopic[] {
+    const today = new Date().toISOString().split('T')[0];
     return [
       {
-        title: "Indian Startup Ecosystem Booms with $12B Funding",
-        description: "Record-breaking funding rounds signal strong investor confidence in Indian startups",
-        searchVolume: 1500000,
+        title: `Today's Market: Record-Breaking Trading Volume - ${today}`,
+        description: "Indian stock markets witness unprecedented trading activity with major sectoral shifts",
+        searchVolume: 2200000,
         priority: "high",
         category: "business",
         source: "news_api",
-        trending_data: {},
+        trending_data: { date: today, breaking: true },
         status: "pending"
       },
       {
-        title: "Climate Change Impact on Indian Agriculture",
-        description: "New research reveals significant effects of climate change on crop yields",
-        searchVolume: 980000,
+        title: `Weather Alert: Monsoon Updates Across India`,
+        description: "Critical weather patterns affecting agriculture and urban areas nationwide",
+        searchVolume: 1800000,
         priority: "medium",
         category: "environment",
         source: "news_api",
-        trending_data: {},
+        trending_data: { date: today, urgent: true },
         status: "pending"
       }
     ];
