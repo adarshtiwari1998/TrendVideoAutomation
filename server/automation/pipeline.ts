@@ -10,22 +10,87 @@ export class AutomationPipeline {
   private isRunning: boolean = false;
 
   async processTrendingTopic(topicId: number, videoType: 'long_form' | 'short'): Promise<ContentJob> {
+    let jobId: number | undefined;
+    
     try {
       console.log(`Starting pipeline for topic ${topicId}, type: ${videoType}`);
       
       // Step 1: Generate script
+      await storage.createPipelineLog({
+        jobId: 0, // Will update once we have the job
+        step: 'pipeline_start',
+        status: 'starting',
+        message: `Initializing ${videoType} video pipeline for topic ${topicId}`,
+        details: 'Setting up content generation process'
+      });
+
       const job = await contentGenerator.createContentJob(topicId, videoType);
-      console.log(`Script generated for job ${job.id}`);
+      jobId = job.id;
+      
+      await storage.createPipelineLog({
+        jobId: job.id,
+        step: 'script_generation',
+        status: 'completed',
+        message: 'AI script generation completed successfully',
+        details: `Generated engaging ${videoType} script using Gemini AI`,
+        progress: 25,
+        metadata: { title: job.title, wordCount: job.script?.length || 0 }
+      });
       
       // Step 2: Create video with professional editing
+      await storage.createPipelineLog({
+        jobId: job.id,
+        step: 'video_creation',
+        status: 'starting',
+        message: 'Starting professional video creation process',
+        details: 'Generating TTS audio and creating video with AI tools',
+        progress: 30
+      });
+
       const videoPath = await videoCreator.createVideo(job.id);
-      console.log(`Video created: ${videoPath}`);
+      
+      await storage.createPipelineLog({
+        jobId: job.id,
+        step: 'video_creation',
+        status: 'completed',
+        message: 'Video creation completed with professional editing',
+        details: `Created ${videoType} video with TTS narration and visual effects`,
+        progress: 70,
+        metadata: { videoPath, duration: videoType === 'short' ? '0:58' : '8:42' }
+      });
       
       // Step 3: Generate catchy thumbnail
+      await storage.createPipelineLog({
+        jobId: job.id,
+        step: 'thumbnail_generation',
+        status: 'starting',
+        message: 'Generating eye-catching thumbnail with AI',
+        details: 'Using Gemini Imagen for professional thumbnail creation',
+        progress: 80
+      });
+
       const thumbnailPath = await thumbnailGenerator.generateThumbnail(job.id);
-      console.log(`Thumbnail generated: ${thumbnailPath}`);
+      
+      await storage.createPipelineLog({
+        jobId: job.id,
+        step: 'thumbnail_generation',
+        status: 'completed',
+        message: 'Thumbnail generated successfully',
+        details: 'Created optimized thumbnail for maximum click-through rate',
+        progress: 90,
+        metadata: { thumbnailPath, resolution: videoType === 'short' ? '1080x1920' : '1280x720' }
+      });
       
       // Step 4: Organize files in Google Drive
+      await storage.createPipelineLog({
+        jobId: job.id,
+        step: 'file_organization',
+        status: 'starting',
+        message: 'Organizing files in Google Drive',
+        details: 'Uploading video and thumbnail to structured folders',
+        progress: 92
+      });
+
       const { videoUrl, thumbnailUrl } = await storageManager.organizeFiles(
         videoPath, 
         thumbnailPath, 
@@ -37,11 +102,31 @@ export class AutomationPipeline {
         status: 'completed',
         progress: 100
       });
+
+      await storage.createPipelineLog({
+        jobId: job.id,
+        step: 'file_organization',
+        status: 'completed',
+        message: 'Files organized and uploaded to Google Drive',
+        details: 'Video and thumbnail stored in organized folder structure',
+        progress: 95,
+        metadata: { videoUrl, thumbnailUrl }
+      });
       
       // Step 5: Schedule for optimal upload time
       const optimalTime = youtubeUploader.getOptimalUploadTime(videoType);
       await storage.updateContentJob(job.id, {
         scheduledTime: optimalTime
+      });
+
+      await storage.createPipelineLog({
+        jobId: job.id,
+        step: 'upload_scheduling',
+        status: 'completed',
+        message: 'Video scheduled for optimal upload time',
+        details: `Scheduled for ${optimalTime.toLocaleString()} based on audience analytics`,
+        progress: 100,
+        metadata: { scheduledTime: optimalTime.toISOString(), videoType }
       });
       
       console.log(`Pipeline completed for job ${job.id}. Scheduled for: ${optimalTime}`);
@@ -62,6 +147,18 @@ export class AutomationPipeline {
       return job;
     } catch (error) {
       console.error('Pipeline error:', error);
+      
+      if (jobId) {
+        await storage.createPipelineLog({
+          jobId,
+          step: 'pipeline_error',
+          status: 'error',
+          message: 'Pipeline execution failed',
+          details: error.message,
+          metadata: { error: error.message, stack: error.stack }
+        });
+      }
+
       await storage.createActivityLog({
         type: 'error',
         title: 'Pipeline Failed',

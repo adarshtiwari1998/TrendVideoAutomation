@@ -82,6 +82,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/pipeline/logs", async (req, res) => {
+    try {
+      const logs = await storage.getPipelineLogs();
+      res.json(logs);
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
+
+  app.get("/api/pipeline/logs/:jobId", async (req, res) => {
+    try {
+      const jobId = parseInt(req.params.jobId);
+      const logs = await storage.getPipelineLogsByJob(jobId);
+      res.json(logs);
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
+
   app.get("/api/dashboard/recent-activity", async (req, res) => {
     try {
       const activities = await storage.getRecentActivityLogs(20);

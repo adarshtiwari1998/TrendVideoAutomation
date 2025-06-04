@@ -107,6 +107,15 @@ export class VideoCreator {
 
     console.log(`Generating TTS audio for job ${job.id}`);
 
+    await storage.createPipelineLog({
+      jobId: job.id,
+      step: 'audio_generation',
+      status: 'starting',
+      message: 'Generating human-like voiceover with ElevenLabs',
+      details: 'Using professional Indian English voice with optimized settings',
+      progress: 35
+    });
+
     try {
       // Use ElevenLabs for human-like voice generation
       const response = await axios.post(
@@ -132,18 +141,58 @@ export class VideoCreator {
 
       // In a real implementation, save the audio buffer to file
       fs.writeFileSync(audioPath, Buffer.from(response.data));
+      
+      await storage.createPipelineLog({
+        jobId: job.id,
+        step: 'audio_generation',
+        status: 'completed',
+        message: 'High-quality TTS audio generated successfully',
+        details: 'Professional voice narration ready for video synchronization',
+        progress: 45,
+        metadata: { audioPath, voiceModel: 'eleven_multilingual_v2' }
+      });
+
       console.log('Generated voiceover:', audioPath);
       return audioPath;
     } catch (error) {
       console.error('Voiceover generation error:', error);
+      
+      await storage.createPipelineLog({
+        jobId: job.id,
+        step: 'audio_generation',
+        status: 'error',
+        message: 'TTS generation failed, using fallback audio',
+        details: `ElevenLabs API error: ${error.message}`,
+        metadata: { error: error.message }
+      });
+
       return this.getMockAudioPath(job.videoType);
     }
   }
 
   private async generateVideo(job: ContentJob, audioPath: string): Promise<string> {
+    await storage.createPipelineLog({
+      jobId: job.id,
+      step: 'video_editing',
+      status: 'starting',
+      message: 'Creating professional video with AI editing',
+      details: 'Generating visuals, effects, and synchronizing with audio',
+      progress: 50
+    });
+
     try {
       // Use Runway ML or similar for professional video generation
       const videoConfig = this.getVideoConfig(job);
+
+      await storage.createPipelineLog({
+        jobId: job.id,
+        step: 'video_editing',
+        status: 'progress',
+        message: 'AI video generation in progress...',
+        details: `Creating ${videoConfig.aspectRatio} video with professional effects`,
+        progress: 60,
+        metadata: { videoConfig }
+      });
 
       const response = await axios.post(
         'https://api.runwayml.com/v1/generate',
@@ -164,10 +213,36 @@ export class VideoCreator {
       );
 
       const videoPath = `/tmp/video_${job.id}_${Date.now()}.mp4`;
+      
+      await storage.createPipelineLog({
+        jobId: job.id,
+        step: 'video_editing',
+        status: 'completed',
+        message: 'Professional video editing completed',
+        details: 'Video created with AI-powered editing, effects, and optimizations',
+        progress: 65,
+        metadata: { 
+          videoPath, 
+          effects: videoConfig.effects,
+          duration: videoConfig.duration,
+          aspectRatio: videoConfig.aspectRatio
+        }
+      });
+
       console.log('Generated professional video:', videoPath);
       return videoPath;
     } catch (error) {
       console.error('Professional video generation error:', error);
+      
+      await storage.createPipelineLog({
+        jobId: job.id,
+        step: 'video_editing',
+        status: 'error',
+        message: 'AI video generation failed, using fallback',
+        details: `Runway ML API error: ${error.message}`,
+        metadata: { error: error.message }
+      });
+
       return this.getMockVideoPath(job.videoType);
     }
   }

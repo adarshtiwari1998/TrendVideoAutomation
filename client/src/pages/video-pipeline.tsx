@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Loader2, Video, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { PipelinePreviewLogs } from '@/components/dashboard/pipeline-preview-logs';
+import { useState } from 'react';
 
 interface ContentJob {
   id: number;
@@ -17,6 +19,8 @@ interface ContentJob {
 }
 
 export default function VideoPipelinePage() {
+  const [selectedJobId, setSelectedJobId] = useState<number | undefined>();
+
   const { data: pipeline, isLoading } = useQuery({
     queryKey: ['active-pipeline'],
     queryFn: async () => {
@@ -57,7 +61,9 @@ export default function VideoPipelinePage() {
           <Loader2 className="h-8 w-8 animate-spin" />
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Pipeline Status */}
+          <div className="space-y-6">
           {/* Active Jobs */}
           <Card>
             <CardHeader>
@@ -67,7 +73,13 @@ export default function VideoPipelinePage() {
               {pipeline?.active?.length > 0 ? (
                 <div className="space-y-4">
                   {pipeline.active.map((job: ContentJob) => (
-                    <div key={job.id} className="border rounded-lg p-4">
+                    <div 
+                      key={job.id} 
+                      className={`border rounded-lg p-4 cursor-pointer transition-colors hover:bg-muted/50 ${
+                        selectedJobId === job.id ? 'ring-2 ring-primary' : ''
+                      }`}
+                      onClick={() => setSelectedJobId(job.id)}
+                    >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                           {getStatusIcon(job.status)}
@@ -84,6 +96,11 @@ export default function VideoPipelinePage() {
                       <p className="text-sm text-muted-foreground">
                         {job.progress}% complete
                       </p>
+                      {selectedJobId === job.id && (
+                        <p className="text-xs text-primary mt-2">
+                          Click to view detailed logs →
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -120,6 +137,12 @@ export default function VideoPipelinePage() {
               )}
             </CardContent>
           </Card>
+          </div>
+
+          {/* Pipeline Preview Logs */}
+          <div>
+            <PipelinePreviewLogs selectedJobId={selectedJobId} />
+          </div>
         </div>
       )}
     </div>
