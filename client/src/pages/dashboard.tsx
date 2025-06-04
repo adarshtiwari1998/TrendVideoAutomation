@@ -201,7 +201,7 @@ export default function Dashboard() {
     <div className="min-h-screen flex bg-background">
       <Sidebar />
       
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto lg:ml-72">
         {/* Header */}
         <header className="bg-card shadow-sm border-b border-border px-6 py-4">
           <div className="flex items-center justify-between">
