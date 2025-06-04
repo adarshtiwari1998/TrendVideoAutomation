@@ -1,0 +1,80 @@
+what I want to build is
+
+I want to build a youtube video automation system
+where what I want is
+
+I have a yotube channel and I want to create a dialy basis video and shot for my youtube channel, so rihgt now I dont have a time and a skills to edit and create the video which is like the trending news daily basis so analyze whats trending today globally and create a transcript for that means script then what he do is start creatinng a video like a video editor doing
+so add a animation, effect, textualization, audio text to speech in indian tone and basically the scenerio is a one long video and one shot video on youtube only
+
+Also once video ready start creatinng a thumnnail for that video based on shot or long it create a catchy thumbnail for hat whihc attract the click rate of audience
+
+Once the video creation, editing, thunmnail done it store this on our google drive autommatically so it create a folder based on that it saved this video and thumnnail, the youtube algo run in that way that you publish the video everyday in the same time so it increase our channel rate, so our cron job publish the video automatically on our channel so create a system so it automaucally add the title, descriptiojn, video upload, all other things whch require on youutbe to publish the video, also the playlist creation, so I provide the access also and let me know how other tools automatically published the video on yotube automation.
+
+so the complicated hting sin this prject is the mailay the analsis of trending news daily basis , then 2nd the video creation, editing , effect, background pucture change in the video based on content is the most critical one also the tone speech, text to speech indian tone, so I want to use the google gemini model for the
+
+trending news analysis, script transcript generation for video, vidoe creatiojn ediitng like a pro, video thumnail image generatiojn and all so I have gemini api key and I want to use geminin model in this project.
+
+also how we upload the final video and thumnail on google drive automatically is there any api for that, also how we automatically publish the video withall contne ttitle, description on youtube which api we use or how other tools work, I want to create a advanced system and architecture inthis tool
+which work perfectl and create a video like a 20+ years video editor experience
+
+For the database use render postgresql dont use neon db
+
+I have my
+
+DATABASE_URL="postgresql://iloveimagetool_user:KL0B1r7g9GkAhMg-d0u70cidbo4c73ajrqfg-a.oregon-postgres.render.com/iloveimagetool"
+PGDATABASE="iloveimagetool"
+PGHOST="dpg-d0u70cidn-postgres.render.com/iloveimagetool"
+PGPORT="5432"
+PGUSER="iloveimagetool_user"
+PGPASSWORD="KL0B1sadQ9"
+
+so create a full project for me?
+
+
+
+what you do dont use neon db
+
+use render postgresql
+
+so add this all instance under secret
+
+DATABASE_URL="postgresql://iloveimagetool_user:KL73ajrqfg-a.oregon-postgres.render.com/iloveimagetool"
+PGDATABASE="iloveimagetool"
+PGHOST="dpg-d0u70g-a.oregon-postgres.render.com/iloveimagetool"
+PGPORT="5432"
+PGUSER="iloveimagetool_user"
+PGPASSWORD="KL0BZlGsadQ9"
+GEMINI_API_KEY=IzaSyCLnudyZaPG5mCE4-Ik
+YOUTUBE_API_KEY=AIzaSyAp6-0KN_3CQ
+
+`
+
+so hwen we use render postgresql we can use this
+
+import { Pool } from 'pg';
+
+under db.ts
+
+also create a seed.ts file so create all table which are in schema.ts under seed.ts
+
+and what you do
+
+using this coomand whichI added under package.json script
+
+"db:push": "drizzle-kit push --force --config=./drizzle.config.ts",
+"db:seed": "tsx db/seed.ts"
+push and create all table udner the posgresql
+
+
+
+now run
+
+"db:seed":
+
+using npm for table creation also make sure add this under seed.ts
+
+CREATE TABLE IF NOT EXISTS
+
+so if I run this seed.ts again so it not recreate the existinn table
+
+see the schema.ts file make sure add all the table logic under seed.ts
