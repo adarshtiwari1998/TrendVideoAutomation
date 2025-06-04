@@ -17,28 +17,41 @@ export class TrendingAnalyzer {
     try {
       console.log('Starting trending topics analysis...');
       
-      const [googleTrends, newsTopics, indiaSpecificTopics] = await Promise.all([
+      // Step 1: Clean up old topics (older than 24 hours)
+      await this.cleanupOldTopics();
+      
+      // Step 2: Get current trending topics
+      const [googleTrends, newsTopics, globalTopics] = await Promise.all([
         this.getGoogleTrends(),
         this.getNewsTopics(),
-        this.getIndiaSpecificTrends()
+        this.getMockIndiaTopics() // Renamed for global focus
       ]);
 
-      const allTopics = [...googleTrends, ...newsTopics, ...indiaSpecificTopics];
-      const processedTopics = this.processDuplicatesAndPrioritize(allTopics);
+      const allTopics = [...googleTrends, ...newsTopics, ...globalTopics];
+      
+      // Step 3: Filter out topics similar to existing content
+      const filteredTopics = await this.filterExistingContent(allTopics);
+      const processedTopics = this.processDuplicatesAndPrioritize(filteredTopics);
 
+      // Step 4: Store new unique topics
       for (const topic of processedTopics) {
         await storage.createTrendingTopic(topic);
       }
 
       await storage.createActivityLog({
         type: 'trending',
-        title: 'Trending Topics Analysis Completed',
-        description: `Analyzed and stored ${processedTopics.length} trending topics`,
+        title: 'Daily Trending Analysis Completed',
+        description: `Analyzed and stored ${processedTopics.length} fresh trending topics (${allTopics.length - filteredTopics.length} duplicates filtered)`,
         status: 'success',
-        metadata: { count: processedTopics.length, sources: ['google', 'news', 'india'] }
+        metadata: { 
+          count: processedTopics.length, 
+          filtered: allTopics.length - filteredTopics.length,
+          sources: ['google', 'news', 'global'],
+          focusAreas: ['facts', 'news', 'science', 'technology', 'health']
+        }
       });
 
-      console.log(`Analysis complete. Found ${processedTopics.length} trending topics.`);
+      console.log(`Analysis complete. Found ${processedTopics.length} unique trending topics.`);
     } catch (error) {
       console.error('Error analyzing trending topics:', error);
       await storage.createActivityLog({
@@ -48,6 +61,44 @@ export class TrendingAnalyzer {
         status: 'error',
         metadata: { error: error.message }
       });
+    }
+  }
+
+  private async cleanupOldTopics(): Promise<void> {
+    try {
+      const twentyFourHoursAgo = new Date();
+      twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+      
+      await storage.deleteOldTrendingTopics(twentyFourHoursAgo);
+      console.log('🧹 Cleaned up trending topics older than 24 hours');
+    } catch (error) {
+      console.error('Error cleaning up old topics:', error);
+    }
+  }
+
+  private async filterExistingContent(topics: InsertTrendingTopic[]): Promise<InsertTrendingTopic[]> {
+    try {
+      // Get existing content jobs to avoid duplicates
+      const existingJobs = await storage.getContentJobs(100);
+      const existingTitles = existingJobs.map(job => job.title.toLowerCase());
+      
+      // Filter out topics that are too similar to existing content
+      const uniqueTopics = topics.filter(topic => {
+        const topicWords = topic.title.toLowerCase().split(' ');
+        const isUnique = !existingTitles.some(existingTitle => {
+          const commonWords = topicWords.filter(word => 
+            existingTitle.includes(word) && word.length > 3
+          );
+          return commonWords.length >= 2; // If 2+ significant words match, consider duplicate
+        });
+        return isUnique;
+      });
+
+      console.log(`🔍 Filtered ${topics.length - uniqueTopics.length} duplicate topics`);
+      return uniqueTopics;
+    } catch (error) {
+      console.error('Error filtering existing content:', error);
+      return topics; // Return all if filtering fails
     }
   }
 
@@ -102,25 +153,38 @@ export class TrendingAnalyzer {
 
   private getMockGoogleTrends(): InsertTrendingTopic[] {
     const today = new Date().toISOString().split('T')[0];
+    const currentHour = new Date().getHours();
+    const timeStamp = `${today}_${currentHour}`;
+    
     return [
       {
-        title: `Breaking: Major Tech Breakthrough Announced - ${today}`,
-        description: "Revolutionary AI technology unveiled today with potential to transform multiple industries",
-        searchVolume: 3500000,
+        title: `Breaking: Global Climate Summit Reaches Historic Agreement - ${today}`,
+        description: "World leaders unite on unprecedented climate action plan with immediate implementation targets",
+        searchVolume: 4200000,
         priority: "high",
-        category: "technology",
+        category: "environment",
         source: "google_trends",
-        trending_data: { date: today, region: 'IN' },
+        trending_data: { date: today, region: 'Global', timestamp: timeStamp, contentType: 'breaking_news' },
         status: "pending"
       },
       {
-        title: `India's Economic Growth Milestone Reached Today`,
-        description: "Historic economic indicators show unprecedented growth in key sectors",
-        searchVolume: 2800000,
+        title: `Scientific Discovery: New Quantum Computing Breakthrough Changes Everything - ${today}`,
+        description: "Scientists achieve quantum supremacy milestone that could revolutionize computing and AI forever",
+        searchVolume: 3800000,
+        priority: "high",
+        category: "science",
+        source: "google_trends",
+        trending_data: { date: today, region: 'Global', timestamp: timeStamp, contentType: 'science_fact' },
+        status: "pending"
+      },
+      {
+        title: `Economic Alert: Global Markets React to Unexpected Policy Changes - ${today}`,
+        description: "Major economies announce coordinated financial policies affecting millions worldwide",
+        searchVolume: 3200000,
         priority: "high",
         category: "business",
         source: "google_trends",
-        trending_data: { date: today, region: 'IN' },
+        trending_data: { date: today, region: 'Global', timestamp: timeStamp, contentType: 'economic_news' },
         status: "pending"
       }
     ];
@@ -128,50 +192,77 @@ export class TrendingAnalyzer {
 
   private getMockNewsTopics(): InsertTrendingTopic[] {
     const today = new Date().toISOString().split('T')[0];
+    const currentHour = new Date().getHours();
+    const timeStamp = `${today}_${currentHour}`;
+    
     return [
       {
-        title: `Today's Market: Record-Breaking Trading Volume - ${today}`,
-        description: "Indian stock markets witness unprecedented trading activity with major sectoral shifts",
-        searchVolume: 2200000,
+        title: `Amazing Fact: Ocean Discovery Reveals Hidden Ecosystem - ${today}`,
+        description: "Marine biologists discover previously unknown deep-sea creatures with extraordinary survival abilities",
+        searchVolume: 2800000,
         priority: "high",
-        category: "business",
+        category: "science",
         source: "news_api",
-        trending_data: { date: today, breaking: true },
+        trending_data: { date: today, breaking: true, timestamp: timeStamp, contentType: 'amazing_fact' },
         status: "pending"
       },
       {
-        title: `Weather Alert: Monsoon Updates Across India`,
-        description: "Critical weather patterns affecting agriculture and urban areas nationwide",
-        searchVolume: 1800000,
-        priority: "medium",
-        category: "environment",
+        title: `Health Breakthrough: Revolutionary Treatment Shows 95% Success Rate - ${today}`,
+        description: "Medical researchers announce groundbreaking therapy that could change treatment forever",
+        searchVolume: 3100000,
+        priority: "high",
+        category: "health",
         source: "news_api",
-        trending_data: { date: today, urgent: true },
+        trending_data: { date: today, urgent: true, timestamp: timeStamp, contentType: 'health_news' },
+        status: "pending"
+      },
+      {
+        title: `Mind-Blowing Fact: Space Telescope Captures Impossible Image - ${today}`,
+        description: "NASA releases stunning photographs that challenge our understanding of the universe",
+        searchVolume: 2600000,
+        priority: "high",
+        category: "science",
+        source: "news_api",
+        trending_data: { date: today, timestamp: timeStamp, contentType: 'space_fact' },
         status: "pending"
       }
     ];
   }
 
   private getMockIndiaTopics(): InsertTrendingTopic[] {
+    const today = new Date().toISOString().split('T')[0];
+    const currentHour = new Date().getHours();
+    const timeStamp = `${today}_${currentHour}`;
+    
     return [
       {
-        title: "IPL 2024 Auction: Record-Breaking Player Deals",
-        description: "Analysis of the most expensive player transfers in IPL history",
-        searchVolume: 3200000,
+        title: `Incredible Fact: Ancient Civilization Discovery Rewrites History - ${today}`,
+        description: "Archaeologists uncover 5000-year-old city with advanced technology that shouldn't exist",
+        searchVolume: 3600000,
         priority: "high",
-        category: "sports",
-        source: "india_trends",
-        trending_data: {},
+        category: "history",
+        source: "global_trends",
+        trending_data: { date: today, timestamp: timeStamp, contentType: 'historical_fact' },
         status: "pending"
       },
       {
-        title: "India's Space Mission: Chandrayaan-4 Announcement",
-        description: "ISRO announces next lunar mission with international collaboration",
-        searchVolume: 2100000,
+        title: `Technology Shock: AI Predicts Major Event 99.9% Accuracy - ${today}`,
+        description: "Artificial intelligence system demonstrates unprecedented prediction capabilities in global test",
+        searchVolume: 4100000,
+        priority: "high",
+        category: "technology",
+        source: "global_trends",
+        trending_data: { date: today, timestamp: timeStamp, contentType: 'tech_breakthrough' },
+        status: "pending"
+      },
+      {
+        title: `Nature's Secret: Scientists Decode Animal Communication - ${today}`,
+        description: "Breakthrough research reveals how animals have been communicating complex ideas all along",
+        searchVolume: 2900000,
         priority: "high",
         category: "science",
-        source: "india_trends",
-        trending_data: {},
+        source: "global_trends",
+        trending_data: { date: today, timestamp: timeStamp, contentType: 'nature_fact' },
         status: "pending"
       }
     ];

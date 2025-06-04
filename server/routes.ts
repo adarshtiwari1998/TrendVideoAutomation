@@ -309,6 +309,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete single trending topic
+  app.delete("/api/trending/:id", async (req, res) => {
+    try {
+      const topicId = parseInt(req.params.id);
+      await storage.deleteTrendingTopic(topicId);
+      await storage.createActivityLog({
+        type: 'system',
+        title: 'Trending Topic Deleted',
+        description: `User deleted trending topic ${topicId}`,
+        status: 'info',
+        metadata: { action: 'delete_topic', topicId, timestamp: new Date().toISOString() }
+      });
+      res.json({ success: true, message: "Trending topic deleted" });
+    } catch (error) {
+      console.error("Delete trending topic error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Clear trending topics
   app.post("/api/trending/clear", async (req, res) => {
     try {

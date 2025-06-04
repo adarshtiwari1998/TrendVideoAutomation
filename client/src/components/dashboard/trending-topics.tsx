@@ -10,7 +10,9 @@ import {
   RotateCcw, 
   AlertCircle,
   Play,
-  Eye
+  Eye,
+  Trash2,
+  Clock
 } from "lucide-react";
 
 interface TrendingTopic {
@@ -52,6 +54,25 @@ export function TrendingTopics({ onRefresh }: TrendingTopicsProps) {
       toast({
         title: "Error",
         description: `Failed to generate content: ${error.message}`,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (topicId: number) =>
+      apiRequest('DELETE', `/api/trending/${topicId}`),
+    onSuccess: () => {
+      toast({
+        title: "Topic Deleted",
+        description: "The trending topic has been removed successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/trending-topics'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: `Failed to delete topic: ${error.message}`,
         variant: "destructive",
       });
     },
@@ -148,6 +169,10 @@ export function TrendingTopics({ onRefresh }: TrendingTopicsProps) {
     generateContentMutation.mutate({ topicId, videoType });
   };
 
+  const handleDeleteTopic = (topicId: number) => {
+    deleteMutation.mutate(topicId);
+  };
+
   return (
     <Card className="bg-card rounded-xl shadow-sm border border-border">
       <CardContent className="p-6">
@@ -175,54 +200,75 @@ export function TrendingTopics({ onRefresh }: TrendingTopicsProps) {
           </div>
         ) : (
           <>
-            <div className="space-y-4">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">Fresh daily topics • Auto-expires in 24h</p>
+                <Badge variant="secondary" className="text-xs">
+                  {trendingTopics.length} topics today
+                </Badge>
+              </div>
               {trendingTopics.slice(0, 5).map((topic) => (
-                <div key={topic.id} className="trending-topic-item group">
-                  <div className={`w-2 h-2 ${getPriorityDot(topic.priority)} rounded-full mt-2 flex-shrink-0`} />
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-medium text-foreground line-clamp-2 group-hover:text-primary transition-colors">
-                      {topic.title}
-                    </h4>
-                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                      {topic.description}
-                    </p>
-                    <div className="flex items-center space-x-2 mt-2">
-                      <Badge 
-                        variant="secondary" 
-                        className={`text-xs ${getPriorityColor(topic.priority)}`}
-                      >
-                        {topic.priority}
-                      </Badge>
-                      <div className="flex items-center space-x-1 text-xs text-muted-foreground">
-                        <Eye className="w-3 h-3" />
-                        <span>{formatSearchVolume(topic.searchVolume)} searches</span>
+                <div key={topic.id} className="trending-topic-item group p-3 bg-muted/10 rounded-lg hover:bg-muted/20 transition-colors border border-border/50">
+                  <div className="flex items-start space-x-3">
+                    <div className={`w-2 h-2 ${getPriorityDot(topic.priority)} rounded-full mt-2 flex-shrink-0`} />
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-medium text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+                        {topic.title}
+                      </h4>
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                        {topic.description}
+                      </p>
+                      <div className="flex items-center space-x-2 mt-2 flex-wrap">
+                        <Badge 
+                          variant="secondary" 
+                          className={`text-xs ${getPriorityColor(topic.priority)}`}
+                        >
+                          {topic.priority}
+                        </Badge>
+                        <Badge variant="outline" className="text-xs">
+                          {topic.category}
+                        </Badge>
+                        <div className="flex items-center space-x-1 text-xs text-muted-foreground">
+                          <Eye className="w-3 h-3" />
+                          <span>{formatSearchVolume(topic.searchVolume)}</span>
+                        </div>
+                        <div className="flex items-center space-x-1 text-xs text-muted-foreground">
+                          <Clock className="w-3 h-3" />
+                          <span>{formatTimeAgo(topic.createdAt)}</span>
+                        </div>
                       </div>
-                      <span className="text-xs text-muted-foreground">
-                        {formatTimeAgo(topic.createdAt)}
-                      </span>
                     </div>
-                  </div>
-                  <div className="flex flex-col space-y-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-6 px-2 text-xs"
-                      onClick={() => handleGenerateContent(topic.id, 'long_form')}
-                      disabled={generateContentMutation.isPending}
-                    >
-                      <Play className="w-3 h-3 mr-1" />
-                      Long
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-6 px-2 text-xs"
-                      onClick={() => handleGenerateContent(topic.id, 'short')}
-                      disabled={generateContentMutation.isPending}
-                    >
-                      <Play className="w-3 h-3 mr-1" />
-                      Short
-                    </Button>
+                    <div className="flex flex-col space-y-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-6 px-2 text-xs bg-green-50 hover:bg-green-100 border-green-200"
+                        onClick={() => handleGenerateContent(topic.id, 'long_form')}
+                        disabled={generateContentMutation.isPending}
+                      >
+                        <Play className="w-3 h-3 mr-1" />
+                        Long
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-6 px-2 text-xs bg-blue-50 hover:bg-blue-100 border-blue-200"
+                        onClick={() => handleGenerateContent(topic.id, 'short')}
+                        disabled={generateContentMutation.isPending}
+                      >
+                        <Play className="w-3 h-3 mr-1" />
+                        Short
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-6 px-2 text-xs bg-red-50 hover:bg-red-100 border-red-200 text-red-600"
+                        onClick={() => handleDeleteTopic(topic.id)}
+                        disabled={deleteMutation.isPending}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}

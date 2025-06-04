@@ -33,6 +33,8 @@ export interface IStorage {
   getTrendingTopics(limit?: number): Promise<TrendingTopic[]>;
   updateTrendingTopicStatus(id: number, status: string): Promise<void>;
   getTrendingTopicsByPriority(priority: string): Promise<TrendingTopic[]>;
+  deleteTrendingTopic(id: number): Promise<void>;
+  deleteOldTrendingTopics(beforeDate: Date): Promise<void>;
 
   // Content Jobs
   createContentJob(job: InsertContentJob): Promise<ContentJob>;
@@ -105,6 +107,18 @@ export class DatabaseStorage implements IStorage {
       .from(trendingTopics)
       .where(eq(trendingTopics.priority, priority))
       .orderBy(desc(trendingTopics.searchVolume));
+  }
+
+  async deleteTrendingTopic(id: number): Promise<void> {
+    await db
+      .delete(trendingTopics)
+      .where(eq(trendingTopics.id, id));
+  }
+
+  async deleteOldTrendingTopics(beforeDate: Date): Promise<void> {
+    await db
+      .delete(trendingTopics)
+      .where(sql`${trendingTopics.createdAt} < ${beforeDate.toISOString()}`);
   }
 
   async createContentJob(job: InsertContentJob): Promise<ContentJob> {
