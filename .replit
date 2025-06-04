@@ -18,7 +18,7 @@ localPort = 5000
 externalPort = 80
 
 [workflows]
-runButton = "Full Stack Dev"
+runButton = "WiFi Compatible Dev"
 
 [[workflows.workflow]]
 name = "Development Server"
@@ -54,3 +54,12 @@ args = "npm run dev"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npm run dev:client"
+
+[[workflows.workflow]]
+name = "WiFi Compatible Dev"
+author = 43474192
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
