@@ -93,12 +93,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/dashboard/system-status", async (req, res) => {
     try {
-      let schedulerStatus;
+      let schedulerStatus = { isRunning: false, jobs: [] };
       try {
         schedulerStatus = automationScheduler.getStatus();
       } catch (schedulerError) {
         console.error("Scheduler status error:", schedulerError);
-        schedulerStatus = { isRunning: false, jobs: [] };
+        schedulerStatus = { isRunning: false, jobs: [], error: schedulerError.message };
       }
 
       const activeJobs = await storage.getActiveContentJobs();

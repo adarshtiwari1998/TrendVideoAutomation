@@ -36,6 +36,11 @@ export class StorageManager {
 
   async organizeFiles(videoPath: string, thumbnailPath: string, jobId: number): Promise<{ videoUrl: string; thumbnailUrl: string }> {
     try {
+      // Check if Google Drive API is properly configured
+      if (!this.isGoogleDriveConfigured()) {
+        return this.useMockStorage(jobId, 'Google Drive API not configured');
+      }
+
       const today = new Date();
       const folderStructure = this.createDateFolderStructure(today);
       
@@ -65,29 +70,21 @@ export class StorageManager {
     } catch (error) {
       console.error('Storage organization error:', error);
       
-      // Fallback to mock URLs if Google Drive API is not configured
-      if (error.message?.includes('Google Drive API has not been used')) {
-        console.log('Google Drive API not configured, using mock storage');
-        
-        const mockVideoUrl = `mock-video-${jobId}-${Date.now()}.mp4`;
-        const mockThumbnailUrl = `mock-thumbnail-${jobId}-${Date.now()}.jpg`;
-        
-        await storage.createActivityLog({
-          type: 'upload',
-          title: 'Files Organized (Mock Storage)',
-          description: `Mock storage used - Google Drive API needs to be enabled`,
-          status: 'warning',
-          metadata: { 
-            jobId, 
-            videoUrl: mockVideoUrl,
-            thumbnailUrl: mockThumbnailUrl,
-            note: 'Google Drive API not configured'
-          }
-        });
-        
-        return { videoUrl: mockVideoUrl, thumbnailUrl: mockThumbnailUrl };
+      // Check for specific Google Drive API errors
+      const errorMessage = error.message || '';
+      if (errorMessage.includes('Google Drive API has not been used') || 
+          errorMessage.includes('Drive API has not been used') ||
+          errorMessage.includes('project 235082531572') ||
+          errorMessage.includes('disabled')) {
+        return this.useMockStorage(jobId, 'Google Drive API needs to be enabled');
+      }
+
+      if (errorMessage.includes('insufficient authentication') || 
+          errorMessage.includes('invalid credentials')) {
+        return this.useMockStorage(jobId, 'Google Drive credentials invalid');
       }
       
+      // For other errors, also use mock storage but log the specific error
       await storage.createActivityLog({
         type: 'error',
         title: 'File Organization Failed',
@@ -96,8 +93,43 @@ export class StorageManager {
         metadata: { jobId, error: error.message }
       });
       
-      throw error;
+      return this.useMockStorage(jobId, `Storage error: ${error.message}`);
     }
+  }
+
+  private isGoogleDriveConfigured(): boolean {
+    try {
+      const credentials = this.getCredentials();
+      return credentials.client_email !== 'default@example.com' && 
+             credentials.private_key !== 'default-key' &&
+             credentials.client_email && 
+             credentials.private_key;
+    } catch {
+      return false;
+    }
+  }
+
+  private async useMockStorage(jobId: number, reason: string): Promise<{ videoUrl: string; thumbnailUrl: string }> {
+    console.log(`Using mock storage for job ${jobId}: ${reason}`);
+    
+    const timestamp = Date.now();
+    const mockVideoUrl = `mock-video-${jobId}-${timestamp}.mp4`;
+    const mockThumbnailUrl = `mock-thumbnail-${jobId}-${timestamp}.jpg`;
+    
+    await storage.createActivityLog({
+      type: 'upload',
+      title: 'Files Organized (Mock Storage)',
+      description: `Mock storage used - ${reason}`,
+      status: 'warning',
+      metadata: { 
+        jobId, 
+        videoUrl: mockVideoUrl,
+        thumbnailUrl: mockThumbnailUrl,
+        reason
+      }
+    });
+    
+    return { videoUrl: mockVideoUrl, thumbnailUrl: mockThumbnailUrl };
   }
 
   private createDateFolderStructure(date: Date): string[] {

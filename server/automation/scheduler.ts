@@ -162,15 +162,30 @@ export class AutomationScheduler {
 
   getStatus(): any {
     try {
-    const status = {};
-    this.jobs.forEach((job, name) => {
-      status[name] = {
-        running: job.running,
-        cronExpression: job.cronTime.source
+      const status = {
+        isRunning: this.jobs.size > 0,
+        jobs: []
       };
-    });
-    return status;
-  } catch (error) {
+      
+      this.jobs.forEach((job, name) => {
+        try {
+          status.jobs.push({
+            name,
+            running: job.running || false,
+            cronExpression: job.cronTime?.source || 'unknown'
+          });
+        } catch (jobError) {
+          console.error(`Error getting status for job ${name}:`, jobError);
+          status.jobs.push({
+            name,
+            running: false,
+            cronExpression: 'error'
+          });
+        }
+      });
+      
+      return status;
+    } catch (error) {
       console.error('Scheduler getStatus error:', error);
       return {
         isRunning: false,
