@@ -6,7 +6,7 @@ export default defineConfig({
   out: "./drizzle",
   dbCredentials: {
     url: process.env.DATABASE_URL!,
-    ssl: process.env.DATABASE_URL?.includes('localhost') ? false : { rejectUnauthorized: false },
+    ssl: { rejectUnauthorized: false },
   },
   verbose: true,
   strict: true,
