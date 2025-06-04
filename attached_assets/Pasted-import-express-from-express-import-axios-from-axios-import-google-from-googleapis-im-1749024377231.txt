@@ -1,0 +1,353 @@
+import express from 'express';
+import axios from 'axios';
+import { google } from 'googleapis';
+import fs from 'fs';
+import dotenv from 'dotenv';
+import FormData from 'form-data';
+import sharp from 'sharp';
+import { YoutubeTranscript } from 'youtube-transcript';
+
+dotenv.config();
+
+const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
+const CHANNEL_ID = process.env.CHANNEL_ID;
+const WORDPRESS_URL = process.env.WORDPRESS_URL;
+const WORDPRESS_USERNAME = process.env.WORDPRESS_USERNAME;
+const WORDPRESS_PASSWORD = process.env.WORDPRESS_PASSWORD;
+const SPREADSHEET_ID = process.env.SPREADSHEET_ID;
+const PORT = 1620;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+
+const app = express();
+app.use(express.json());
+
+const credentials = JSON.parse(fs.readFileSync('credentials.json'));
+const auth = new google.auth.JWT({
+    email: credentials.client_email,
+    key: credentials.private_key,
+    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+});
+const sheets = google.sheets({ version: 'v4', auth });
+
+app.get('/', (req, res) => {
+    res.send(`<h1>YouTube Automation Server</h1><p>Send a POST request to <code>/automate</code> to start the automation process.</p>`);
+});
+
+async function fetchVideos() {
+    const searchUrl = `https://www.googleapis.com/youtube/v3/search?key=${YOUTUBE_API_KEY}&channelId=${CHANNEL_ID}&part=snippet,id&order=date&maxResults=50`;
+
+    let allVideos = [];
+    let nextPageToken = null;
+
+    try {
+        do {
+            const paginatedUrl = nextPageToken ? `${searchUrl}&pageToken=${nextPageToken}` : searchUrl;
+
+            console.log('Fetching videos from URL:', paginatedUrl);
+
+            const searchResponse = await axios.get(paginatedUrl);
+            console.log('API Response:', searchResponse.data);
+
+            const videos = searchResponse.data.items.filter((video) => video.id.kind === 'youtube#video');
+            allVideos = allVideos.concat(videos);
+            nextPageToken = searchResponse.data.nextPageToken || null;
+        } while (nextPageToken);
+
+        const videoIds = allVideos.map((video) => video.id.videoId);
+        const chunkSize = 50;
+        const videoDetails = [];
+
+        for (let i = 0; i < videoIds.length; i += chunkSize) {
+            const chunk = videoIds.slice(i, i + chunkSize);
+            const videoDetailsUrl = `https://www.googleapis.com/youtube/v3/videos?key=${YOUTUBE_API_KEY}&id=${chunk.join(',')}&part=contentDetails,snippet`;
+
+            console.log('Fetching video details for chunk:', chunk);
+            const videoDetailsResponse = await axios.get(videoDetailsUrl);
+            console.log('Video Details Response:', videoDetailsResponse.data);
+
+            videoDetails.push(...videoDetailsResponse.data.items);
+        }
+
+        // Filter out shorts by checking video duration only keeping those longer than 90 seconds
+        const filteredVideos = allVideos.filter((video, index) => {
+            const duration = videoDetails[index].contentDetails.duration;
+            const durationInSeconds = parseDuration(duration);
+            return durationInSeconds > 90; // Include videos longer than 90 seconds
+        });
+
+        // Clean up titles and attach upload date
+        filteredVideos.forEach((video, index) => {
+            const title = video.snippet.title.replace(/#\w+/g, '').trim();
+            const uploadDate = videoDetails[index].snippet.publishedAt; // Fetch upload date
+            video.snippet.title = title;
+            video.uploadDate = new Date(uploadDate).toISOString(); // Format date for WordPress & Sheets
+        });
+
+        return filteredVideos;
+    } catch (error) {
+        console.error('Error fetching videos:', error.response ? error.response.data : error.message);
+        return [];
+    }
+}
+
+function parseDuration(duration) {
+    const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
+    const hours = (parseInt(match[1]) || 0);
+    const minutes = (parseInt(match[2]) || 0);
+    const seconds = (parseInt(match[3]) || 0);
+    return (hours * 3600) + (minutes * 60) + seconds; // Returns total duration in seconds
+}
+
+async function fetchTranscript(videoId) {
+    try {
+        const transcriptData = await YoutubeTranscript.fetchTranscript(videoId);
+        const cleanedTranscript = transcriptData
+            .map(item => item.text.replace(/$.*?$/g, '').trim())
+            .filter(text => text.length > 0)
+            .join(' ');
+        return cleanedTranscript;
+    } catch (error) {
+        console.error(`Failed to fetch transcript for video ${videoId}:`, error);
+        return null;
+    }
+}
+
+async function summarizeTranscriptToBlogContent(transcript) {
+    const geminiApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+    const prompt = `
+        Create a detailed and engaging blog post based on the following YouTube video transcript. The blog post should:
+        1. Start with an engaging introduction that hooks the reader.
+        2. Include a clear structure with headings and subheadings.
+        3. Summarize the main points, key arguments, and notable examples or stories from the video.
+        4. Provide actionable tips, tricks, or ideas that the reader can apply.
+        5. End with a conclusion that summarizes the key takeaways and encourages the reader to take action or explore further.
+        
+        Write in a conversational and engaging tone, as if a professional content writer is crafting the blog post. Avoid robotic or overly formal language.
+        
+        Here is the transcript:
+        ${transcript}
+    `;
+
+    try {
+        const response = await axios.post(geminiApiUrl, {
+            contents: [{ parts: [{ text: prompt }] }],
+        }, {
+            headers: { 'Content-Type': 'application/json' },
+        });
+
+        if (response.data.candidates && response.data.candidates.length > 0) {
+            const summary = response.data.candidates[0].content.parts[0].text;
+            return summary;
+        } else {
+            return "<p>Could not generate summary.</p>";
+        }
+    } catch (error) {
+        console.error('Error summarizing transcript with Gemini:', error.response ? error.response.data : error.message);
+        return "<p>Error generating summary.</p>";
+    }
+}
+
+async function uploadMedia(imageUrl) {
+    console.log('Uploading media:', imageUrl);
+    try {
+        const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+        const imageBuffer = Buffer.from(response.data, 'binary');
+        const resizedImageBuffer = await sharp(imageBuffer)
+            .resize(1400, 942, { fit: 'cover' })
+            .toBuffer();
+
+        const imageName = imageUrl.split('/').pop();
+        const formData = new FormData();
+        formData.append('file', resizedImageBuffer, imageName);
+
+        const uploadResponse = await axios.post(
+            `${WORDPRESS_URL}/wp-json/wp/v2/media`,
+            formData,
+            {
+                headers: { ...formData.getHeaders(), 'Content-Disposition': `attachment; filename="${imageName}"` },
+                auth: { username: WORDPRESS_USERNAME, password: WORDPRESS_PASSWORD },
+            }
+        );
+
+        console.log('Media uploaded successfully:', uploadResponse.data);
+        return uploadResponse.data.id;
+    } catch (error) {
+        console.error('Error uploading media:', error.response ? error.response.data : error.message);
+        throw error;
+    }
+}
+
+function formatContent(content) {
+    // Step 1: Convert headers into HTML
+    content = content
+        .replace(/### (.+?)(?=\n|$)/g, '<h3>$1</h3>')
+        .replace(/## (.+?)(?=\n|$)/g, '<h2>$1</h2>')
+        .replace(/#### (.+?)(?=\n|$)/g, '<h4>$1</h4>');
+
+    // Step 2: Handle bullet points
+    const bulletPointsRegex = /^(?:\*+ *)(.+)$/gm;
+    const hasBulletPoints = bulletPointsRegex.test(content); // Check if bullet points exist
+
+    if (hasBulletPoints) {
+        // Wrap bullet points in <ul>
+        const formattedContent = content.split('\n').map(line => {
+            // Match lines that start with '*' and convert them to <li> tags
+            const bulletMatch = line.match(/^\* (.+)/);
+            if (bulletMatch) {
+                return `<li>${bulletMatch[1]}</li>`; // Convert to <li>
+            } else {
+                return line; // Return the line as is, if not a bullet point
+            }
+        }).join('\n');
+
+        // Replace the original content with the new formatted version
+        content = formattedContent.replace(/(<li>.*?<\/li>)/g, '<ul>$1</ul>') // Wrap the list items in <ul>
+            .replace(/<\/ul>(\s*<li>)/g, '$1</ul>') // Ensure no nested ul
+            .replace(/<ul>(<li>.*?<\/li>)<\/ul>/g, '$1'); // Handle cases where <ul> wraps single <li>
+    }
+
+    // Step 3: Bold text enclosed with ** and remove the ** markers
+    content = content.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>'); // Convert **text** to <strong>text</strong>
+
+    // Step 4: Wrap paragraphs around text not already wrapped
+    content = content.split('\n').map(line => {
+        const trimmedLine = line.trim();
+        if (trimmedLine) {
+            return `<p>${trimmedLine}</p>`;
+        }
+        return ''; // Return empty line as is
+    }).join('\n');
+
+    // Clean up empty <p> tags
+    return content.replace(/<p><\/p>/g, ''); // Remove empty <p> tags
+}
+
+
+
+async function isTitleDuplicated(title) {
+    try {
+        const sheetResponse = await sheets.spreadsheets.values.get({
+            spreadsheetId: SPREADSHEET_ID,
+            range: 'Sheet1!A:A', 
+        });
+        
+        // Check if values exist and are an array
+        const titlesInSheet = (sheetResponse.data.values || []).flat();
+
+        const wpResponse = await axios.get(`${WORDPRESS_URL}/wp-json/wp/v2/posts?search=${title}`, {
+            auth: { username: WORDPRESS_USERNAME, password: WORDPRESS_PASSWORD },
+        });
+
+        const titlesInPosts = wpResponse.data.map(post => post.title.rendered);
+        
+        return titlesInSheet.includes(title) || titlesInPosts.includes(title);
+    } catch (error) {
+        console.error('Error checking for duplicate titles:', error.message);
+        return false; // Return false to allow posting in case of an error
+    }
+}
+
+
+async function createPost(title, content, thumbnailUrl, videoId, uploadDate) {
+    const featuredMediaId = await uploadMedia(thumbnailUrl);
+
+    // Create the iframe HTML with 100% width
+    const iframe = `
+        <div style="width: 100%;">
+            <iframe width="100%" height="315" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>
+        </div>
+    `;
+
+    // Ensure the content is formatted correctly
+    const formattedSummary = formatContent(content);
+
+    // Wrap the content in a div with a specific class name for better styling
+    const data = {
+        title: title,
+        content: `<div class="post-content">${formattedSummary}<br>${iframe}</div>`,
+        status: 'publish',
+        featured_media: featuredMediaId,
+        date: uploadDate // Set the published date to the video's upload date
+    };
+
+    const response = await axios.post(`${WORDPRESS_URL}/wp-json/wp/v2/posts`, data, {
+        auth: { username: WORDPRESS_USERNAME, password: WORDPRESS_PASSWORD },
+    });
+
+    return response.data;
+}
+
+async function appendToSheet(spreadsheetId, range, values) {
+    console.log('Appending to Google Sheets:', { spreadsheetId, range, values });
+    try {
+        const response = await sheets.spreadsheets.values.append({
+            spreadsheetId,
+            range,
+            valueInputOption: 'USER_ENTERED',
+            resource: { values: [values] },
+        });
+        console.log('Data appended successfully:', response.data);
+        return response.data;
+    } catch (error) {
+        console.error('Error appending to Google Sheets:', error.response ? error.response.data : error.message);
+        throw error;
+    }
+}
+
+app.get('/automate', async (req, res) => {
+    try {
+        const videos = await fetchVideos();
+        for (const video of videos) {
+            const videoId = video.id.videoId;
+            const title = video.snippet.title;
+            const thumbnailUrl = video.snippet.thumbnails.high.url;
+            const uploadDate = video.uploadDate; 
+
+            if (await isTitleDuplicated(title)) {
+                console.log(`Title "${title}" already exists. Skipping post creation.`);
+                continue; // Skip to the next video
+            }
+
+            let summary = '';
+            const transcript = await fetchTranscript(videoId);
+            if (transcript) {
+                summary = await summarizeTranscriptToBlogContent(transcript);
+            } else {
+                summary = "<p>No transcript available.</p>";
+            }
+
+            try {
+                const post = await createPost(title, summary, thumbnailUrl, videoId, uploadDate);
+                console.log(`Published: ${title}`);
+
+                await appendToSheet(SPREADSHEET_ID, 'Sheet1!A1', [
+                    title,
+                    `https://www.youtube.com/embed/${videoId}`,
+                    summary,
+                    thumbnailUrl,
+                    'Published',
+                    uploadDate // Add upload date to the sheet
+                ]);
+            } catch (error) {
+                console.error(`Failed to publish: ${title}`, error);
+                await appendToSheet(SPREADSHEET_ID, 'Sheet1!A1', [
+                    title,
+                    `https://www.youtube.com/embed/${videoId}`,
+                    summary,
+                    thumbnailUrl,
+                    'Failed',
+                    uploadDate // Add upload date to the sheet
+                ]);
+            }
+        }
+
+        res.status(200).json({ message: 'Automation completed successfully!' });
+    } catch (error) {
+        console.error('Error in automation:', error);
+        res.status(500).json({ error: 'Automation failed', details: error.message });
+    }
+});
+
+app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+});
