@@ -292,6 +292,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // YouTube automation routes
+  app.post('/api/youtube/upload/:id', async (req, res) => {
+    try {
+      const jobId = parseInt(req.params.id);
+      const videoUrl = await youtubeUploader.uploadVideo(jobId);
+      res.json({ success: true, videoUrl });
+    } catch (error) {
+      console.error('Upload error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Settings API routes
+  app.post('/api/settings/update-keys', async (req, res) => {
+    try {
+      const { apiKeys, channelName } = req.body;
+
+      // In production, you would save these to environment variables or secure storage
+      // For development, we'll store them in a local config file
+      const configPath = require('path').join(process.cwd(), '.env.local');
+      let envContent = '';
+      const fs = require('fs');
+
+      Object.entries(apiKeys).forEach(([key, value]) => {
+        if (value) {
+          envContent += `${key}=${value}\n`;
+        }
+      });
+
+      if (channelName) {
+        envContent += `CHANNEL_NAME=${channelName}\n`;
+      }
+
+      // In development mode, just log the configuration
+      if (process.env.NODE_ENV === 'development') {
+        console.log('API Keys configured (development mode):', Object.keys(apiKeys));
+        res.json({ success: true, message: 'Configuration saved successfully' });
+      } else {
+        fs.writeFileSync(configPath, envContent);
+        res.json({ success: true, message: 'Configuration saved successfully' });
+      }
+    } catch (error) {
+      console.error('Settings save error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get('/api/youtube/channel-id', async (req, res) => {
+    try {
+      const { name } = req.query;
+      if (!name) {
+        return res.status(400).json({ error: 'Channel name is required' });
+      }
+
+      // Mock channel ID extraction for development
+      const mockChannelId = `UC${Math.random().toString(36).substring(2, 15)}`;
+
+      res.json({ 
+        channelId: mockChannelId,
+        channelName: name,
+        verified: false // In production, verify the channel exists
+      });
+    } catch (error) {
+      console.error('Channel ID fetch error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

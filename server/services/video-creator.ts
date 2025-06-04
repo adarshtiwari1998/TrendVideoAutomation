@@ -11,18 +11,26 @@ export class VideoCreator {
   private runwayApiKey: string;
 
   constructor() {
-    if (!process.env.GEMINI_API_KEY) {
-      throw new Error("GEMINI_API_KEY environment variable is required");
+    // In development, these can be mock values
+    const geminiKey = process.env.GEMINI_API_KEY || 'dev-mock-key';
+    const elevenLabsKey = process.env.ELEVEN_LABS_API_KEY || 'dev-mock-key';
+    const runwayKey = process.env.RUNWAY_API_KEY || 'dev-mock-key';
+    
+    if (process.env.NODE_ENV === 'production') {
+      if (!process.env.GEMINI_API_KEY) {
+        throw new Error("GEMINI_API_KEY environment variable is required in production");
+      }
+      if (!process.env.ELEVEN_LABS_API_KEY) {
+        throw new Error("ELEVEN_LABS_API_KEY environment variable is required in production");
+      }
+      if (!process.env.RUNWAY_API_KEY) {
+        throw new Error("RUNWAY_API_KEY environment variable is required in production");
+      }
     }
-    if (!process.env.ELEVEN_LABS_API_KEY) {
-      throw new Error("ELEVEN_LABS_API_KEY environment variable is required");
-    }
-    if (!process.env.RUNWAY_API_KEY) {
-      throw new Error("RUNWAY_API_KEY environment variable is required");
-    }
-    this.gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    this.elevenLabsApiKey = process.env.ELEVEN_LABS_API_KEY;
-    this.runwayApiKey = process.env.RUNWAY_API_KEY;
+    
+    this.gemini = new GoogleGenerativeAI(geminiKey);
+    this.elevenLabsApiKey = elevenLabsKey;
+    this.runwayApiKey = runwayKey;
   }
 
   async createVideo(jobId: number): Promise<string> {

@@ -1,4 +1,3 @@
-
 import { defineConfig } from "drizzle-kit";
 
 export default defineConfig({
@@ -9,4 +8,6 @@ export default defineConfig({
     url: process.env.DATABASE_URL!,
     ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
   },
+  verbose: true,
+  strict: true,
 });
