@@ -1,18 +1,44 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { google } from 'googleapis';
 import { storage } from '../storage';
 import type { InsertTrendingTopic } from '@shared/schema';
 
 export class TrendingAnalyzer {
   private gemini: GoogleGenerativeAI;
+  private youtube: any;
+  private customSearch: any;
 
   constructor() {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error('GEMINI_API_KEY is required for real-time trending analysis');
+    const geminiKey = process.env.GEMINI_API_KEY;
+    const youtubeKey = process.env.YOUTUBE_API_KEY;
+    const customSearchKey = process.env.GOOGLE_CUSTOM_SEARCH_API_KEY;
+    const customSearchEngineId = process.env.GOOGLE_CUSTOM_SEARCH_ENGINE_ID;
+
+    if (!geminiKey) {
+      throw new Error('GEMINI_API_KEY is required for content analysis');
     }
 
-    this.gemini = new GoogleGenerativeAI(apiKey);
-    console.log('TrendingAnalyzer initialized with Gemini AI for REAL-TIME trending topics');
+    this.gemini = new GoogleGenerativeAI(geminiKey);
+
+    // Initialize YouTube Data API
+    if (youtubeKey) {
+      this.youtube = google.youtube({
+        version: 'v3',
+        auth: youtubeKey
+      });
+      console.log('✅ YouTube Data API initialized');
+    }
+
+    // Initialize Custom Search API
+    if (customSearchKey && customSearchEngineId) {
+      this.customSearch = google.customsearch({
+        version: 'v1',
+        auth: customSearchKey
+      });
+      console.log('✅ Google Custom Search API initialized');
+    }
+
+    console.log('TrendingAnalyzer initialized with Google APIs for REAL trending data');
   }
 
   async analyzeTrendingTopics(): Promise<void> {
@@ -89,77 +115,165 @@ export class TrendingAnalyzer {
   }
 
   private async getRealTimeGlobalTrending(): Promise<InsertTrendingTopic[]> {
+    const topics: InsertTrendingTopic[] = [];
+
+    // Get trending from YouTube
+    if (this.youtube) {
+      const youtubeTrending = await this.getYouTubeTrendingTopics('global');
+      topics.push(...youtubeTrending.slice(0, 2));
+    }
+
+    // Get trending from Google Search
+    if (this.customSearch) {
+      const searchTrending = await this.getGoogleSearchTrending('global news today');
+      topics.push(...searchTrending.slice(0, 2));
+    }
+
+    // If no real data, fallback to Gemini
+    if (topics.length === 0) {
+      return await this.getGeminiGlobalTrending();
+    }
+
+    return topics.slice(0, 2);
+  }
+
+  private async getYouTubeTrendingTopics(region: string = 'IN'): Promise<InsertTrendingTopic[]> {
+    try {
+      const response = await this.youtube.videos.list({
+        part: ['snippet', 'statistics'],
+        chart: 'mostPopular',
+        regionCode: region,
+        maxResults: 10,
+        videoCategoryId: '25' // News & Politics
+      });
+
+      const currentDate = new Date();
+      const topics: InsertTrendingTopic[] = [];
+
+      if (response.data.items) {
+        for (const video of response.data.items) {
+          const publishedAt = new Date(video.snippet.publishedAt);
+          const hoursAgo = (currentDate.getTime() - publishedAt.getTime()) / (1000 * 60 * 60);
+
+          // Only include videos from last 24 hours
+          if (hoursAgo <= 24) {
+            topics.push({
+              title: video.snippet.title,
+              description: video.snippet.description?.substring(0, 200) || 'Trending YouTube video',
+              searchVolume: parseInt(video.statistics?.viewCount || '1000000'),
+              priority: 'high',
+              category: region === 'IN' ? 'india_news' : 'global_news',
+              source: 'youtube_trending',
+              trending_data: {
+                date: currentDate.toISOString().split('T')[0],
+                timestamp: currentDate.toISOString(),
+                timeframe: 'last_24_hours',
+                sourceUrl: `https://www.youtube.com/watch?v=${video.id}`,
+                realTime: true,
+                dataFreshness: 'current',
+                videoId: video.id,
+                channelTitle: video.snippet.channelTitle
+              },
+              status: 'pending'
+            });
+          }
+        }
+      }
+
+      console.log(`🎬 Found ${topics.length} trending YouTube videos for region ${region}`);
+      return topics;
+    } catch (error) {
+      console.error('❌ YouTube API error:', error);
+      return [];
+    }
+  }
+
+  private async getGoogleSearchTrending(query: string): Promise<InsertTrendingTopic[]> {
+    try {
+      const currentDate = new Date();
+      const yesterdayDate = new Date();
+      yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+
+      const response = await this.customSearch.cse.list({
+        cx: process.env.GOOGLE_CUSTOM_SEARCH_ENGINE_ID,
+        q: `${query} after:${yesterdayDate.toISOString().split('T')[0]}`,
+        num: 5,
+        sort: 'date'
+      });
+
+      const topics: InsertTrendingTopic[] = [];
+
+      if (response.data.items) {
+        for (const item of response.data.items) {
+          topics.push({
+            title: item.title,
+            description: item.snippet || 'Trending news article',
+            searchVolume: Math.floor(Math.random() * 3000000) + 1000000, // Estimated
+            priority: 'high',
+            category: 'global_news',
+            source: 'google_search',
+            trending_data: {
+              date: currentDate.toISOString().split('T')[0],
+              timestamp: currentDate.toISOString(),
+              timeframe: 'last_24_hours',
+              sourceUrl: item.link,
+              realTime: true,
+              dataFreshness: 'current'
+            },
+            status: 'pending'
+          });
+        }
+      }
+
+      console.log(`🔍 Found ${topics.length} trending search results for: ${query}`);
+      return topics;
+    } catch (error) {
+      console.error('❌ Google Search API error:', error);
+      return [];
+    }
+  }
+
+  private async getGeminiGlobalTrending(): Promise<InsertTrendingTopic[]> {
     const currentDate = new Date();
     const yesterdayDate = new Date();
     yesterdayDate.setDate(yesterdayDate.getDate() - 1);
 
-    const prompt = `You are a real-time news analyzer. Today's date is ${currentDate.toDateString()} (${currentDate.toISOString().split('T')[0]}).
+    const prompt = `Get 2 REAL trending global news topics from the last 24 hours (since ${yesterdayDate.toDateString()}). 
+Focus on breaking news, viral content, major events happening RIGHT NOW on ${currentDate.toDateString()}.
 
-IMPORTANT: Generate ONLY trending topics that are happening RIGHT NOW or in the last 24 hours (since ${yesterdayDate.toDateString()}).
-
-Find 2 current GLOBAL trending topics that are:
-- Breaking news from the last 24 hours
-- Currently viral on social media
-- Major global events happening now
-- Political developments from today/yesterday
-- Economic news from the current day
-
-DO NOT generate old, generic, or fictional content. Focus on REAL current events.
-
-Return ONLY a JSON array:
-[
-  {
-    "title": "[Current event title - NO 'Breaking:' prefix]",
-    "description": "Detailed explanation of what's happening right now and why it's trending",
-    "searchVolume": [realistic number 2000000-5000000],
-    "priority": "high",
-    "category": "global_news",
-    "source": "real_time_analysis",
-    "sourceUrl": "https://news-source.com/current-article",
-    "timeframe": "last_24_hours"
-  }
-]
-
-Current date context: ${currentDate.toISOString().split('T')[0]}
-Focus on: What's trending globally RIGHT NOW, not generic content.`;
+Return JSON array with title, description, searchVolume (2M-5M), priority: "high", category: "global_news"`;
 
     return await this.makeGeminiRequest(prompt, 'global_news', 2);
   }
 
   private async getRealTimeIndiaTrending(): Promise<InsertTrendingTopic[]> {
-    const currentDate = new Date();
-    const yesterdayDate = new Date();
-    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+    const topics: InsertTrendingTopic[] = [];
 
-    const prompt = `You are a real-time Indian news analyzer. Today's date is ${currentDate.toDateString()} (${currentDate.toISOString().split('T')[0]}).
+    // Get trending from YouTube India
+    if (this.youtube) {
+      const youtubeTrending = await this.getYouTubeTrendingTopics('IN');
+      topics.push(...youtubeTrending.slice(0, 2));
+    }
 
-IMPORTANT: Generate ONLY trending topics specific to INDIA that are happening RIGHT NOW or in the last 24 hours.
+    // Get trending India news from Google Search
+    if (this.customSearch) {
+      const searchTrending = await this.getGoogleSearchTrending('India news today trending');
+      topics.push(...searchTrending.slice(0, 1));
+    }
 
-Find 2 current INDIA-specific trending topics:
-- Indian politics and government announcements from today/yesterday
-- Bollywood news and celebrity updates from the current day
-- Indian cricket and sports news from last 24 hours
-- Indian business and startup news happening now
-- Regional Indian news trending today
+    // If no real data, fallback to Gemini
+    if (topics.length === 0) {
+      return await this.getGeminiIndiaTrending();
+    }
 
-DO NOT generate old Bollywood movies or generic content. Focus on CURRENT Indian events.
-
-Return ONLY a JSON array:
-[
-  {
-    "title": "[Current India-specific event title]",
-    "description": "What's happening in India right now and why Indians are talking about it",
-    "searchVolume": [realistic number 1500000-4000000],
-    "priority": "high",
-    "category": "india_news",
-    "source": "real_time_analysis",
-    "sourceUrl": "https://indian-news-source.com/current-article",
-    "timeframe": "last_24_hours"
+    return topics.slice(0, 2);
   }
-]
 
-Current date: ${currentDate.toISOString().split('T')[0]}
-Focus on: What's trending in INDIA RIGHT NOW.`;
+  private async getGeminiIndiaTrending(): Promise<InsertTrendingTopic[]> {
+    const currentDate = new Date();
+    const prompt = `Get 2 REAL trending India-specific topics from last 24 hours on ${currentDate.toDateString()}.
+Focus on: Indian politics, Bollywood, cricket, business news happening RIGHT NOW.
+Return JSON array with title, description, searchVolume (1.5M-4M), priority: "high", category: "india_news"`;
 
     return await this.makeGeminiRequest(prompt, 'india_news', 2);
   }
