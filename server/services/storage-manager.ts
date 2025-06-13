@@ -19,18 +19,19 @@ export class StorageManager {
     this.baseFolderId = process.env.GOOGLE_DRIVE_BASE_FOLDER_ID || '';
   }
 
-  private getCredentials() {
+  private getCredentials(): any {
+    const credentialsPath = process.env.GOOGLE_CREDENTIALS || './google-credentials.json';
+
+    if (!fs.existsSync(credentialsPath)) {
+      console.warn('⚠️  Google credentials file not found, Drive storage will be disabled');
+      return null;
+    }
+
     try {
-      if (process.env.GOOGLE_CREDENTIALS) {
-        return JSON.parse(process.env.GOOGLE_CREDENTIALS);
-      }
-      return JSON.parse(fs.readFileSync('credentials.json', 'utf8'));
+      return JSON.parse(fs.readFileSync(credentialsPath, 'utf8'));
     } catch (error) {
-      console.error('Drive credentials error:', error);
-      return {
-        client_email: process.env.GOOGLE_CLIENT_EMAIL || 'default@example.com',
-        private_key: process.env.GOOGLE_PRIVATE_KEY || 'default-key'
-      };
+      console.warn('⚠️  Invalid Google credentials file format');
+      return null;
     }
   }
 
@@ -43,10 +44,10 @@ export class StorageManager {
 
       const today = new Date();
       const folderStructure = this.createDateFolderStructure(today);
-      
+
       // Create folder structure if it doesn't exist
       const folderId = await this.ensureFolderStructure(folderStructure);
-      
+
       // Upload video and thumbnail to organized folders
       const [videoUrl, thumbnailUrl] = await Promise.all([
         this.uploadFile(videoPath, folderId, 'video'),
@@ -69,7 +70,7 @@ export class StorageManager {
       return { videoUrl, thumbnailUrl };
     } catch (error) {
       console.error('Storage organization error:', error);
-      
+
       // Check for specific Google Drive API errors
       const errorMessage = error.message || '';
       if (errorMessage.includes('Google Drive API has not been used') || 
@@ -83,7 +84,7 @@ export class StorageManager {
           errorMessage.includes('invalid credentials')) {
         return this.useMockStorage(jobId, 'Google Drive credentials invalid');
       }
-      
+
       // For other errors, also use mock storage but log the specific error
       await storage.createActivityLog({
         type: 'error',
@@ -92,7 +93,7 @@ export class StorageManager {
         status: 'error',
         metadata: { jobId, error: error.message }
       });
-      
+
       return this.useMockStorage(jobId, `Storage error: ${error.message}`);
     }
   }
@@ -111,11 +112,11 @@ export class StorageManager {
 
   private async useMockStorage(jobId: number, reason: string): Promise<{ videoUrl: string; thumbnailUrl: string }> {
     console.log(`Using mock storage for job ${jobId}: ${reason}`);
-    
+
     const timestamp = Date.now();
     const mockVideoUrl = `mock-video-${jobId}-${timestamp}.mp4`;
     const mockThumbnailUrl = `mock-thumbnail-${jobId}-${timestamp}.jpg`;
-    
+
     await storage.createActivityLog({
       type: 'upload',
       title: 'Files Organized (Mock Storage)',
@@ -128,7 +129,7 @@ export class StorageManager {
         reason
       }
     });
-    
+
     return { videoUrl: mockVideoUrl, thumbnailUrl: mockThumbnailUrl };
   }
 
@@ -136,16 +137,16 @@ export class StorageManager {
     const year = date.getFullYear().toString();
     const month = date.toLocaleString('en-US', { month: 'long' });
     const day = date.getDate().toString().padStart(2, '0');
-    
+
     return ['YouTube Automation', year, month, day];
   }
 
   private async ensureFolderStructure(folderPath: string[]): Promise<string> {
     let currentParentId = this.baseFolderId;
-    
+
     for (const folderName of folderPath) {
       const existingFolder = await this.findFolder(folderName, currentParentId);
-      
+
       if (existingFolder) {
         currentParentId = existingFolder.id;
       } else {
@@ -153,7 +154,7 @@ export class StorageManager {
         currentParentId = newFolder.id;
       }
     }
-    
+
     return currentParentId;
   }
 
@@ -163,7 +164,7 @@ export class StorageManager {
         q: `name='${name}' and parents in '${parentId}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
         fields: 'files(id, name)'
       });
-      
+
       return response.data.files[0] || null;
     } catch (error) {
       console.error('Error finding folder:', error);
@@ -180,7 +181,7 @@ export class StorageManager {
       },
       fields: 'id'
     });
-    
+
     return response.data;
   }
 
@@ -188,7 +189,7 @@ export class StorageManager {
     try {
       const fileName = this.generateFileName(filePath, type);
       const mimeType = type === 'video' ? 'video/mp4' : 'image/jpeg';
-      
+
       const response = await this.drive.files.create({
         requestBody: {
           name: fileName,
@@ -221,7 +222,7 @@ export class StorageManager {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const extension = type === 'video' ? 'mp4' : 'jpg';
     const baseFileName = path.basename(filePath, path.extname(filePath));
-    
+
     return `${type}_${baseFileName}_${timestamp}.${extension}`;
   }
 
@@ -236,11 +237,11 @@ export class StorageManager {
       const response = await this.drive.about.get({
         fields: 'storageQuota'
       });
-      
+
       const quota = response.data.storageQuota;
       const usedBytes = parseInt(quota.usage || '0');
       const usedGB = (usedBytes / (1024 * 1024 * 1024)).toFixed(1);
-      
+
       return `${usedGB} GB`;
     } catch (error) {
       console.error('Error getting storage usage:', error);
@@ -252,21 +253,21 @@ export class StorageManager {
     try {
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - daysOld);
-      
+
       const query = `createdTime < '${cutoffDate.toISOString()}' and parents in '${this.baseFolderId}' and trashed=false`;
-      
+
       const response = await this.drive.files.list({
         q: query,
         fields: 'files(id, name, createdTime)'
       });
-      
+
       const filesToDelete = response.data.files || [];
-      
+
       for (const file of filesToDelete) {
         await this.drive.files.delete({ fileId: file.id });
         console.log(`Deleted old file: ${file.name}`);
       }
-      
+
       await storage.createActivityLog({
         type: 'system',
         title: 'Storage Cleanup Completed',

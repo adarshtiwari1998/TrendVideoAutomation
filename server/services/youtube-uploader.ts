@@ -9,6 +9,12 @@ export class YouTubeUploader {
 
   constructor() {
     const credentials = this.getCredentials();
+
+    if (!credentials) {
+      console.warn('YouTube uploader is disabled due to missing credentials.');
+      return;
+    }
+
     const auth = new google.auth.JWT({
       email: credentials.client_email,
       key: credentials.private_key,
@@ -22,19 +28,19 @@ export class YouTubeUploader {
     this.channelId = process.env.YOUTUBE_CHANNEL_ID || process.env.CHANNEL_ID || '';
   }
 
-  private getCredentials() {
+  private getCredentials(): any {
+    const credentialsPath = process.env.GOOGLE_CREDENTIALS || './google-credentials.json';
+
+    if (!fs.existsSync(credentialsPath)) {
+      console.warn('⚠️  Google credentials file not found, YouTube upload will be disabled');
+      return null;
+    }
+
     try {
-      if (process.env.GOOGLE_CREDENTIALS) {
-        return JSON.parse(process.env.GOOGLE_CREDENTIALS);
-      }
-      // Fallback to file if environment variable not set
-      return JSON.parse(fs.readFileSync('credentials.json', 'utf8'));
+      return JSON.parse(fs.readFileSync(credentialsPath, 'utf8'));
     } catch (error) {
-      console.error('Credentials error:', error);
-      return {
-        client_email: process.env.GOOGLE_CLIENT_EMAIL || 'default@example.com',
-        private_key: process.env.GOOGLE_PRIVATE_KEY || 'default-key'
-      };
+      console.warn('⚠️  Invalid Google credentials file format');
+      return null;
     }
   }
 
@@ -89,7 +95,7 @@ export class YouTubeUploader {
         status: 'failed',
         errorMessage: error.message 
       });
-      
+
       await storage.createActivityLog({
         type: 'error',
         title: 'YouTube Upload Failed',
@@ -97,14 +103,14 @@ export class YouTubeUploader {
         status: 'error',
         metadata: { jobId, error: error.message }
       });
-      
+
       throw error;
     }
   }
 
   private async performUpload(job: ContentJob) {
     const metadata = this.generateVideoMetadata(job);
-    
+
     return await this.youtube.videos.insert({
       part: ['snippet', 'status'],
       requestBody: {
@@ -145,7 +151,7 @@ export class YouTubeUploader {
   private generateVideoMetadata(job: ContentJob) {
     const category = job.metadata?.category || 'general';
     const isShort = job.videoType === 'short';
-    
+
     const description = `${job.script?.substring(0, 200)}...
 
 🔔 SUBSCRIBE for daily updates on trending topics!
@@ -164,7 +170,7 @@ This video was created with AI assistance for educational and informational purp
 
     const baseTags = ['trending', 'india', 'news', 'viral', category];
     const shortTags = isShort ? ['shorts', 'short', 'quick'] : ['analysis', 'detailed', 'explained'];
-    
+
     return {
       description,
       tags: [...baseTags, ...shortTags, ...this.getCategoryTags(category)]
@@ -182,7 +188,7 @@ This video was created with AI assistance for educational and informational purp
       science: '28', // Science & Technology
       general: '22' // People & Blogs
     };
-    
+
     return categoryIds[category] || categoryIds.general;
   }
 
@@ -197,7 +203,7 @@ This video was created with AI assistance for educational and informational purp
       science: ['science', 'research', 'discovery', 'space', 'study'],
       general: ['update', 'information', 'facts', 'knowledge', 'learn']
     };
-    
+
     return categoryTags[category] || categoryTags.general;
   }
 
@@ -216,7 +222,7 @@ This video was created with AI assistance for educational and informational purp
   private async updateDailyStats(videoType: string): Promise<void> {
     const today = new Date().toISOString().split('T')[0];
     const existingStats = await storage.getTodayStats();
-    
+
     const updates = {
       date: today,
       videosCreated: (existingStats?.videosCreated || 0) + (videoType === 'long_form' ? 1 : 0),
@@ -235,23 +241,23 @@ This video was created with AI assistance for educational and informational purp
     const now = new Date();
     const istOffset = 5.5 * 60 * 60 * 1000; // IST offset in milliseconds
     const istNow = new Date(now.getTime() + istOffset);
-    
+
     // Optimal times for Indian audience
     const optimalHours = {
       long_form: 18.5, // 6:30 PM IST
       short: 20.5 // 8:30 PM IST
     };
-    
+
     const targetHour = optimalHours[videoType] || optimalHours.long_form;
-    
+
     // If current time is past optimal time, schedule for next day
     const targetTime = new Date(istNow);
     targetTime.setHours(Math.floor(targetHour), (targetHour % 1) * 60, 0, 0);
-    
+
     if (targetTime.getTime() <= istNow.getTime()) {
       targetTime.setDate(targetTime.getDate() + 1);
     }
-    
+
     // Convert back to UTC for storage
     return new Date(targetTime.getTime() - istOffset);
   }
