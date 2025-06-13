@@ -130,11 +130,11 @@ export class ThumbnailGenerator {
     const escapedTitle = title.replace(/'/g, "\\'").replace(/"/g, '\\"');
 
     return `ffmpeg -i "${backgroundPath}" ` +
-      `-vf "scale=${dimensions}:force_original_aspect_ratio=increase,crop=${dimensions}," +
-      `"drawtext=text='${escapedTitle}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:` +
+      `-vf "scale=${dimensions}:force_original_aspect_ratio=increase,crop=${dimensions},` +
+      `drawtext=text='${escapedTitle}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:` +
       `fontsize=${fontSize}:fontcolor=${colors.text}:x=(w-text_w)/2:y=${titleY}:` +
-      `bordercolor=${colors.border}:borderw=4:shadowcolor=black:shadowx=2:shadowy=2," +
-      `"drawbox=x=0:y=${titleY - 20}:w=w:h=${fontSize + 40}:color=${colors.bg}@0.7:t=fill"` +
+      `bordercolor=${colors.border}:borderw=4:shadowcolor=black:shadowx=2:shadowy=2,` +
+      `drawbox=x=0:y=${titleY - 20}:w=w:h=${fontSize + 40}:color=${colors.bg}@0.7:t=fill"` +
       ` -frames:v 1 -q:v 2 "${outputPath}" -y`;
   }
 
