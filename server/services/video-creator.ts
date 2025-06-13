@@ -23,30 +23,33 @@ export class VideoCreator {
 
   async createVideo(jobId: number): Promise<string> {
     try {
+      // Fetch job details
+      const jobData = await storage.read(jobId);
+
       // Ensure FFmpeg is available
       const ffmpegAvailable = await FFmpegInstaller.ensureFFmpeg();
 
-      console.log(`🎬 Starting video creation for job ${jobId}`);
+      console.log(`🎬 Starting video creation for job ${jobData.id}`);
 
       if (ffmpegAvailable) {
         // Create audio from script
-        const audioPath = await this.generateAudio(job.script, jobId);
+        const audioPath = await this.generateAudio(jobData.script, jobId);
 
         // Generate visual content
-        const visualPath = await this.createVisualContent(job, audioPath);
+        const visualPath = await this.createVisualContent(jobData, audioPath);
 
         // Combine audio and visuals
-        const editedPath = await this.applyProfessionalEditing(visualPath, audioPath, job);
+        const editedPath = await this.applyProfessionalEditing(visualPath, audioPath, jobData);
 
         // Final encoding and optimization
-        const finalPath = await this.finalizeVideo(editedPath, job);
+        const finalPath = await this.finalizeVideo(editedPath, jobData);
 
         console.log(`✅ Video created successfully: ${finalPath}`);
         return finalPath;
       } else {
         // Fallback: create simple audio-only content
         console.log('🔄 Using fallback video creation method');
-        return await this.createFallbackVideo(job.script, jobId);
+        return await this.createFallbackVideo(jobData.script, jobId);
       }
     } catch (error) {
       console.error(`❌ Video creation failed for job ${jobId}:`, error);
