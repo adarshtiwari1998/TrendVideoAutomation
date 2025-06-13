@@ -24,7 +24,11 @@ export class VideoCreator {
   async createVideo(jobId: number): Promise<string> {
     try {
       // Fetch job details
-      const jobData = await storage.read(jobId);
+      const jobData = await storage.getContentJobById(jobId);
+      
+      if (!jobData) {
+        throw new Error(`Job ${jobId} not found`);
+      }
 
       // Ensure FFmpeg is available
       const ffmpegAvailable = await FFmpegInstaller.ensureFFmpeg();
