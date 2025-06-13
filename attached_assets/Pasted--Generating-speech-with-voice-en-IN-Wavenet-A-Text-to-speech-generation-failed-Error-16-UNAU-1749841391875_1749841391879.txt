@@ -1,0 +1,63 @@
+🎤 Generating speech with voice: en-IN-Wavenet-A
+❌ Text-to-speech generation failed: Error: 16 UNAUTHENTICATED: Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+    at callErrorFromStatus (/home/runner/workspace/node_modules/@grpc/grpc-js/src/call.ts:82:17)
+    at Object.onReceiveStatus (/home/runner/workspace/node_modules/@grpc/grpc-js/src/client.ts:360:55)
+    at Object.onReceiveStatus (/home/runner/workspace/node_modules/@grpc/grpc-js/src/client-interceptors.ts:458:34)
+    at Object.onReceiveStatus (/home/runner/workspace/node_modules/@grpc/grpc-js/src/client-interceptors.ts:419:48)
+    at <anonymous> (/home/runner/workspace/node_modules/@grpc/grpc-js/src/resolving-call.ts:169:24)
+    at process.processTicksAndRejections (node:internal/process/task_queues:77:11)
+for call at
+    at ServiceClientImpl.makeUnaryRequest (/home/runner/workspace/node_modules/@grpc/grpc-js/src/client.ts:325:42)
+    at ServiceClientImpl.<anonymous> (/home/runner/workspace/node_modules/@grpc/grpc-js/src/make-client.ts:189:15)
+    at /home/runner/workspace/node_modules/@google-cloud/text-to-speech/build/src/v1/text_to_speech_client.js:228:29
+    at /home/runner/workspace/node_modules/google-gax/build/src/normalCalls/timeout.js:44:16
+    at repeat (/home/runner/workspace/node_modules/google-gax/build/src/normalCalls/retries.js:114:25)
+    at /home/runner/workspace/node_modules/google-gax/build/src/normalCalls/retries.js:157:13
+    at OngoingCallPromise.call (/home/runner/workspace/node_modules/google-gax/build/src/call.js:70:27)
+    at NormalApiCaller.call (/home/runner/workspace/node_modules/google-gax/build/src/normalCalls/normalApiCaller.js:34:19)
+    at /home/runner/workspace/node_modules/google-gax/build/src/createApiCall.js:110:30
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5) {
+  code: 16,
+  details: 'Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.',
+  metadata: Metadata {
+    internalRepr: Map(1) { 'www-authenticate' => [Array] },
+    options: {}
+  },
+  note: 'Exception occurred in retry method that was not classified as transient'
+}
+Audio generation failed: Error: TTS generation failed: 16 UNAUTHENTICATED: Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+    at TextToSpeechService.generateSpeech (/home/runner/workspace/server/services/text-to-speech.ts:67:13)
+    at runNextTicks (node:internal/process/task_queues:60:5)
+    at process.processImmediate (node:internal/timers:454:9)
+    at async VideoCreator.generateAudio (/home/runner/workspace/server/services/video-creator.ts:82:25)
+    at async VideoCreator.createFallbackVideo (/home/runner/workspace/server/services/video-creator.ts:67:25)
+    at async VideoCreator.createVideo (/home/runner/workspace/server/services/video-creator.ts:56:16)
+    at async AutomationPipeline.processTrendingTopic (/home/runner/workspace/server/automation/pipeline.ts:58:21)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:199:19)
+Fallback video creation failed: Error: TTS generation failed: 16 UNAUTHENTICATED: Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+    at TextToSpeechService.generateSpeech (/home/runner/workspace/server/services/text-to-speech.ts:67:13)
+    at runNextTicks (node:internal/process/task_queues:60:5)
+    at process.processImmediate (node:internal/timers:454:9)
+    at async VideoCreator.generateAudio (/home/runner/workspace/server/services/video-creator.ts:82:25)
+    at async VideoCreator.createFallbackVideo (/home/runner/workspace/server/services/video-creator.ts:67:25)
+    at async VideoCreator.createVideo (/home/runner/workspace/server/services/video-creator.ts:56:16)
+    at async AutomationPipeline.processTrendingTopic (/home/runner/workspace/server/automation/pipeline.ts:58:21)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:199:19)
+❌ Video creation failed for job 50: Error: TTS generation failed: 16 UNAUTHENTICATED: Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+    at TextToSpeechService.generateSpeech (/home/runner/workspace/server/services/text-to-speech.ts:67:13)
+    at runNextTicks (node:internal/process/task_queues:60:5)
+    at process.processImmediate (node:internal/timers:454:9)
+    at async VideoCreator.generateAudio (/home/runner/workspace/server/services/video-creator.ts:82:25)
+    at async VideoCreator.createFallbackVideo (/home/runner/workspace/server/services/video-creator.ts:67:25)
+    at async VideoCreator.createVideo (/home/runner/workspace/server/services/video-creator.ts:56:16)
+    at async AutomationPipeline.processTrendingTopic (/home/runner/workspace/server/automation/pipeline.ts:58:21)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:199:19)
+Pipeline error: Error: TTS generation failed: 16 UNAUTHENTICATED: Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+    at TextToSpeechService.generateSpeech (/home/runner/workspace/server/services/text-to-speech.ts:67:13)
+    at runNextTicks (node:internal/process/task_queues:60:5)
+    at process.processImmediate (node:internal/timers:454:9)
+    at async VideoCreator.generateAudio (/home/runner/workspace/server/services/video-creator.ts:82:25)
+    at async VideoCreator.createFallbackVideo (/home/runner/workspace/server/services/video-creator.ts:67:25)
+    at async VideoCreator.createVideo (/home/runner/workspace/server/services/video-creator.ts:56:16)
+    at async AutomationPipeline.processTrendingTopic (/home/runner/workspace/server/automation/pipeline.ts:58:21)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:199:19)
