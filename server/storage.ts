@@ -122,15 +122,37 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteTrendingTopic(id: number): Promise<void> {
+    // First delete any content jobs that reference this trending topic
+    await db
+      .delete(contentJobs)
+      .where(eq(contentJobs.topicId, id));
+    
+    // Then delete the trending topic
     await db
       .delete(trendingTopics)
       .where(eq(trendingTopics.id, id));
   }
 
   async deleteOldTrendingTopics(beforeDate: Date): Promise<void> {
-    await db
-      .delete(trendingTopics)
+    // First, get IDs of trending topics to be deleted
+    const topicsToDelete = await db
+      .select({ id: trendingTopics.id })
+      .from(trendingTopics)
       .where(sql`${trendingTopics.createdAt} < ${beforeDate.toISOString()}`);
+    
+    const topicIds = topicsToDelete.map(t => t.id);
+    
+    if (topicIds.length > 0) {
+      // Delete related content jobs first
+      await db
+        .delete(contentJobs)
+        .where(sql`${contentJobs.topicId} IN (${sql.join(topicIds, sql`, `)})`);
+      
+      // Then delete the trending topics
+      await db
+        .delete(trendingTopics)
+        .where(sql`${trendingTopics.createdAt} < ${beforeDate.toISOString()}`);
+    }
   }
 
   async createContentJob(job: InsertContentJob): Promise<ContentJob> {
@@ -363,8 +385,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async clearTrendingTopics(): Promise<void> {
+    // First delete all content jobs that reference trending topics
+    await db.execute(sql`DELETE FROM content_jobs WHERE topic_id IS NOT NULL`);
+    // Then delete all trending topics
     await db.execute(sql`DELETE FROM trending_topics`);
-    console.log('Cleared all trending topics');
+    console.log('Cleared all trending topics and related content jobs');
   }
 
   async clearContentJobs(): Promise<void> {
