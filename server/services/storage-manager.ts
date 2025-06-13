@@ -9,6 +9,14 @@ export class StorageManager {
 
   constructor() {
     const credentials = this.getCredentials();
+    
+    if (!credentials) {
+      console.warn('⚠️  Google Drive API disabled - credentials not available');
+      this.drive = null;
+      this.baseFolderId = '';
+      return;
+    }
+
     const auth = new google.auth.JWT({
       email: credentials.client_email,
       key: credentials.private_key,
@@ -100,7 +108,15 @@ export class StorageManager {
 
   private isGoogleDriveConfigured(): boolean {
     try {
+      if (!this.drive) {
+        return false;
+      }
+      
       const credentials = this.getCredentials();
+      if (!credentials) {
+        return false;
+      }
+      
       return credentials.client_email !== 'default@example.com' && 
              credentials.private_key !== 'default-key' &&
              credentials.client_email && 

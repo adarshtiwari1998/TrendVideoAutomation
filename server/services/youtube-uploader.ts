@@ -11,7 +11,9 @@ export class YouTubeUploader {
     const credentials = this.getCredentials();
 
     if (!credentials) {
-      console.warn('YouTube uploader is disabled due to missing credentials.');
+      console.warn('⚠️  YouTube uploader is disabled due to missing credentials.');
+      this.youtube = null;
+      this.channelId = '';
       return;
     }
 
