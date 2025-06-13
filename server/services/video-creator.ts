@@ -4,7 +4,7 @@ import fs from 'fs/promises';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { storage } from '../storage';
-import { textToSpeech } from './text-to-speech';
+import { textToSpeechService } from './text-to-speech';
 import { FFmpegInstaller } from './ffmpeg-installer';
 
 const execAsync = promisify(exec);
@@ -59,19 +59,13 @@ export class VideoCreator {
   private async generateAudio(script: string, jobId: number): Promise<string> {
     try {
       // Use enhanced TTS with natural Indian accent
-      const audioPath = await textToSpeech.generateSpeech(
-        script, 
-        jobId, 
-        {
-          voice: 'en-IN-Wavenet-A', // Indian English female voice
-          speakingRate: 0.95,
-          pitch: 0.0,
-          volumeGainDb: 2.0,
-          // Add emotional emphasis
-          ssmlGender: 'FEMALE',
-          audioEncoding: 'MP3'
-        }
-      );
+      const audioPath = await textToSpeechService.generateSpeech({
+        text: script,
+        outputPath: path.join(this.outputDir, `audio_${jobId}.mp3`),
+        voice: 'en-IN-Wavenet-A', // Indian English female voice
+        speed: 0.95,
+        pitch: 0.0
+      });
       
       // Enhance audio quality with noise reduction and normalization
       const enhancedAudioPath = path.join(this.outputDir, `audio_enhanced_${jobId}.mp3`);
