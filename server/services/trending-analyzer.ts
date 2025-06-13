@@ -55,25 +55,25 @@ export class TrendingAnalyzer {
 
       // Step 2: Get REAL current trending topics using advanced prompts
       const [
-        globalTrending,
-        indiaTrending,
-        techTrending,
-        entertainmentTrending,
-        sportsTrending
+        spaceTrending,
+        geographyTrending,
+        scienceTrending,
+        natureTrending,
+        geographyFactsTrending
       ] = await Promise.all([
-        this.getRealTimeGlobalTrending(),
-        this.getRealTimeIndiaTrending(),
-        this.getRealTimeTechTrending(),
-        this.getRealTimeEntertainmentTrending(),
-        this.getRealTimeSportsTrending()
+        this.getRealTimeGlobalTrending(), // Now focuses on space
+        this.getRealTimeGeographyTrending(),
+        this.getRealTimeScienceTrending(),
+        this.getRealTimeNatureTrending(),
+        this.getRealTimeGeographyFactsTrending()
       ]);
 
       const allTopics = [
-        ...globalTrending,
-        ...indiaTrending,
-        ...techTrending,
-        ...entertainmentTrending,
-        ...sportsTrending
+        ...spaceTrending,
+        ...geographyTrending,
+        ...scienceTrending,
+        ...natureTrending,
+        ...geographyFactsTrending
       ];
 
       // Step 3: Add current timestamps
@@ -117,34 +117,34 @@ export class TrendingAnalyzer {
   private async getRealTimeGlobalTrending(): Promise<InsertTrendingTopic[]> {
     const topics: InsertTrendingTopic[] = [];
 
-    // Get trending from YouTube
+    // Get trending from YouTube with science focus
     if (this.youtube) {
-      const youtubeTrending = await this.getYouTubeTrendingTopics('global');
-      topics.push(...youtubeTrending.slice(0, 2));
+      const youtubeTrending = await this.getYouTubeTrendingTopics('global', '28'); // Science & Technology category
+      topics.push(...youtubeTrending.slice(0, 1));
     }
 
-    // Get trending from Google Search
+    // Get trending from Google Search with space focus
     if (this.customSearch) {
-      const searchTrending = await this.getGoogleSearchTrending('global news today');
-      topics.push(...searchTrending.slice(0, 2));
+      const spaceSearchTrending = await this.getGoogleSearchTrending('space news discovery today astronomy');
+      topics.push(...spaceSearchTrending.slice(0, 1));
     }
 
     // If no real data, fallback to Gemini
     if (topics.length === 0) {
-      return await this.getGeminiGlobalTrending();
+      return await this.getGeminiSpaceTrending();
     }
 
     return topics.slice(0, 2);
   }
 
-  private async getYouTubeTrendingTopics(region: string = 'IN'): Promise<InsertTrendingTopic[]> {
+  private async getYouTubeTrendingTopics(region: string = 'IN', categoryId: string = '28'): Promise<InsertTrendingTopic[]> {
     try {
       const response = await this.youtube.videos.list({
         part: ['snippet', 'statistics'],
         chart: 'mostPopular',
         regionCode: region,
         maxResults: 10,
-        videoCategoryId: '25' // News & Politics
+        videoCategoryId: categoryId // 28=Science & Technology, 27=Education
       });
 
       const currentDate = new Date();
@@ -246,125 +246,137 @@ Return JSON array with title, description, searchVolume (2M-5M), priority: "high
     return await this.makeGeminiRequest(prompt, 'global_news', 2);
   }
 
-  private async getRealTimeIndiaTrending(): Promise<InsertTrendingTopic[]> {
+  private async getRealTimeGeographyTrending(): Promise<InsertTrendingTopic[]> {
     const topics: InsertTrendingTopic[] = [];
 
-    // Get trending from YouTube India
+    // Get trending geography content from YouTube
     if (this.youtube) {
-      const youtubeTrending = await this.getYouTubeTrendingTopics('IN');
-      topics.push(...youtubeTrending.slice(0, 2));
+      const youtubeTrending = await this.getYouTubeTrendingTopics('global', '27'); // Education category
+      topics.push(...youtubeTrending.slice(0, 1));
     }
 
-    // Get trending India news from Google Search
+    // Get trending geography news from Google Search
     if (this.customSearch) {
-      const searchTrending = await this.getGoogleSearchTrending('India news today trending');
+      const searchTrending = await this.getGoogleSearchTrending('geography facts world discovery continent');
       topics.push(...searchTrending.slice(0, 1));
     }
 
     // If no real data, fallback to Gemini
     if (topics.length === 0) {
-      return await this.getGeminiIndiaTrending();
+      return await this.getGeminiGeographyTrending();
     }
 
     return topics.slice(0, 2);
   }
 
-  private async getGeminiIndiaTrending(): Promise<InsertTrendingTopic[]> {
+  private async getGeminiSpaceTrending(): Promise<InsertTrendingTopic[]> {
     const currentDate = new Date();
-    const prompt = `Get 2 REAL trending India-specific topics from last 24 hours on ${currentDate.toDateString()}.
-Focus on: Indian politics, Bollywood, cricket, business news happening RIGHT NOW.
-Return JSON array with title, description, searchVolume (1.5M-4M), priority: "high", category: "india_news"`;
+    const prompt = `Get 2 REAL trending space and astronomy topics from last 24 hours on ${currentDate.toDateString()}.
+Focus on: Space missions, astronomical discoveries, planetary science, space technology, cosmic events happening RIGHT NOW.
+Return JSON array with title, description, searchVolume (1.5M-4M), priority: "high", category: "space_news"`;
 
-    return await this.makeGeminiRequest(prompt, 'india_news', 2);
+    return await this.makeGeminiRequest(prompt, 'space_news', 2);
   }
 
-  private async getRealTimeTechTrending(): Promise<InsertTrendingTopic[]> {
+  private async getGeminiGeographyTrending(): Promise<InsertTrendingTopic[]> {
+    const currentDate = new Date();
+    const prompt = `Get 2 REAL trending geography topics from last 24 hours on ${currentDate.toDateString()}.
+Focus on: Geographical discoveries, world facts, country insights, natural landmarks, territorial changes happening RIGHT NOW.
+Return JSON array with title, description, searchVolume (800K-2.5M), priority: "medium", category: "geography_news"`;
+
+    return await this.makeGeminiRequest(prompt, 'geography_news', 2);
+  }
+
+  private async getRealTimeScienceTrending(): Promise<InsertTrendingTopic[]> {
     const currentDate = new Date();
 
-    const prompt = `You are a real-time technology news analyzer. Today's date is ${currentDate.toDateString()}.
+    const prompt = `You are a science facts and discovery analyzer. Today's date is ${currentDate.toDateString()}.
 
-Find 2 current TECHNOLOGY trending topics from the last 24 hours:
-- AI and tech company announcements from today/yesterday
-- Major software updates or launches happening now
-- Tech industry breaking news from current day
-- Cryptocurrency and fintech news from last 24 hours
-- Global tech trends and innovations trending today
+Find 2 current SCIENCE trending topics from the last 24 hours:
+- Latest scientific discoveries and breakthroughs
+- Space exploration news and astronomy discoveries
+- Physics, chemistry, biology breakthrough facts
+- Environmental science and climate discoveries
+- Medical and health science breakthroughs
+- Fascinating science facts that are trending
 
 Return ONLY a JSON array:
 [
   {
-    "title": "[Current tech event title]",
-    "description": "Latest technology development and its impact",
-    "searchVolume": [realistic number 1000000-3000000],
-    "priority": "medium",
-    "category": "technology",
+    "title": "[Current science discovery/fact title]",
+    "description": "Latest scientific discovery or fascinating fact explanation",
+    "searchVolume": [realistic number 800000-2500000],
+    "priority": "high",
+    "category": "science_facts",
     "source": "real_time_analysis",
-    "sourceUrl": "https://tech-news.com/current-article",
+    "sourceUrl": "https://science-news.com/current-discovery",
     "timeframe": "last_24_hours"
   }
 ]
 
-Focus on: Current tech events, not general tech topics.`;
+Focus on: Current scientific breakthroughs, space discoveries, and fascinating science facts.`;
 
-    return await this.makeGeminiRequest(prompt, 'technology', 2);
+    return await this.makeGeminiRequest(prompt, 'science_facts', 2);
   }
 
-  private async getRealTimeEntertainmentTrending(): Promise<InsertTrendingTopic[]> {
+  private async getRealTimeNatureTrending(): Promise<InsertTrendingTopic[]> {
     const currentDate = new Date();
 
-    const prompt = `Real-time entertainment analyzer. Today: ${currentDate.toDateString()}.
+    const prompt = `Real-time nature and wildlife analyzer. Today: ${currentDate.toDateString()}.
 
-Find 1 current ENTERTAINMENT trending topic from last 24 hours:
-- Celebrity news and controversies from today/yesterday
-- Movie/TV show releases or announcements happening now
-- Music industry news from current day
-- Entertainment awards or events from last 24 hours
-- Viral entertainment content trending today
+Find 2 current NATURE trending topics from last 24 hours:
+- Wildlife discoveries and animal behavior facts
+- Environmental changes and natural phenomena
+- Conservation success stories and nature preservation
+- Natural disasters and geological events
+- Amazing nature facts and biological discoveries
+- Climate and weather patterns affecting nature
 
 Return JSON array:
 [
   {
-    "title": "[Current entertainment event]",
-    "description": "What's happening in entertainment right now",
-    "searchVolume": [realistic number 800000-2500000],
+    "title": "[Current nature event/fact]",
+    "description": "Latest nature discovery or environmental event",
+    "searchVolume": [realistic number 600000-2000000],
     "priority": "medium",
-    "category": "entertainment",
+    "category": "nature_facts",
     "source": "real_time_analysis",
-    "sourceUrl": "https://entertainment-news.com/current",
+    "sourceUrl": "https://nature-news.com/current",
     "timeframe": "last_24_hours"
   }
 ]`;
 
-    return await this.makeGeminiRequest(prompt, 'entertainment', 1);
+    return await this.makeGeminiRequest(prompt, 'nature_facts', 2);
   }
 
-  private async getRealTimeSportsTrending(): Promise<InsertTrendingTopic[]> {
+  private async getRealTimeGeographyFactsTrending(): Promise<InsertTrendingTopic[]> {
     const currentDate = new Date();
 
-    const prompt = `Real-time sports analyzer. Today: ${currentDate.toDateString()}.
+    const prompt = `Real-time geography facts analyzer. Today: ${currentDate.toDateString()}.
 
-Find 1 current SPORTS trending topic from last 24 hours:
-- Live match results or ongoing tournaments from today/yesterday
-- Player transfers or sports news from current day
-- Cricket, football, or other sports events happening now
-- Sports achievements or records from last 24 hours
-- Indian sports news trending today
+Find 2 current GEOGRAPHY trending topics from last 24 hours:
+- Fascinating geographical discoveries and facts
+- Changes in world geography and geological events
+- Country facts and cultural geography insights
+- Natural landmarks and geographical phenomena
+- Maps and territorial changes or discoveries
+- Amazing geographical facts and world records
 
 Return JSON array:
 [
   {
-    "title": "[Current sports event]",
-    "description": "Latest sports development and fan reactions",
-    "searchVolume": [realistic number 1200000-3500000],
+    "title": "[Current geography fact/discovery]",
+    "description": "Latest geographical discovery or fascinating world fact",
+    "searchVolume": [realistic number 500000-1800000],
     "priority": "medium",
-    "category": "sports",
+    "category": "geography_facts",
     "source": "real_time_analysis",
-    "sourceUrl": "https://sports-news.com/current",
+    "sourceUrl": "https://geography-news.com/current",
     "timeframe": "last_24_hours"
   }
 ]`;
 
-    return await this.makeGeminiRequest(prompt, 'sports', 1);
+    return await this.makeGeminiRequest(prompt, 'geography_facts', 2);
   }
 
   private async makeGeminiRequest(prompt: string, category: string, expectedCount: number): Promise<InsertTrendingTopic[]> {
@@ -418,51 +430,83 @@ Return JSON array:
     const todayString = currentDate.toISOString().split('T')[0];
 
     const fallbacks: Record<string, InsertTrendingTopic[]> = {
-      global_news: [{
-        title: `Global Climate Summit Decision Announced Today - ${todayString}`,
-        description: `Major climate policy announcement made today affecting global environmental strategies`,
+      space_news: [{
+        title: `Major Space Discovery Announced Today - ${todayString}`,
+        description: `Significant astronomical discovery made today affecting our understanding of the universe`,
         searchVolume: 2800000,
         priority: "high",
-        category: "global_news",
+        category: "space_news",
         source: "current_fallback",
         trending_data: { 
           date: todayString, 
           timestamp: currentDate.toISOString(),
           timeframe: 'current_day',
           realTime: true,
-          sourceUrl: "https://global-news.com"
+          sourceUrl: "https://space-news.com"
         },
         status: "pending"
       }],
-      india_news: [{
-        title: `India Government Policy Update Announced Today - ${todayString}`,
-        description: `Significant government announcement affecting Indian citizens made today`,
-        searchVolume: 3200000,
-        priority: "high",
-        category: "india_news",
+      geography_news: [{
+        title: `Fascinating Geography Discovery Today - ${todayString}`,
+        description: `Amazing geographical fact or discovery revealed today`,
+        searchVolume: 1500000,
+        priority: "medium",
+        category: "geography_news",
         source: "current_fallback",
         trending_data: { 
           date: todayString, 
           timestamp: currentDate.toISOString(),
           timeframe: 'current_day',
           realTime: true,
-          sourceUrl: "https://india-news.com"
+          sourceUrl: "https://geography-news.com"
         },
         status: "pending"
       }],
-      technology: [{
-        title: `Major Tech Company Announcement Today - ${todayString}`,
-        description: `Significant technology development announced today affecting the industry`,
+      science_facts: [{
+        title: `Breakthrough Science Discovery Today - ${todayString}`,
+        description: `Significant scientific breakthrough announced today affecting our understanding`,
         searchVolume: 1800000,
         priority: "medium",
-        category: "technology",
+        category: "science_facts",
         source: "current_fallback",
         trending_data: { 
           date: todayString, 
           timestamp: currentDate.toISOString(),
           timeframe: 'current_day',
           realTime: true,
-          sourceUrl: "https://tech-news.com"
+          sourceUrl: "https://science-news.com"
+        },
+        status: "pending"
+      }],
+      nature_facts: [{
+        title: `Amazing Nature Discovery Today - ${todayString}`,
+        description: `Fascinating wildlife or environmental discovery made today`,
+        searchVolume: 1200000,
+        priority: "medium",
+        category: "nature_facts",
+        source: "current_fallback",
+        trending_data: { 
+          date: todayString, 
+          timestamp: currentDate.toISOString(),
+          timeframe: 'current_day',
+          realTime: true,
+          sourceUrl: "https://nature-news.com"
+        },
+        status: "pending"
+      }],
+      geography_facts: [{
+        title: `Incredible Geography Fact Revealed Today - ${todayString}`,
+        description: `Mind-blowing geographical fact or world discovery shared today`,
+        searchVolume: 900000,
+        priority: "medium",
+        category: "geography_facts",
+        source: "current_fallback",
+        trending_data: { 
+          date: todayString, 
+          timestamp: currentDate.toISOString(),
+          timeframe: 'current_day',
+          realTime: true,
+          sourceUrl: "https://world-facts.com"
         },
         status: "pending"
       }]

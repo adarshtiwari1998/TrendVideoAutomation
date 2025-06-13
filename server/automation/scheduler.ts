@@ -15,6 +15,16 @@ export class AutomationScheduler {
       await trendingAnalyzer.analyzeTrendingTopics();
     });
 
+    // Auto cleanup old topics and regenerate every 4 hours
+    this.scheduleJob('auto-cleanup-regenerate', '0 */4 * * *', async () => {
+      await this.performAutoCleanupAndRegenerate();
+    });
+
+    // Check for topics older than 24 hours every 2 hours
+    this.scheduleJob('trending-cleanup-check', '0 */2 * * *', async () => {
+      await this.checkAndCleanupOldTopics();
+    });
+
     // Daily content creation at 9:00 AM IST (03:30 UTC)
     this.scheduleJob('daily-automation', '30 3 * * *', async () => {
       await automationPipeline.runDailyAutomation();
@@ -315,6 +325,83 @@ export class AutomationScheduler {
     }
   }
 
+  private async performAutoCleanupAndRegenerate(): Promise<void> {
+    try {
+      const twentyFourHoursAgo = new Date();
+      twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+
+      // Get current topics count
+      const currentTopics = await storage.getTrendingTopics(100);
+      const oldTopics = currentTopics.filter(topic => 
+        new Date(topic.createdAt) <= twentyFourHoursAgo
+      );
+
+      if (oldTopics.length > 0) {
+        console.log(`🧹 Found ${oldTopics.length} topics older than 24 hours, cleaning up...`);
+        
+        // Delete old topics
+        await storage.deleteOldTrendingTopics(twentyFourHoursAgo);
+        
+        await storage.createActivityLog({
+          type: 'system',
+          title: 'Auto Cleanup - Old Topics Removed',
+          description: `Automatically deleted ${oldTopics.length} topics older than 24 hours`,
+          status: 'info',
+          metadata: { 
+            deletedCount: oldTopics.length,
+            cutoffTime: twentyFourHoursAgo.toISOString(),
+            automated: true
+          }
+        });
+
+        // Wait a moment then regenerate
+        setTimeout(async () => {
+          console.log('🔄 Auto-regenerating trending topics after cleanup...');
+          await trendingAnalyzer.analyzeTrendingTopics();
+        }, 2000);
+      }
+
+      // Also check if we have too few topics (less than 5) and regenerate
+      const remainingTopics = await storage.getTrendingTopics(10);
+      if (remainingTopics.length < 5) {
+        console.log('📈 Low topic count detected, generating new trending topics...');
+        await trendingAnalyzer.analyzeTrendingTopics();
+      }
+
+    } catch (error) {
+      console.error('Auto cleanup and regenerate error:', error);
+      await storage.createActivityLog({
+        type: 'error',
+        title: 'Auto Cleanup Failed',
+        description: `Error during auto cleanup: ${error.message}`,
+        status: 'error',
+        metadata: { error: error.message, automated: true }
+      });
+    }
+  }
+
+  private async checkAndCleanupOldTopics(): Promise<void> {
+    try {
+      const twentyFourHoursAgo = new Date();
+      twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+
+      const currentTopics = await storage.getTrendingTopics(100);
+      const oldTopicsCount = currentTopics.filter(topic => 
+        new Date(topic.createdAt) <= twentyFourHoursAgo
+      ).length;
+
+      if (oldTopicsCount > 0) {
+        console.log(`⏰ Scheduled cleanup: ${oldTopicsCount} topics are older than 24 hours`);
+        await this.performAutoCleanupAndRegenerate();
+      } else {
+        console.log('✅ All trending topics are fresh (less than 24 hours old)');
+      }
+
+    } catch (error) {
+      console.error('Cleanup check error:', error);
+    }
+  }
+
   // Manual trigger methods for testing/admin use
   async triggerTrendingAnalysis(): Promise<void> {
     await trendingAnalyzer.analyzeTrendingTopics();
@@ -326,6 +413,10 @@ export class AutomationScheduler {
 
   async triggerUploadCheck(): Promise<void> {
     await automationPipeline.processScheduledUploads();
+  }
+
+  async triggerAutoCleanup(): Promise<void> {
+    await this.performAutoCleanupAndRegenerate();
   }
 }
 

@@ -348,6 +348,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         metadata: { action: 'bulk_delete_topics', count: topicIds.length, timestamp: new Date().toISOString() }
       });
 
+      // Check if we have too few topics remaining and auto-regenerate
+      const remainingTopics = await storage.getTrendingTopics(10);
+      if (remainingTopics.length < 5) {
+        console.log('🔄 Auto-regenerating trending topics after bulk delete...');
+        // Trigger regeneration in background
+        setTimeout(async () => {
+          await automationScheduler.triggerTrendingAnalysis();
+        }, 1000);
+      }
+
       res.json({ success: true, message: `${topicIds.length} trending topics deleted` });
     } catch (error) {
       console.error("Bulk delete trending topics error:", error);
