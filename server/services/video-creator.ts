@@ -63,15 +63,37 @@ export class VideoCreator {
 
   private async createFallbackVideo(script: string, jobId: number): Promise<string> {
     try {
-      // Generate audio
-      const audioPath = await this.generateAudio(script, jobId);
-
-      // For now, return the audio file as the "video"
-      // This can be enhanced later with image-based video creation
-      console.log('📱 Created audio-only content (fallback mode)');
-      return audioPath;
+      // Try to generate audio first
+      let audioPath;
+      try {
+        audioPath = await this.generateAudio(script, jobId);
+        console.log('📱 Created audio-only content (fallback mode)');
+        return audioPath;
+      } catch (audioError) {
+        console.warn('⚠️ Audio generation failed, creating text-only video:', audioError.message);
+        
+        // Create a simple text-based video without audio
+        return await this.createTextOnlyVideo(script, jobId);
+      }
     } catch (error) {
       console.error('Fallback video creation failed:', error);
+      throw error;
+    }
+  }
+
+  private async createTextOnlyVideo(script: string, jobId: number): Promise<string> {
+    try {
+      const outputPath = path.join(this.outputDir, `text_only_${jobId}.txt`);
+      
+      // Create a text file with the script content
+      const content = `Video Script for Job ${jobId}\n\n${script}\n\nNote: This is a text-only fallback due to TTS unavailability.`;
+      
+      await fs.writeFile(outputPath, content, 'utf8');
+      
+      console.log('📝 Created text-only content as final fallback');
+      return outputPath;
+    } catch (error) {
+      console.error('Text-only video creation failed:', error);
       throw error;
     }
   }
