@@ -1,0 +1,50 @@
+"active":[],"scheduled":[],…
+6:50:10 PM [express] GET /api/pipeline/logs 200 in 475ms :: [{"id":1,"jobId":0,"step":"pipeline_star…
+6:50:13 PM [express] GET /api/pipeline/logs 304 in 472ms :: [{"id":1,"jobId":0,"step":"pipeline_star…
+6:50:15 PM [express] GET /api/dashboard/active-pipeline 304 in 479ms :: {"active":[],"scheduled":[],…
+6:50:15 PM [express] GET /api/pipeline/logs 304 in 465ms :: [{"id":1,"jobId":0,"step":"pipeline_star…
+6:50:18 PM [express] GET /api/dashboard/active-pipeline 304 in 475ms :: {"active":[],"scheduled":[],…
+6:50:18 PM [express] GET /api/pipeline/logs 304 in 466ms :: [{"id":1,"jobId":0,"step":"pipeline_star…
+✅ Gemini API response received, length: 3977
+📄 Using plain text response
+📦 Setting up FFmpeg...
+❌ FFmpeg setup failed: require is not defined
+🔧 Trying alternative approach...
+⚠️  FFmpeg not available, will use fallback video processing
+🎬 Starting video creation for job 48
+🔄 Using fallback video creation method
+❌ Video creation failed for job 48: ReferenceError: job is not defined
+    at VideoCreator.createVideo (/home/runner/workspace/server/services/video-creator.ts:49:47)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async AutomationPipeline.processTrendingTopic (/home/runner/workspace/server/automation/pipeline.ts:58:21)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:199:19)
+Pipeline error: ReferenceError: job is not defined
+    at VideoCreator.createVideo (/home/runner/workspace/server/services/video-creator.ts:49:47)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async AutomationPipeline.processTrendingTopic (/home/runner/workspace/server/automation/pipeline.ts:58:21)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:199:19)
+6:50:22 PM [express] GET /api/pipeline/logs 200 in 1763ms :: [{"id":5,"jobId":48,"step":"pipeline_er…
+6:50:23 PM [express] GET /api/dashboard/active-pipeline 304 in 470ms :: {"active":[],"scheduled":[],…
+6:50:25 PM [express] GET /api/pipeline/logs 304 in 471ms :: [{"id":5,"jobId":48,"step":"pipeline_err…
+6:50:28 PM [express] GET /api/dashboard/active-pipeline 304 in 478ms :: {"active":[],"scheduled":[],…
+6:50:28 PM [express] GET /api/pipeline/logs 304 in 471ms :: [{"id":5,"jobId":48,"step":"pipeline_err…
+6:50:31 PM [express] GET /api/pipeline/logs 304 in 471ms :: [{"id":5,"jobId":48,"step":"pipeline_err…
+6:50:32 PM [express] GET /api/dashboard/active-pipeline 304 in 473ms :: {"active":[],"scheduled":[],…
+6:50:34 PM [express] GET /api/dashboard/recent-activity 200 in 1477ms :: [{"id":1168,"type":"error",…
+6:50:34 PM [express] GET /api/dashboard/trending-topics 304 in 1623ms :: [{"id":527,"title":"Latest …
+6:50:34 PM [express] GET /api/dashboard/scheduled-videos 304 in 1719ms :: {"scheduled":[],"processin…
+6:50:34 PM [express] GET /api/dashboard/system-status 304 in 1817ms :: {"components":[{"name":"Trend…
+6:50:34 PM [express] GET /api/dashboard/stats 304 in 1971ms :: {"todayVideos":0,"todayShorts":0,"suc…
+6:50:42 PM [express] GET /api/pipeline/logs 304 in 475ms :: [{"id":5,"jobId":48,"step":"pipeline_err…
+6:50:45 PM [express] GET /api/pipeline/logs 304 in 475ms :: [{"id":5,"jobId":48,"step":"pipeline_err…
+6:50:47 PM [express] GET /api/dashboard/active-pipeline 304 in 1825ms :: {"active":[],"scheduled":[]…
+6:50:47 PM [express] GET /api/pipeline/logs 304 in 486ms :: [{"id":5,"jobId":48,"step":"pipeline_err…
+6:50:50 PM [express] GET /api/pipeline/logs 304 in 519ms :: [{"id":5,"jobId":48,"step":"pipeline_err…
+6:50:56 PM [express] GET /api/dashboard/active-pipeline 200 in 545ms :: {"active":[],"scheduled":[],…
+6:50:57 PM [express] GET /api/dashboard/recent-activity 200 in 1511ms :: [{"id":1168,"type":"error",…
+6:50:57 PM [express] GET /api/dashboard/trending-topics 200 in 1571ms :: [{"id":527,"title":"Latest …
+6:50:57 PM [express] GET /api/dashboard/scheduled-videos 200 in 1759ms :: {"scheduled":[],"processin…
+6:50:58 PM [express] GET /api/dashboard/system-status 200 in 1896ms :: {"components":[{"name":"Trend…
+6:50:58 PM [express] GET /api/dashboard/stats 200 in 2098ms :: {"todayVideos":0,"todayShorts":0,"suc…
+6:51:27 PM [express] GET /api/dashboard/active-pipeline 304 in 462ms :: {"active":[],"scheduled":[],…
+6:51:27 PM [express] GET /api/pipeline/logs 200 in 462ms :: [{"id":5,"jobId":48,"step":"pipeline_err…
