@@ -387,16 +387,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/pipeline/clear", async (req, res) => {
     try {
       await storage.clearContentJobs();
+      await storage.clearPipelineLogs(); // Also clear pipeline logs
       await storage.createActivityLog({
         type: 'system',
         title: 'Pipeline Cleared',
-        description: 'User manually cleared all active pipeline jobs',
+        description: 'User manually cleared all active pipeline jobs and logs',
         status: 'info',
         metadata: { action: 'clear_pipeline', timestamp: new Date().toISOString() }
       });
       res.json({ success: true, message: "Pipeline cleared" });
     } catch (error) {
       console.error("Clear pipeline error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Clear pipeline logs only
+  app.post("/api/pipeline/logs/clear", async (req, res) => {
+    try {
+      await storage.clearPipelineLogs();
+      await storage.createActivityLog({
+        type: 'system',
+        title: 'Pipeline Logs Cleared',
+        description: 'User manually cleared all pipeline logs',
+        status: 'info',
+        metadata: { action: 'clear_pipeline_logs', timestamp: new Date().toISOString() }
+      });
+      res.json({ success: true, message: "Pipeline logs cleared" });
+    } catch (error) {
+      console.error("Clear pipeline logs error:", error);
       res.status(500).json({ error: error.message });
     }
   });
@@ -542,14 +561,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 app.post('/api/pipeline/cleanup-stuck-jobs', async (req, res) => {
   try {
-    // Reset stuck jobs to failed status
-    await storage.db.execute(sql`
-      UPDATE content_jobs 
-      SET status = 'failed', progress = 0 
-      WHERE status IN ('script_generation', 'video_creation', 'processing') 
-      AND created_at < NOW() - INTERVAL '1 hour'
-    `);
-
+    // Use storage methods instead of direct db access
+    await storage.clearStuckJobs();
     res.json({ message: 'Stuck jobs cleaned up successfully' });
   } catch (error) {
     console.error('Error cleaning up stuck jobs:', error);

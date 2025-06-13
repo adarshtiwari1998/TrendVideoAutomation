@@ -64,6 +64,7 @@ export interface IStorage {
     metadata?: any;
   }): Promise<any>;
   getPipelineLogs(jobId?: number, limit?: number): Promise<any[]>;
+  clearPipelineLogs(): Promise<void>;
 
   // Automation Settings
   getAutomationSetting(key: string): Promise<AutomationSetting | undefined>;
@@ -126,7 +127,7 @@ export class DatabaseStorage implements IStorage {
     await db
       .delete(contentJobs)
       .where(eq(contentJobs.topicId, id));
-    
+
     // Then delete the trending topic
     await db
       .delete(trendingTopics)
@@ -139,15 +140,15 @@ export class DatabaseStorage implements IStorage {
       .select({ id: trendingTopics.id })
       .from(trendingTopics)
       .where(sql`${trendingTopics.createdAt} < ${beforeDate.toISOString()}`);
-    
+
     const topicIds = topicsToDelete.map(t => t.id);
-    
+
     if (topicIds.length > 0) {
       // Delete related content jobs first
       await db
         .delete(contentJobs)
         .where(sql`${contentJobs.topicId} IN (${sql.join(topicIds, sql`, `)})`);
-      
+
       // Then delete the trending topics
       await db
         .delete(trendingTopics)
@@ -398,34 +399,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Pipeline Logs (using activity logs table for now)
-  async createPipelineLog(log: {
-    jobId: number;
-    step: string;
-    status: 'starting' | 'progress' | 'completed' | 'error';
-    message: string;
-    details?: string;
-    progress?: number;
-    metadata?: any;
-  }): Promise<any> {
-    const activityLog = await this.createActivityLog({
-      type: 'system',
-      title: `Pipeline: ${log.step}`,
-      description: log.message,
-      status: log.status === 'error' ? 'error' : 
-             log.status === 'completed' ? 'success' : 'info',
-      metadata: {
-        jobId: log.jobId,
-        step: log.step,
-        details: log.details,
-        progress: log.progress,
-        ...log.metadata
-      }
-    });
-
-    console.log(`Pipeline Log [Job ${log.jobId}] ${log.step}: ${log.message}`);
-    return activityLog;
-  }
-
   async getPipelineLogs(jobId?: number, limit = 50): Promise<any[]> {
     // Create pipeline_logs table if it doesn't exist
     try {
@@ -464,7 +437,7 @@ export class DatabaseStorage implements IStorage {
 
     const result = await query;
     const logs = result.rows || [];
-    
+
     return logs.map(log => ({
       id: log.id,
       jobId: log.job_id,
@@ -478,10 +451,10 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
-  async createPipelineLog(logData: {
+  async createPipelineLog(log: {
     jobId: number;
     step: string;
-    status: string;
+    status: 'starting' | 'progress' | 'completed' | 'error';
     message: string;
     details?: string;
     progress?: number;
@@ -490,11 +463,19 @@ export class DatabaseStorage implements IStorage {
     try {
       await db.execute(sql`
         INSERT INTO pipeline_logs (job_id, step, status, message, details, progress, metadata)
-        VALUES (${logData.jobId}, ${logData.step}, ${logData.status}, ${logData.message}, 
-                ${logData.details || null}, ${logData.progress || null}, ${JSON.stringify(logData.metadata || {})})
+        VALUES (${log.jobId}, ${log.step}, ${log.status}, ${log.message}, ${log.details || null}, ${log.progress || null}, ${JSON.stringify(log.metadata || {})})
       `);
     } catch (error) {
-      console.error('Error creating pipeline log:', error);
+      console.error('Failed to create pipeline log:', error);
+    }
+  }
+
+  async clearPipelineLogs(): Promise<void> {
+    try {
+      await db.execute(sql`DELETE FROM pipeline_logs`);
+      console.log('Cleared all pipeline logs');
+    } catch (error) {
+      console.error('Failed to clear pipeline logs:', error);
     }
   }
 }
