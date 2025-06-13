@@ -112,21 +112,21 @@ export class TextToSpeechService {
 
       // Try to use system TTS commands
       try {
-        const { execSync } = await import('child_process');
-        const fs = await import('fs');
+        const { execSync } = require('child_process');
+        const fsSync = require('fs');
 
         // Try espeak first (common on Linux)
         try {
           const wavPath = outputPath.replace('.mp3', '.wav');
-          execSync.execSync(`espeak "${text.substring(0, 500)}" -w "${wavPath}"`, { stdio: 'pipe' });
+          execSync(`espeak "${text.substring(0, 500)}" -w "${wavPath}"`, { stdio: 'pipe' });
 
           // Convert to mp3 if ffmpeg is available
           try {
-            execSync.execSync(`ffmpeg -i "${wavPath}" "${outputPath}" -y`, { stdio: 'pipe' });
-            execSync.execSync(`rm "${wavPath}"`, { stdio: 'pipe' });
+            execSync(`ffmpeg -i "${wavPath}" "${outputPath}" -y`, { stdio: 'pipe' });
+            execSync(`rm "${wavPath}"`, { stdio: 'pipe' });
           } catch {
             // If ffmpeg fails, just rename wav to mp3
-            execSync.execSync(`mv "${wavPath}" "${outputPath}"`, { stdio: 'pipe' });
+            execSync(`mv "${wavPath}" "${outputPath}"`, { stdio: 'pipe' });
           }
 
           console.log(`📱 System TTS audio created: ${outputPath}`);
@@ -139,17 +139,17 @@ export class TextToSpeechService {
         try {
           const tempScript = `/tmp/tts_script_${Date.now()}.txt`;
           await fs.writeFile(tempScript, text.substring(0, 500));
-          execSync.execSync(`text2wave "${tempScript}" -o "${outputPath.replace('.mp3', '.wav')}"`, { stdio: 'pipe' });
+          execSync(`text2wave "${tempScript}" -o "${outputPath.replace('.mp3', '.wav')}"`, { stdio: 'pipe' });
 
           // Convert to mp3 if possible
           try {
-            execSync.execSync(`ffmpeg -i "${outputPath.replace('.mp3', '.wav')}" "${outputPath}" -y`, { stdio: 'pipe' });
-            execSync.execSync(`rm "${outputPath.replace('.mp3', '.wav')}"`, { stdio: 'pipe' });
+            execSync(`ffmpeg -i "${outputPath.replace('.mp3', '.wav')}" "${outputPath}" -y`, { stdio: 'pipe' });
+            execSync(`rm "${outputPath.replace('.mp3', '.wav')}"`, { stdio: 'pipe' });
           } catch {
-            execSync.execSync(`mv "${outputPath.replace('.mp3', '.wav')}" "${outputPath}"`, { stdio: 'pipe' });
+            execSync(`mv "${outputPath.replace('.mp3', '.wav')}" "${outputPath}"`, { stdio: 'pipe' });
           }
 
-          execSync.execSync(`rm "${tempScript}"`, { stdio: 'pipe' });
+          execSync(`rm "${tempScript}"`, { stdio: 'pipe' });
           console.log(`📱 Festival TTS audio created: ${outputPath}`);
           return outputPath;
         } catch (festivalError) {
@@ -161,10 +161,10 @@ export class TextToSpeechService {
       }
 
       // Final fallback: create a simple silence audio file with text embedded as metadata
-      const { execSync } = await import('child_process');
+      const { execSync: finalExecSync } = require('child_process');
       try {
         // Create 10 seconds of silence as final fallback
-        execSync.execSync(`ffmpeg -f lavfi -i "anullsrc=channel_layout=stereo:sample_rate=22050" -t 10 "${outputPath}" -y`, { stdio: 'pipe' });
+        finalExecSync(`ffmpeg -f lavfi -i "anullsrc=channel_layout=stereo:sample_rate=22050" -t 10 "${outputPath}" -y`, { stdio: 'pipe' });
         console.log(`🔇 Created silence audio as final fallback: ${outputPath}`);
         return outputPath;
       } catch {

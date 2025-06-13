@@ -1,4 +1,3 @@
-
 import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
@@ -18,19 +17,23 @@ export class FFmpegInstaller {
 
   private static async setupFFmpeg(): Promise<void> {
     try {
+      const { execSync } = require('child_process');
+      const fs = require('fs');
+      const path = require('path');
+
       // Use ffmpeg-static package which provides static binaries
       const ffmpegStatic = await import('ffmpeg-static').then(m => m.default).catch(() => null);
-      
+
       if (ffmpegStatic) {
         // Create symlink to make ffmpeg available globally
         const ffmpegPath = '/tmp/ffmpeg';
         if (!fs.existsSync(ffmpegPath)) {
           fs.symlinkSync(ffmpegStatic, ffmpegPath);
         }
-        
+
         // Add to PATH
         process.env.PATH = `/tmp:${process.env.PATH}`;
-        
+
         console.log('✅ FFmpeg static binary is ready');
       } else {
         throw new Error('FFmpeg static binary not found');
@@ -38,7 +41,7 @@ export class FFmpegInstaller {
     } catch (error) {
       console.error('❌ FFmpeg setup failed:', error.message);
       console.log('🔧 Trying alternative approach...');
-      
+
       // Alternative: just proceed without FFmpeg and use fallback methods
       console.log('⚠️  FFmpeg not available, will use fallback video processing');
     }
