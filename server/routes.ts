@@ -529,31 +529,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/pipeline/logs', async (req, res) => {
-    try {
-      const jobId = req.query.jobId ? parseInt(req.query.jobId as string) : undefined;
-      const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
+  app.get('/api/pipeline/logs/:jobId?', async (req, res) => {
+  try {
+    const jobId = req.params.jobId ? parseInt(req.params.jobId) : undefined;
+    const logs = await storage.getPipelineLogs(jobId);
+    res.json(logs);
+  } catch (error) {
+    console.error('Error fetching pipeline logs:', error);
+    res.status(500).json({ error: 'Failed to fetch pipeline logs' });
+  }
+});
 
-      const logs = await storage.getPipelineLogs(jobId, limit);
-      res.json(logs);
-    } catch (error) {
-      console.error('Pipeline logs error:', error);
-      res.status(500).json({ error: 'Failed to fetch pipeline logs' });
-    }
-  });
+app.post('/api/pipeline/cleanup-stuck-jobs', async (req, res) => {
+  try {
+    // Reset stuck jobs to failed status
+    await storage.db.execute(sql`
+      UPDATE content_jobs 
+      SET status = 'failed', progress = 0 
+      WHERE status IN ('script_generation', 'video_creation', 'processing') 
+      AND created_at < NOW() - INTERVAL '1 hour'
+    `);
 
-  app.get('/api/pipeline/logs/:jobId', async (req, res) => {
-    try {
-      const jobId = parseInt(req.params.jobId);
-      const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
-
-      const logs = await storage.getPipelineLogs(jobId, limit);
-      res.json(logs);
-    } catch (error) {
-      console.error('Pipeline logs error:', error);
-      res.status(500).json({ error: 'Failed to fetch pipeline logs' });
-    }
-  });
+    res.json({ message: 'Stuck jobs cleaned up successfully' });
+  } catch (error) {
+    console.error('Error cleaning up stuck jobs:', error);
+    res.status(500).json({ error: 'Failed to cleanup stuck jobs' });
+  }
+});
 
   const httpServer = createServer(app);
   return httpServer;

@@ -427,41 +427,75 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPipelineLogs(jobId?: number, limit = 50): Promise<any[]> {
-    let query = db
-      .select()
-      .from(activityLogs)
-      .where(sql`${activityLogs.title} LIKE 'Pipeline:%'`)
-      .orderBy(desc(activityLogs.createdAt))
-      .limit(limit);
-
-    if (jobId) {
-      query = db
-        .select()
-        .from(activityLogs)
-        .where(
-          and(
-            sql`${activityLogs.title} LIKE 'Pipeline:%'`,
-            sql`${activityLogs.metadata}->>'jobId' = ${jobId.toString()}`
-          )
+    // Create pipeline_logs table if it doesn't exist
+    try {
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS pipeline_logs (
+          id SERIAL PRIMARY KEY,
+          job_id INTEGER NOT NULL,
+          step VARCHAR(255) NOT NULL,
+          status VARCHAR(50) NOT NULL,
+          message TEXT,
+          details TEXT,
+          progress INTEGER,
+          metadata JSONB,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-        .orderBy(desc(activityLogs.createdAt))
-        .limit(limit);
+      `);
+    } catch (error) {
+      console.log('Pipeline logs table already exists');
     }
 
-    const logs = await query;
+    let query;
+    if (jobId) {
+      query = db.execute(sql`
+        SELECT * FROM pipeline_logs 
+        WHERE job_id = ${jobId}
+        ORDER BY created_at DESC 
+        LIMIT ${limit}
+      `);
+    } else {
+      query = db.execute(sql`
+        SELECT * FROM pipeline_logs 
+        ORDER BY created_at DESC 
+        LIMIT ${limit}
+      `);
+    }
+
+    const result = await query;
+    const logs = result.rows || [];
     
     return logs.map(log => ({
       id: log.id,
-      jobId: log.metadata?.jobId || 0,
-      step: log.metadata?.step || 'unknown',
-      status: log.status === 'success' ? 'completed' : 
-              log.status === 'error' ? 'error' : 'progress',
-      message: log.description,
-      details: log.metadata?.details,
-      progress: log.metadata?.progress,
-      timestamp: log.createdAt.toISOString(),
+      jobId: log.job_id,
+      step: log.step,
+      status: log.status,
+      message: log.message,
+      details: log.details,
+      progress: log.progress,
+      timestamp: log.created_at,
       metadata: log.metadata
     }));
+  }
+
+  async createPipelineLog(logData: {
+    jobId: number;
+    step: string;
+    status: string;
+    message: string;
+    details?: string;
+    progress?: number;
+    metadata?: any;
+  }): Promise<void> {
+    try {
+      await db.execute(sql`
+        INSERT INTO pipeline_logs (job_id, step, status, message, details, progress, metadata)
+        VALUES (${logData.jobId}, ${logData.step}, ${logData.status}, ${logData.message}, 
+                ${logData.details || null}, ${logData.progress || null}, ${JSON.stringify(logData.metadata || {})})
+      `);
+    } catch (error) {
+      console.error('Error creating pipeline log:', error);
+    }
   }
 }
 

@@ -47,7 +47,26 @@ export class AutomationPipeline {
         progress: 30
       });
 
-      const videoPath = await videoCreator.createVideo(job.id);
+      // Update job status to video_creation
+      await storage.updateContentJob(job.id, {
+        status: 'video_creation',
+        progress: 30
+      });
+
+      let videoPath;
+      try {
+        videoPath = await videoCreator.createVideo(job.id);
+      } catch (videoError) {
+        await storage.createPipelineLog({
+          jobId: job.id,
+          step: 'video_creation',
+          status: 'error',
+          message: 'Video creation failed',
+          details: videoError.message,
+          metadata: { error: videoError.message }
+        });
+        throw videoError;
+      }
       
       await storage.createPipelineLog({
         jobId: job.id,
@@ -149,6 +168,12 @@ export class AutomationPipeline {
       console.error('Pipeline error:', error);
       
       if (jobId) {
+        // Update job status to failed
+        await storage.updateContentJob(jobId, {
+          status: 'failed',
+          progress: 0
+        });
+        
         await storage.createPipelineLog({
           jobId,
           step: 'pipeline_error',

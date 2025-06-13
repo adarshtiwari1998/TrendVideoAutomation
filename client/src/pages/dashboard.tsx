@@ -332,6 +332,22 @@ export default function Dashboard() {
                 >
                   Clear Stuck Jobs
                 </Button>
+                
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    try {
+                      await fetch('/api/pipeline/cleanup-stuck-jobs', { method: 'POST' });
+                      queryClient.invalidateQueries({ queryKey: ['/api/dashboard/active-pipeline'] });
+                    } catch (error) {
+                      console.error('Failed to cleanup stuck jobs:', error);
+                    }
+                  }}
+                  className="border-red-300 text-red-700 hover:bg-red-50"
+                >
+                  Reset Stuck Pipeline Jobs
+                </Button>
               </div>
               
               <div className="border-t pt-3">
