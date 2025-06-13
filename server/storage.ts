@@ -429,7 +429,7 @@ export class DatabaseStorage implements IStorage {
         details: log.details,
         progress: log.progress,
         timestamp: log.created_at,
-        metadata: log.metadata ? JSON.parse(log.metadata) : {}
+        metadata: log.metadata ? (typeof log.metadata === 'string' ? JSON.parse(log.metadata) : log.metadata) : {}
       }));
     } catch (error) {
       console.error('Error fetching pipeline logs:', error);
@@ -457,7 +457,7 @@ export class DatabaseStorage implements IStorage {
         details: log.details,
         progress: log.progress,
         timestamp: log.created_at,
-        metadata: log.metadata ? JSON.parse(log.metadata) : {}
+        metadata: log.metadata ? (typeof log.metadata === 'string' ? JSON.parse(log.metadata) : log.metadata) : {}
       }));
     } catch (error) {
       console.error('Error fetching pipeline logs by job:', error);

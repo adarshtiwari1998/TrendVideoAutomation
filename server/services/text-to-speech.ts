@@ -1,4 +1,3 @@
-
 import { TextToSpeechClient } from '@google-cloud/text-to-speech';
 import fs from 'fs/promises';
 import path from 'path';
@@ -13,12 +12,12 @@ export interface TTSOptions {
 
 export class TextToSpeechService {
   private client: TextToSpeechClient;
-  
+
   constructor() {
     try {
       // Initialize Google Cloud TTS client with proper credential handling
       const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS || process.env.GOOGLE_CREDENTIALS || './google-credentials.json';
-      
+
       // Try to read credentials directly from file
       let credentials = null;
       try {
@@ -42,7 +41,7 @@ export class TextToSpeechService {
           projectId: process.env.GOOGLE_CLOUD_PROJECT_ID || 'magnetic-racer-442915-u4'
         });
       }
-      
+
       console.log('✅ Google Cloud TTS client initialized');
     } catch (error) {
       console.error('❌ Failed to initialize Google Cloud TTS client:', error);
@@ -74,10 +73,10 @@ export class TextToSpeechService {
         };
 
         console.log(`🎤 Generating speech with Google Cloud TTS - voice: ${voice}`);
-        
+
         // Perform the text-to-speech request
         const [response] = await this.client.synthesizeSpeech(request);
-        
+
         if (!response.audioContent) {
           throw new Error('No audio content received from Google TTS');
         }
@@ -88,7 +87,7 @@ export class TextToSpeechService {
 
         // Write the audio content to file
         await fs.writeFile(outputPath, response.audioContent as Buffer);
-        
+
         console.log(`✅ Audio saved to: ${outputPath}`);
         return outputPath;
 
@@ -106,29 +105,30 @@ export class TextToSpeechService {
   private async generateFallbackAudio(text: string, outputPath: string): Promise<string> {
     try {
       console.log('🔄 Generating fallback audio content...');
-      
+
       // Ensure output directory exists
       const outputDir = path.dirname(outputPath);
       await fs.mkdir(outputDir, { recursive: true });
 
       // Try to use system TTS commands
       try {
-        const { execSync } = require('child_process');
-        
+        const { execSync } = await import('child_process');
+        const fs = await import('fs');
+
         // Try espeak first (common on Linux)
         try {
           const wavPath = outputPath.replace('.mp3', '.wav');
-          execSync(`espeak "${text.substring(0, 500)}" -w "${wavPath}"`, { stdio: 'pipe' });
-          
+          execSync.execSync(`espeak "${text.substring(0, 500)}" -w "${wavPath}"`, { stdio: 'pipe' });
+
           // Convert to mp3 if ffmpeg is available
           try {
-            execSync(`ffmpeg -i "${wavPath}" "${outputPath}" -y`, { stdio: 'pipe' });
-            execSync(`rm "${wavPath}"`, { stdio: 'pipe' });
+            execSync.execSync(`ffmpeg -i "${wavPath}" "${outputPath}" -y`, { stdio: 'pipe' });
+            execSync.execSync(`rm "${wavPath}"`, { stdio: 'pipe' });
           } catch {
             // If ffmpeg fails, just rename wav to mp3
-            execSync(`mv "${wavPath}" "${outputPath}"`, { stdio: 'pipe' });
+            execSync.execSync(`mv "${wavPath}" "${outputPath}"`, { stdio: 'pipe' });
           }
-          
+
           console.log(`📱 System TTS audio created: ${outputPath}`);
           return outputPath;
         } catch (espeakError) {
@@ -139,32 +139,32 @@ export class TextToSpeechService {
         try {
           const tempScript = `/tmp/tts_script_${Date.now()}.txt`;
           await fs.writeFile(tempScript, text.substring(0, 500));
-          execSync(`text2wave "${tempScript}" -o "${outputPath.replace('.mp3', '.wav')}"`, { stdio: 'pipe' });
-          
+          execSync.execSync(`text2wave "${tempScript}" -o "${outputPath.replace('.mp3', '.wav')}"`, { stdio: 'pipe' });
+
           // Convert to mp3 if possible
           try {
-            execSync(`ffmpeg -i "${outputPath.replace('.mp3', '.wav')}" "${outputPath}" -y`, { stdio: 'pipe' });
-            execSync(`rm "${outputPath.replace('.mp3', '.wav')}"`, { stdio: 'pipe' });
+            execSync.execSync(`ffmpeg -i "${outputPath.replace('.mp3', '.wav')}" "${outputPath}" -y`, { stdio: 'pipe' });
+            execSync.execSync(`rm "${outputPath.replace('.mp3', '.wav')}"`, { stdio: 'pipe' });
           } catch {
-            execSync(`mv "${outputPath.replace('.mp3', '.wav')}" "${outputPath}"`, { stdio: 'pipe' });
+            execSync.execSync(`mv "${outputPath.replace('.mp3', '.wav')}" "${outputPath}"`, { stdio: 'pipe' });
           }
-          
-          execSync(`rm "${tempScript}"`, { stdio: 'pipe' });
+
+          execSync.execSync(`rm "${tempScript}"`, { stdio: 'pipe' });
           console.log(`📱 Festival TTS audio created: ${outputPath}`);
           return outputPath;
         } catch (festivalError) {
           console.warn('festival not available either');
         }
-        
+
       } catch (systemError) {
         console.warn('System TTS commands failed:', systemError.message);
       }
 
       // Final fallback: create a simple silence audio file with text embedded as metadata
-      const { execSync } = require('child_process');
+      const { execSync } = await import('child_process');
       try {
         // Create 10 seconds of silence as final fallback
-        execSync(`ffmpeg -f lavfi -i "anullsrc=channel_layout=stereo:sample_rate=22050" -t 10 "${outputPath}" -y`, { stdio: 'pipe' });
+        execSync.execSync(`ffmpeg -f lavfi -i "anullsrc=channel_layout=stereo:sample_rate=22050" -t 10 "${outputPath}" -y`, { stdio: 'pipe' });
         console.log(`🔇 Created silence audio as final fallback: ${outputPath}`);
         return outputPath;
       } catch {
@@ -186,7 +186,7 @@ export class TextToSpeechService {
 
   async generateNarration(script: string, outputDir: string, videoId: string): Promise<string> {
     const outputPath = path.join(outputDir, `${videoId}_narration.mp3`);
-    
+
     // Split long scripts into chunks for better synthesis
     const chunks = this.splitTextIntoChunks(script, 4000); // Google TTS has character limits
     const audioFiles: string[] = [];
@@ -212,12 +212,12 @@ export class TextToSpeechService {
       // TODO: Implement audio concatenation using ffmpeg
       // For now, just use the first chunk
       await fs.rename(audioFiles[0], outputPath);
-      
+
       // Clean up remaining chunks
       for (let i = 1; i < audioFiles.length; i++) {
         await fs.unlink(audioFiles[i]).catch(() => {});
       }
-      
+
       return outputPath;
     }
   }

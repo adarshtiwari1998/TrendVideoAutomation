@@ -19,7 +19,7 @@ export class FFmpegInstaller {
   private static async setupFFmpeg(): Promise<void> {
     try {
       // Use ffmpeg-static package which provides static binaries
-      const ffmpegStatic = require('ffmpeg-static');
+      const ffmpegStatic = await import('ffmpeg-static').then(m => m.default).catch(() => null);
       
       if (ffmpegStatic) {
         // Create symlink to make ffmpeg available globally
