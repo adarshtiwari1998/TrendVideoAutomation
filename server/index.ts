@@ -66,6 +66,36 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = 5000;
+  
+  // Handle server startup errors
+  server.on('error', (err: any) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`❌ Port ${port} is already in use. Please kill existing processes first.`);
+      console.error('Run: ps aux | grep -E "(node|tsx)" | grep -v grep | awk \'{print $2}\' | xargs kill -9');
+      process.exit(1);
+    } else {
+      console.error('Server error:', err);
+      process.exit(1);
+    }
+  });
+
+  // Graceful shutdown handling
+  process.on('SIGTERM', () => {
+    console.log('🛑 SIGTERM received, shutting down gracefully...');
+    server.close(() => {
+      console.log('💤 Server closed');
+      process.exit(0);
+    });
+  });
+
+  process.on('SIGINT', () => {
+    console.log('🛑 SIGINT received, shutting down gracefully...');
+    server.close(() => {
+      console.log('💤 Server closed');
+      process.exit(0);
+    });
+  });
+
   server.listen({
     port,
     host: "0.0.0.0",
