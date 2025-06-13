@@ -63,7 +63,7 @@ export interface IStorage {
     progress?: number;
     metadata?: any;
   }): Promise<any>;
-  getPipelineLogs(jobId?: number, limit?: number): Promise<any[]>;
+  getPipelineLogs(limit?: number, jobId?: number): Promise<any[]>;
   clearPipelineLogs(): Promise<void>;
 
   // Automation Settings
@@ -399,56 +399,70 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Pipeline Logs (using activity logs table for now)
-  async getPipelineLogs(jobId?: number, limit = 50): Promise<any[]> {
-    // Create pipeline_logs table if it doesn't exist
+  async getPipelineLogs(limit: number = 50, jobId?: number): Promise<any[]> {
     try {
-      await db.execute(sql`
-        CREATE TABLE IF NOT EXISTS pipeline_logs (
-          id SERIAL PRIMARY KEY,
-          job_id INTEGER NOT NULL,
-          step VARCHAR(255) NOT NULL,
-          status VARCHAR(50) NOT NULL,
-          message TEXT,
-          details TEXT,
-          progress INTEGER,
-          metadata JSONB,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
-    } catch (error) {
-      console.log('Pipeline logs table already exists');
-    }
+      let query;
+      if (jobId) {
+        query = db.execute(sql`
+          SELECT * FROM pipeline_logs 
+          WHERE job_id = ${jobId}
+          ORDER BY created_at DESC 
+          LIMIT ${limit}
+        `);
+      } else {
+        query = db.execute(sql`
+          SELECT * FROM pipeline_logs 
+          ORDER BY created_at DESC 
+          LIMIT ${limit}
+        `);
+      }
 
-    let query;
-    if (jobId) {
-      query = db.execute(sql`
+      const result = await query;
+      const logs = result.rows || [];
+
+      return logs.map(log => ({
+        id: log.id,
+        jobId: log.job_id,
+        step: log.step,
+        status: log.status,
+        message: log.message,
+        details: log.details,
+        progress: log.progress,
+        timestamp: log.created_at,
+        metadata: log.metadata ? JSON.parse(log.metadata) : {}
+      }));
+    } catch (error) {
+      console.error('Error fetching pipeline logs:', error);
+      return [];
+    }
+  }
+
+  async getPipelineLogsByJob(jobId: number, limit: number = 50): Promise<any[]> {
+    try {
+      const result = await db.execute(sql`
         SELECT * FROM pipeline_logs 
         WHERE job_id = ${jobId}
         ORDER BY created_at DESC 
         LIMIT ${limit}
       `);
-    } else {
-      query = db.execute(sql`
-        SELECT * FROM pipeline_logs 
-        ORDER BY created_at DESC 
-        LIMIT ${limit}
-      `);
+
+      const logs = result.rows || [];
+
+      return logs.map(log => ({
+        id: log.id,
+        jobId: log.job_id,
+        step: log.step,
+        status: log.status,
+        message: log.message,
+        details: log.details,
+        progress: log.progress,
+        timestamp: log.created_at,
+        metadata: log.metadata ? JSON.parse(log.metadata) : {}
+      }));
+    } catch (error) {
+      console.error('Error fetching pipeline logs by job:', error);
+      return [];
     }
-
-    const result = await query;
-    const logs = result.rows || [];
-
-    return logs.map(log => ({
-      id: log.id,
-      jobId: log.job_id,
-      step: log.step,
-      status: log.status,
-      message: log.message,
-      details: log.details,
-      progress: log.progress,
-      timestamp: log.created_at,
-      metadata: log.metadata
-    }));
   }
 
   async createPipelineLog(log: {

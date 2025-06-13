@@ -76,9 +76,9 @@ export default function VideoPipelinePage() {
                     <div 
                       key={job.id} 
                       className={`border rounded-lg p-4 cursor-pointer transition-colors hover:bg-muted/50 ${
-                        selectedJobId === job.id ? 'ring-2 ring-primary' : ''
+                        selectedJobId === job.id ? 'ring-2 ring-primary bg-primary/5' : ''
                       }`}
-                      onClick={() => setSelectedJobId(job.id)}
+                      onClick={() => setSelectedJobId(selectedJobId === job.id ? undefined : job.id)}
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
@@ -96,8 +96,12 @@ export default function VideoPipelinePage() {
                       <p className="text-sm text-muted-foreground">
                         {job.progress}% complete
                       </p>
-                      {selectedJobId === job.id && (
+                      {selectedJobId === job.id ? (
                         <p className="text-xs text-primary mt-2">
+                          ✓ Viewing detailed logs - Click to show all logs
+                        </p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground mt-2">
                           Click to view detailed logs →
                         </p>
                       )}

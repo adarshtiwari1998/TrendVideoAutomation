@@ -549,15 +549,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get('/api/pipeline/logs/:jobId?', async (req, res) => {
-  try {
-    const jobId = req.params.jobId ? parseInt(req.params.jobId) : undefined;
-    const logs = await storage.getPipelineLogs(jobId);
-    res.json(logs);
-  } catch (error) {
-    console.error('Error fetching pipeline logs:', error);
-    res.status(500).json({ error: 'Failed to fetch pipeline logs' });
-  }
-});
+    try {
+      const jobId = req.params.jobId ? parseInt(req.params.jobId) : undefined;
+      let logs;
+      
+      if (jobId && !isNaN(jobId)) {
+        logs = await storage.getPipelineLogsByJob(jobId);
+      } else {
+        logs = await storage.getPipelineLogs(50);
+      }
+      
+      res.json(logs);
+    } catch (error) {
+      console.error('Error fetching pipeline logs:', error);
+      res.status(500).json({ error: 'Failed to fetch pipeline logs' });
+    }
+  });
 
 app.post('/api/pipeline/cleanup-stuck-jobs', async (req, res) => {
   try {

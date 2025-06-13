@@ -40,16 +40,17 @@ export function PipelinePreviewLogs({ selectedJobId }: PipelinePreviewLogsProps)
   const [expandedLogs, setExpandedLogs] = useState<Set<number>>(new Set());
 
   const { data: logs, isLoading } = useQuery({
-    queryKey: ['pipeline-logs', selectedJobId],
+    queryKey: ['pipeline-logs', selectedJobId || 'all'],
     queryFn: async () => {
-      const url = selectedJobId 
+      const url = selectedJobId && selectedJobId > 0
         ? `/api/pipeline/logs/${selectedJobId}`
         : '/api/pipeline/logs';
       const response = await fetch(url);
       if (!response.ok) throw new Error('Failed to fetch logs');
       return response.json();
     },
-    refetchInterval: 2000 // Refresh every 2 seconds for real-time updates
+    refetchInterval: 2000, // Refresh every 2 seconds for real-time updates
+    enabled: true // Always enabled, but URL changes based on selectedJobId
   });
 
   const getStepIcon = (step: string, status: string) => {
@@ -114,8 +115,10 @@ export function PipelinePreviewLogs({ selectedJobId }: PipelinePreviewLogsProps)
         <CardTitle className="flex items-center gap-2">
           <Sparkles className="h-5 w-5" />
           Pipeline Preview Logs
-          {selectedJobId && (
-            <Badge variant="outline">Job #{selectedJobId}</Badge>
+          {selectedJobId && selectedJobId > 0 ? (
+            <Badge variant="default">Filtering: Job #{selectedJobId}</Badge>
+          ) : (
+            <Badge variant="outline">All Jobs</Badge>
           )}
         </CardTitle>
       </CardHeader>
