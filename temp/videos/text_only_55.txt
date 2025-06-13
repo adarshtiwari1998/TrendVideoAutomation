@@ -1,0 +1,56 @@
+Video Script for Job 55
+
+```json
+{
+  "script": "Hey everyone, and namaste! Welcome back to the channel! Did you know that the universe is constantly revealing its secrets?  Just in the last few days, some mind-blowing discoveries have been made in the world of astronomy.  We're talking game-changing stuff! So, get ready to explore the cosmos with me as we dive into the latest science news, discoveries, and analysis.  [Pause for intro animation/music]
+
+**(Section 1: The Giant Eye)**
+
+Okay, first up, let’s talk about this massive new camera. Imagine a camera so powerful it can capture an image sharp enough to spot a golf ball from 15 miles away! That’s the kind of resolution we’re talking about with the world's largest digital camera, recently installed on a major telescope. [Visual cue: Zoom in on a picture of the telescope and camera]. This behemoth is going to revolutionize astronomy.  Think about it –  we’ll be able to see galaxies in unprecedented detail, track asteroids more effectively, and maybe even, *just maybe*, find evidence of life beyond Earth!  [Pause for animation showing zooming into a galaxy]
+
+**(Section 2:  Transforming Astronomy)**
+
+But how exactly will this super-camera transform astronomy? Well, for starters, it will allow scientists to create the largest 3D map of the universe ever attempted. [Visual cue:  Animation of a 3D universe map being constructed]. This map will help us understand dark matter, dark energy, and the very fabric of spacetime.  It's like upgrading from a blurry old radio to a crystal-clear 8K TV. The detail! The clarity! It's incredible! [Pause for a reaction shot/visual gag]
+
+
+**(Section 3: More than just pretty pictures)**
+
+Now, I know what you’re thinking: “Cool pictures, but what’s the practical application?”  Well, this isn't just about pretty pictures, folks. This technology can potentially help us predict potentially hazardous asteroids with much greater accuracy, giving us more time to react. [Visual cue: Simulation of an asteroid’s trajectory]. Plus, understanding the universe helps us understand our place within it. It inspires innovation, pushes the boundaries of human knowledge, and who knows, maybe even leads to discoveries that benefit us here on Earth. [Pause for inspiring music and visuals of space exploration]
+
+
+**(Section 4: What about Mathematics? )**
+
+Recently, there’s been a lot of discussion around the field of mathematics and its future.  [Visual cue: Text overlay "The Future of Math"]. Some experts are calling for a radical shift in how we approach math education and research.  This ties into everything we’ve talked about because analyzing the data from that giant camera requires powerful mathematical models and innovative thinking. [Visual cue: Show complex mathematical formulas related to astronomy]. It’s an exciting time to be alive, and these advancements really highlight the interconnectedness of different scientific fields. [Pause for thoughtful expression]
+
+So what do you guys think about these amazing discoveries?  Are you as excited as I am?  Let me know in the comments below! Don't forget to like this video and subscribe to the channel for more mind-blowing content. Hit that bell icon so you don't miss any future updates! And as always, thanks for watching! [Pause for outro animation/music] ",
+  "visual_cues": [
+    "Intro animation/music",
+    "Zoom in on a picture of the telescope and camera",
+    "Animation showing zooming into a galaxy",
+    "Animation of a 3D universe map being constructed",
+    "Reaction shot/visual gag",
+    "Simulation of an asteroid’s trajectory",
+    "Inspiring music and visuals of space exploration",
+    "Text overlay \"The Future of Math\"",
+    "Show complex mathematical formulas related to astronomy",
+    "Thoughtful expression",
+    "Outro animation/music"
+  ],
+  "hashtags": [
+    "#sciencenews",
+    "#astronomy",
+    "#spaceexploration",
+    "#telescope",
+    "#universe",
+    "#discoveries",
+    "#technology",
+    "#innovation",
+    "#mathematics",
+    "#futureofmath",
+    "#india",
+    "#globalnews"
+  ]
+}
+```
+
+Note: This is a text-only fallback due to TTS unavailability.
