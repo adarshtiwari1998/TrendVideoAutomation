@@ -1,0 +1,48 @@
+Video Script for Job 52
+
+```json
+{
+  "script": "Namaste, world! And hello to everyone tuning in from across the globe! Welcome to the channel where we unravel the mysteries of the universe, one science update at a time.  Did you know that astronomy is getting a massive upgrade?  I'm talking about a digital camera so big, it makes your phone's camera look like a grain of sand.  We're diving deep into the latest science news, including this game-changing telescope technology and more, so stick around! (pause for intro animation/music)
+
+**(Section 1: The Giant Eye in the Sky)**
+
+This isn't your average point-and-shoot, folks. Imagine a camera with a resolution so high, it could capture a golf ball from 24 kilometers away!  That's the power of the new camera being fitted onto a major telescope – the largest digital camera ever built! (pause for image of the telescope/camera) This behemoth will revolutionize how we see the cosmos. Think clearer images of distant galaxies, better tracking of asteroids, and maybe even… discovering signs of extraterrestrial life!  Who knows? (pause for visual effect – zoom into a galaxy)
+
+**(Section 2: Transforming Astronomy – One Pixel at a Time)**
+
+But why is this such a big deal?  Well, for starters, it's not just about taking pretty pictures of space.  This camera generates an enormous amount of data – we're talking petabytes! (pause for visual representation of data volume)  This data will help scientists create the most detailed 3D map of the universe, potentially unlocking secrets about dark matter, dark energy, and the very origins of the universe. It's like upgrading from a blurry old radio to a crystal-clear 8K TV. (pause for animation comparing old vs. new telescope images)
+
+**(Section 3: Beyond the Telescope – Other Science Headlines)**
+
+But the universe isn't the only thing making headlines.  There have been fascinating developments closer to home, too.  Researchers are making breakthroughs in everything from medical technology to sustainable energy.  (pause for quick montage of news headlines)  For example, a team in [mention specific country/university] has developed a new [mention specific technology/innovation].  This could potentially… [explain the potential impact]. (pause for relevant visuals) It's an exciting time to be alive, witnessing these advancements unfold!
+
+**(Section 4:  What's Next?)**
+
+The world of science is constantly evolving, with new discoveries being made every single day.  From giant telescopes peering into the depths of space to groundbreaking innovations happening right here on Earth, there's always something new to explore.  What scientific discovery are *you* most excited about?  Let me know in the comments below! (pause for end screen animation)  Don't forget to hit that like button if you enjoyed this video and subscribe to stay updated on the latest science news.  Share this video with your friends and family – let's spread the knowledge!  And as always, thanks for watching!  (pause for end screen with social media links) ",
+  "visual_cues": [
+    "Intro animation/music",
+    "Image of the telescope/camera",
+    "Visual effect – zoom into a galaxy",
+    "Visual representation of data volume",
+    "Animation comparing old vs. new telescope images",
+    "Quick montage of news headlines",
+    "Relevant visuals of mentioned technology/innovation",
+    "End screen animation",
+    "End screen with social media links"
+  ],
+  "hashtags": [
+    "#sciencenews",
+    "#astronomy",
+    "#telescope",
+    "#spaceexploration",
+    "#technology",
+    "#innovation",
+    "#globalnews",
+    "#indianyoutuber",
+    "#viralscience",
+    "#facts"
+  ]
+}
+```
+
+Note: This is a text-only fallback due to TTS unavailability.
