@@ -1,0 +1,110 @@
+TrendingAnalyzer initialized with Google APIs for REAL trending data
+🎬 Initializing video creation services...
+📦 Setting up FFmpeg...
+❌ FFmpeg setup failed: require is not defined
+🔧 Trying alternative approach...
+⚠️  FFmpeg not available, will use fallback video processing
+⚠️  FFmpeg not available, using fallback methods
+Initializing automation scheduler...
+Automation scheduler initialized with 8 jobs
+Starting all scheduled jobs...
+Started job: trending-analysis
+Started job: auto-cleanup-regenerate
+Started job: trending-cleanup-check
+Started job: daily-automation
+Started job: upload-check
+Started job: storage-cleanup
+Started job: health-check
+Started job: stats-update
+6:54:51 PM [express] serving on port 5000
+Browserslist: browsers data (caniuse-lite) is 8 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+6:54:57 PM [express] GET /api/dashboard/active-pipeline 304 in 471ms :: {"active":[],"scheduled":[],…
+6:54:58 PM [express] GET /api/pipeline/logs 304 in 469ms :: [{"id":5,"jobId":48,"step":"pipeline_err…
+6:54:58 PM [express] GET /api/dashboard/recent-activity 200 in 1521ms :: [{"id":1169,"type":"system"…
+6:54:58 PM [express] GET /api/dashboard/trending-topics 304 in 1648ms :: [{"id":527,"title":"Latest …
+6:54:58 PM [express] GET /api/dashboard/scheduled-videos 304 in 1725ms :: {"scheduled":[],"processin…
+6:54:58 PM [express] GET /api/dashboard/system-status 304 in 1888ms :: {"components":[{"name":"Trend…
+6:54:58 PM [express] GET /api/dashboard/stats 304 in 2027ms :: {"todayVideos":0,"todayShorts":0,"suc…
+6:54:59 PM [express] GET /api/dashboard/active-pipeline 200 in 474ms :: {"active":[],"scheduled":[],…
+6:55:00 PM [express] GET /api/pipeline/logs 304 in 472ms :: [{"id":5,"jobId":48,"step":"pipeline_err…
+6:55:03 PM [express] GET /api/pipeline/logs 304 in 470ms :: [{"id":5,"jobId":48,"step":"pipeline_err…
+6:55:05 PM [express] GET /api/dashboard/recent-activity 200 in 237ms :: [{"id":1169,"type":"system",…
+6:55:05 PM [express] GET /api/dashboard/trending-topics 304 in 235ms :: [{"id":527,"title":"Latest s…
+6:55:05 PM [express] GET /api/dashboard/active-pipeline 304 in 471ms :: {"active":[],"scheduled":[],…
+6:55:05 PM [express] GET /api/dashboard/scheduled-videos 304 in 486ms :: {"scheduled":[],"processing…
+6:55:05 PM [express] GET /api/dashboard/system-status 304 in 496ms :: {"components":[{"name":"Trendi…
+6:55:05 PM [express] GET /api/dashboard/stats 304 in 700ms :: {"todayVideos":0,"todayShorts":0,"succ…
+6:55:05 PM [express] GET /api/dashboard/active-pipeline 304 in 468ms :: {"active":[],"scheduled":[],…
+Cleared stuck jobs from previous sessions
+6:55:11 PM [express] POST /api/automation/clear-stuck-jobs 200 in 257ms :: {"success":true,"message"…
+Error cleaning up stuck jobs: TypeError: Cannot read properties of undefined (reading 'execute')
+    at <anonymous> (/home/runner/workspace/server/routes.ts:546:22)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/runner/workspace/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/runner/workspace/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at <anonymous> (/home/runner/workspace/server/index.ts:37:3)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at urlencodedParser (/home/runner/workspace/node_modules/body-parser/lib/types/urlencoded.js:103:7)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at jsonParser (/home/runner/workspace/node_modules/body-parser/lib/types/json.js:122:7)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at expressInit (/home/runner/workspace/node_modules/express/lib/middleware/init.js:40:5)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at query (/home/runner/workspace/node_modules/express/lib/middleware/query.js:45:5)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at Function.handle (/home/runner/workspace/node_modules/express/lib/router/index.js:175:3)
+    at Function.handle (/home/runner/workspace/node_modules/express/lib/application.js:181:10)
+    at Server.app (/home/runner/workspace/node_modules/express/lib/express.js:39:9)
+    at Server.emit (node:events:518:28)
+    at parserOnIncoming (node:_http_server:1141:12)
+    at HTTPParser.parserOnHeadersComplete (node:_http_common:118:17)
+6:55:14 PM [express] POST /api/pipeline/cleanup-stuck-jobs 500 in 12ms :: {"error":"Failed to cleanu…
+6:55:14 PM [express] GET /api/dashboard/active-pipeline 304 in 469ms :: {"active":[],"scheduled":[],…
+6:55:21 PM [express] GET /api/dashboard/active-pipeline 304 in 502ms :: {"active":[],"scheduled":[],…
+6:55:21 PM [express] GET /api/pipeline/logs 200 in 469ms :: [{"id":5,"jobId":48,"step":"pipeline_err…
+6:55:23 PM [express] GET /api/dashboard/scheduled-videos 304 in 473ms :: {"scheduled":[],"processing…
+6:55:24 PM [express] GET /api/dashboard/recent-activity 304 in 1498ms :: [{"id":1169,"type":"system"…
+6:55:24 PM [express] GET /api/dashboard/trending-topics 304 in 1592ms :: [{"id":527,"title":"Latest …
+6:55:24 PM [express] GET /api/dashboard/active-pipeline 304 in 1726ms :: {"active":[],"scheduled":[]…
+6:55:24 PM [express] GET /api/dashboard/system-status 304 in 1854ms :: {"components":[{"name":"Trend…
+6:55:25 PM [express] GET /api/dashboard/stats 304 in 2226ms :: {"todayVideos":0,"todayShorts":0,"suc…
+Cleared all content jobs
+6:55:27 PM [express] POST /api/pipeline/clear 200 in 472ms :: {"success":true,"message":"Pipeline cl…
+6:55:32 PM [express] GET /api/dashboard/active-pipeline 304 in 516ms :: {"active":[],"scheduled":[],…
+6:55:33 PM [express] GET /api/pipeline/logs 304 in 467ms :: [{"id":5,"jobId":48,"step":"pipeline_err…
+6:55:35 PM [express] GET /api/pipeline/logs 304 in 467ms :: [{"id":5,"jobId":48,"step":"pipeline_err…
+6:55:38 PM [express] GET /api/dashboard/active-pipeline 304 in 485ms :: {"active":[],"scheduled":[],…
+6:55:39 PM [express] GET /api/pipeline/logs 304 in 1800ms :: [{"id":5,"jobId":48,"step":"pipeline_er…
+6:55:47 PM [express] GET /api/dashboard/active-pipeline 304 in 476ms :: {"active":[],"scheduled":[],…
+6:56:00 PM [express] GET /api/dashboard/active-pipeline 304 in 1711ms :: {"active":[],"scheduled":[]…
+6:56:00 PM [express] GET /api/dashboard/recent-activity 200 in 1511ms :: [{"id":1170,"type":"system"…
+6:56:00 PM [express] GET /api/dashboard/scheduled-videos 304 in 1702ms :: {"scheduled":[],"processin…
+6:56:00 PM [express] GET /api/dashboard/system-status 304 in 1714ms :: {"components":[{"name":"Trend…
+6:56:01 PM [express] GET /api/dashboard/stats 304 in 1924ms :: {"todayVideos":0,"todayShorts":0,"suc…
+6:56:10 PM [express] GET /api
