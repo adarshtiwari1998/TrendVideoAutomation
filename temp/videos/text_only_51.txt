@@ -1,0 +1,24 @@
+Video Script for Job 51
+
+```json
+{
+  "script": "Hey everyone, and welcome back to the channel!  Did you know that a camera the size of a small car just got hooked up to a massive telescope? We're talking bigger than a bus, bigger than your house... probably bigger than your entire street! This isn't your average Instagram selfie camera. This thing is going to revolutionize how we see the universe.  So, grab your chai and some snacks, because in today's video, we're diving deep into the latest groundbreaking science news, discoveries, and what they mean for us here on Earth. #Space #Astronomy #ScienceNews\n\n[Visual Cue: Zoom in on an image of the telescope and camera] \n\nFirst up, let's talk about this mega-camera.  It's part of the Vera C. Rubin Observatory in Chile, and it's officially the world's largest digital camera.  Imagine a 3.2 GIGAPIXEL image! That’s like taking 378 4K ultra-high-definition TVs and sticking them together.  [Pause for effect]  Crazy, right? This level of detail allows astronomers to see objects 100 million times fainter than what the naked eye can see. Think about that – we’re talking galaxies billions of light-years away. [Visual Cue: Show a comparison of the camera size to everyday objects]\n\n[Transition music/animation]\n\nNow, why is this such a big deal?  Well, this camera is more than just a high-resolution snapshot machine. It’s going to capture a panoramic movie of the Southern sky every few nights for ten years!  This project, known as the Legacy Survey of Space and Time, will create the largest astronomical movie of all time.  [Visual Cue: Animated simulation of the telescope scanning the sky]\n\nThis means we can track the movement of asteroids, potentially identifying those that might pose a threat to Earth – kind of like a planetary defense system, straight out of a sci-fi movie! [Pause] But it's also about unlocking the secrets of dark energy and dark matter, two of the biggest mysteries in the universe. [Visual Cue: Animated graphical representation of dark matter and dark energy]\n\n[Transition music/animation]\n\nAnd it's not just about telescopes and cameras.  There have been some fascinating developments in other fields too.  Researchers are working on new types of batteries that could charge electric cars in minutes. Imagine the convenience! [Visual Cue: Show futuristic concept art of fast-charging electric cars]  [Pause] And on the medical front, scientists are making breakthroughs in understanding how aging works, paving the way for potential therapies to extend healthy lifespans.  It’s truly an exciting time to be alive!\n\n[Visual Cue: Montage of different science news headlines]\n\nSo, what do you think about these latest discoveries?  Let me know in the comments below!  If you enjoyed this video and want to stay updated on the most amazing scientific advancements, hit that subscribe button and the bell icon to be notified when I upload new videos.  And don't forget to give this video a thumbs up – it really helps the channel grow.  Thanks for watching, and I'll see you in the next one!\n\n[End screen with social media links]\n",
+  "visual_cues": [
+    "Zoom in on an image of the telescope and camera",
+    "Show a comparison of the camera size to everyday objects",
+    "Animated simulation of the telescope scanning the sky",
+    "Animated graphical representation of dark matter and dark energy",
+    "Show futuristic concept art of fast-charging electric cars",
+    "Montage of different science news headlines"
+  ],
+  "hashtags": [
+    "#Space",
+    "#Astronomy",
+    "#ScienceNews",
+    "#Technology",
+    "#Future"
+  ]
+}
+```
+
+Note: This is a text-only fallback due to TTS unavailability.

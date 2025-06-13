@@ -1,0 +1,50 @@
+🔄 Generating fallback audio content...
+📱 Fallback audio created: /home/runner/workspace/temp/videos/audio_51.mp3
+Audio generation failed: Error: Command failed: ffmpeg -i "/home/runner/workspace/temp/videos/audio_51.mp3" -af "highpass=f=200,lowpass=f=3000,dynaudnorm=f=500:g=31,volume=1.2" -b:a 128k "/home/runner/workspace/temp/videos/audio_enhanced_51.mp3" -y
+/bin/sh: 1: ffmpeg: not found
+
+    at genericNodeError (node:internal/errors:984:15)
+    at wrappedFn (node:internal/errors:538:14)
+    at ChildProcess.exithandler (node:child_process:422:12)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1104:16)
+    at Socket.<anonymous> (node:internal/child_process:456:11)
+    at Socket.emit (node:events:518:28)
+    at Pipe.<anonymous> (node:net:343:12) {
+  code: 127,
+  killed: false,
+  signal: null,
+  cmd: 'ffmpeg -i "/home/runner/workspace/temp/videos/audio_51.mp3" -af "highpass=f=200,lowpass=f=3000,dynaudnorm=f=500:g=31,volume=1.2" -b:a 128k "/home/runner/workspace/temp/videos/audio_enhanced_51.mp3" -y',
+  stdout: '',
+  stderr: '/bin/sh: 1: ffmpeg: not found\n'
+}
+⚠️ Audio generation failed, creating text-only video: Command failed: ffmpeg -i "/home/runner/workspace/temp/videos/audio_51.mp3" -af "highpass=f=200,lowpass=f=3000,dynaudnorm=f=500:g=31,volume=1.2" -b:a 128k "/home/runner/workspace/temp/videos/audio_enhanced_51.mp3" -y
+/bin/sh: 1: ffmpeg: not found
+
+📝 Created text-only content as final fallback
+🖼️ Creating professional YouTube thumbnail for: Everything You Need to Know About Latest science news, discoveries and analysis
+🎨 Creating professional thumbnail with FFmpeg...
+Failed to download background, creating solid color: Request failed with status code 503
+Thumbnail generation error: Error: Failed to create background: Command failed: ffmpeg -f lavfi -i "color=#1f2937:size=1920x1080:duration=1" "/home/runner/workspace/generated/backgrounds/global_news_bg.jpg" -y
+/bin/sh: 1: ffmpeg: not found
+
+    at ThumbnailGenerator.createSolidBackground (/home/runner/workspace/server/services/thumbnail-generator.ts:178:13)
+    at ThumbnailGenerator.getBackgroundImage (/home/runner/workspace/server/services/thumbnail-generator.ts:166:25)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async ThumbnailGenerator.createProfessionalThumbnail (/home/runner/workspace/server/services/thumbnail-generator.ts:85:28)
+    at async ThumbnailGenerator.createYouTubeThumbnail (/home/runner/workspace/server/services/thumbnail-generator.ts:73:5)
+    at async ThumbnailGenerator.generateThumbnail (/home/runner/workspace/server/services/thumbnail-generator.ts:31:29)
+    at async AutomationPipeline.processTrendingTopic (/home/runner/workspace/server/automation/pipeline.ts:91:29)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:199:19)
+Pipeline error: Error: Failed to create background: Command failed: ffmpeg -f lavfi -i "color=#1f2937:size=1920x1080:duration=1" "/home/runner/workspace/generated/backgrounds/global_news_bg.jpg" -y
+/bin/sh: 1: ffmpeg: not found
+
+    at ThumbnailGenerator.createSolidBackground (/home/runner/workspace/server/services/thumbnail-generator.ts:178:13)
+    at ThumbnailGenerator.getBackgroundImage (/home/runner/workspace/server/services/thumbnail-generator.ts:166:25)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async ThumbnailGenerator.createProfessionalThumbnail (/home/runner/workspace/server/services/thumbnail-generator.ts:85:28)
+    at async ThumbnailGenerator.createYouTubeThumbnail (/home/runner/workspace/server/services/thumbnail-generator.ts:73:5)
+    at async ThumbnailGenerator.generateThumbnail (/home/runner/workspace/server/services/thumbnail-generator.ts:31:29)
+    at async AutomationPipeline.processTrendingTopic (/home/runner/workspace/server/automation/pipeline.ts:91:29)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:199:19)
+7:05:49 PM [express] POST /api/c
