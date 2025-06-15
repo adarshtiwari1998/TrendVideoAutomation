@@ -80,8 +80,6 @@ export class ContentGenerator {
       .replace(/Write ONLY.*?\./gi, '')
       .replace(/Structure.*?:/gi, '')
       .replace(/STRICT REQUIREMENTS.*?\./gi, '')
-      // Clean up multiple newlines and spaces
-      .replace(/\n\s*\n\s*\n/g, '\n\n')
       .trim();
 
     // If it looks like JSON, try to extract just the script content
@@ -96,13 +94,37 @@ export class ContentGenerator {
       }
     }
 
-    // If the cleaned text is still system-like, return empty to trigger fallback
+    // CRITICAL: Clean up text formatting issues that break FFmpeg
+    cleaned = cleaned
+      // Fix sentence structure issues
+      .replace(/\.\s*([a-z])/g, '. $1') // Ensure space after periods
+      .replace(/([a-z])\s+([A-Z])/g, '$1. $2') // Add periods between sentences
+      .replace(/\s+/g, ' ') // Normalize all whitespace
+      .replace(/\n{3,}/g, '\n\n') // Clean up excessive newlines
+      // Remove or escape characters that can break FFmpeg commands
+      .replace(/['"]/g, '') // Remove quotes that can break shell commands
+      .replace(/[()]/g, '') // Remove parentheses that can break shell commands
+      .replace(/[&|<>]/g, '') // Remove shell metacharacters
+      .replace(/\$/g, '') // Remove dollar signs
+      .replace(/`/g, '') // Remove backticks
+      // Ensure proper sentence endings
+      .replace(/([a-zA-Z])\s*$/g, '$1.') // Add period at end if missing
+      .trim();
+
+    // Validate content quality
     if (cleaned.length < 100 || 
         /^(I'll|I'm|Here's|This is|Sure|Certainly)/i.test(cleaned) ||
         cleaned.includes('API') || 
         cleaned.includes('Gemini') ||
         cleaned.includes('model')) {
       console.warn('⚠️ Detected system text in cleaned script, returning empty for fallback');
+      return '';
+    }
+
+    // Final validation - ensure we have coherent sentences
+    const sentences = cleaned.split(/[.!?]+/).filter(s => s.trim().length > 10);
+    if (sentences.length < 3) {
+      console.warn('⚠️ Script appears to have too few coherent sentences, using fallback');
       return '';
     }
 
@@ -126,18 +148,45 @@ export class ContentGenerator {
       }
     }
 
-    // Clean the script content
-    return script
+    // Clean the script content with proper formatting
+    let cleaned = script
+      // Remove problematic formatting elements
       .replace(/\[.*?\]/g, '') // Remove stage directions
       .replace(/\(.*?\)/g, '') // Remove parenthetical notes
       .replace(/^\s*[-*]\s*/gm, '') // Remove bullet points
       .replace(/^Step \d+:.*$/gm, '') // Remove step indicators
       .replace(/^\d+\.\s*/gm, '') // Remove numbered lists
+      // Clean up text structure
       .split('\n')
       .filter(line => line.trim().length > 0)
       .filter(line => !line.match(/^(Note:|Remember:|Important:)/i))
-      .join('\n')
+      .join(' ') // Join with spaces instead of newlines for better flow
+      .replace(/\s+/g, ' ') // Normalize whitespace
       .trim();
+
+    // Ensure proper sentence structure
+    cleaned = cleaned
+      // Fix common sentence flow issues
+      .replace(/([.!?])\s*([a-z])/g, '$1 $2') // Ensure space after punctuation
+      .replace(/([a-zA-Z])([A-Z])/g, '$1. $2') // Add periods between sentences if missing
+      .replace(/\s+/g, ' ') // Final whitespace cleanup
+      // Ensure proper ending
+      .replace(/([a-zA-Z])\s*$/g, '$1.'); // Add period at end if missing
+
+    // Validate the cleaned content
+    if (cleaned.length < 50) {
+      console.warn('⚠️ Cleaned script too short, using fallback');
+      return '';
+    }
+
+    // Check for coherent content
+    const words = cleaned.split(' ').filter(w => w.length > 2);
+    if (words.length < 20) {
+      console.warn('⚠️ Script appears to lack sufficient content, using fallback');
+      return '';
+    }
+
+    return cleaned;
   }
 
   private createPrompt(topic: TrendingTopic, videoType: 'long_form' | 'short'): string {
