@@ -127,27 +127,27 @@ export class TrendingAnalyzer {
       let totalProcessed = 0;
       let validArticles = 0;
 
-      // Enhanced search strategies targeting specific articles
+      // Simplified search strategies for Google Custom Search API
       const searchStrategies = [
         { 
-          query: `${query} article OR story OR report filetype:html -site:youtube.com -site:facebook.com -site:twitter.com`, 
-          num: 15, 
-          description: 'Specific articles' 
+          query: `${query} article news`, 
+          num: 10, 
+          description: 'News articles' 
         },
         { 
-          query: `"${query}" news article published 2025 -homepage -category`, 
-          num: 15, 
-          description: 'Recent news articles' 
-        },
-        { 
-          query: `${query} breakthrough discovery research published -index -archive`, 
-          num: 15, 
+          query: `${query} discovery breakthrough`, 
+          num: 10, 
           description: 'Research breakthroughs' 
         },
         { 
-          query: `${query} latest updates today yesterday filetype:html`, 
-          num: 15, 
+          query: `${query} latest news today`, 
+          num: 10, 
           description: 'Latest updates' 
+        },
+        { 
+          query: `${query} research study`, 
+          num: 10, 
+          description: 'Research studies' 
         }
       ];
 
@@ -161,8 +161,9 @@ export class TrendingAnalyzer {
             cx: process.env.GOOGLE_CUSTOM_SEARCH_ENGINE_ID,
             q: strategy.query,
             num: strategy.num,
-            dateRestrict: 'd2', // Last 48 hours
-            lr: 'lang_en'
+            dateRestrict: 'd1',
+            lr: 'lang_en',
+            safe: 'medium'
           });
 
           if (response.data.items && response.data.items.length > 0) {
@@ -235,7 +236,8 @@ export class TrendingAnalyzer {
                   date: now.toISOString().split('T')[0],
                   timestamp: now.toISOString(),
                   timeframe: 'last_48_hours',
-                  sourceUrl: itemUrl,
+                  sourceUrl: item.link,
+                  originalSearchUrl: itemUrl,
                   realTime: true,
                   dataFreshness: 'current',
                   fullContent: fullContent,
@@ -315,63 +317,55 @@ export class TrendingAnalyzer {
       const pathname = urlObj.pathname.toLowerCase();
       const hostname = urlObj.hostname.toLowerCase();
       
-      // Strict exclusion patterns - these are definitely NOT articles
-      const excludePatterns = [
-        /^\/$/, // Homepage
-        /^\/[^\/]*\/$/, // Single level category pages like /space/
-        /\/category\//, /\/tag\//, /\/topic\//, /\/section\//,
-        /\/archive\//, /\/search\//, /\/feed\//, /\/rss\//,
-        /\/page\/\d+/, /\/\d{4}\/$/, /\/\d{4}\/\d{2}\/$/, // Date-only URLs
-        /\/about/, /\/contact/, /\/privacy/, /\/terms/,
-        /\/newsletter/, /\/subscribe/, /\/login/, /\/register/
-      ];
-
-      if (excludePatterns.some(pattern => pattern.test(pathname))) {
-        console.log(`❌ URL excluded by pattern: ${pathname}`);
-        return false;
-      }
-
-      // Check for homepage indicators
-      if (pathname === '/' || pathname === '/index.html' || pathname === '/home') {
-        console.log(`❌ Homepage URL: ${pathname}`);
-        return false;
-      }
-
-      // Must have meaningful depth (at least 2 path segments)
-      const pathSegments = pathname.split('/').filter(p => p.length > 0);
-      if (pathSegments.length < 2) {
-        console.log(`❌ URL too shallow: ${pathSegments.length} segments`);
-        return false;
-      }
-
-      // Look for article indicators in URL
-      const articleIndicators = [
-        /\/article\//, /\/story\//, /\/news\//, /\/report\//,
-        /\/research\//, /\/study\//, /\/discovery\//, /\/breakthrough\//,
-        /\/releases\//, /\/updates\//, /\/content\//, /\/post\//,
-        /\d{4}\/\d{2}\/\d{2}\//, // Date-based article URLs like /2025/01/15/
-        /\/\d{4}-\d{2}-\d{2}-/, // Date prefix URLs
-        /[a-z]+-[a-z]+-[a-z]+/, // Multi-word article URLs with hyphens
-        /\/[a-z0-9-]{10,}/, // Long URL segments (likely article slugs)
-      ];
-
-      const hasArticleIndicator = articleIndicators.some(pattern => pattern.test(pathname));
+      console.log(`🔍 Checking URL: ${hostname}${pathname}`);
       
-      // Special handling for known news sites
-      const newsDomainsSpecialHandling = [
-        'space.com', 'nasa.gov', 'sciencenews.org', 'newscientist.com',
-        'astronomy.com', 'universetoday.com', 'phys.org', 'sciencedaily.com'
+      // Immediate exclusions - definitely not articles
+      const immediateExclusions = [
+        pathname === '/',
+        pathname === '/index.html',
+        pathname === '/home',
+        pathname.endsWith('/'),
+        pathname.includes('/category'),
+        pathname.includes('/tag'),
+        pathname.includes('/search'),
+        pathname.includes('/feed')
       ];
 
-      if (newsDomainsSpecialHandling.some(domain => hostname.includes(domain))) {
-        // For news sites, be more lenient but still check for meaningful content
-        const hasContent = pathSegments.some(segment => segment.length > 8); // At least one long segment
-        console.log(`🔍 News site URL check: ${hostname}, hasContent: ${hasContent}, hasIndicator: ${hasArticleIndicator}`);
-        return hasContent || hasArticleIndicator;
+      if (immediateExclusions.some(condition => condition)) {
+        console.log(`❌ Homepage or category page: ${pathname}`);
+        return false;
       }
 
-      console.log(`🔍 General URL check: hasIndicator: ${hasArticleIndicator}, segments: ${pathSegments.length}`);
-      return hasArticleIndicator;
+      // Count meaningful path segments
+      const pathSegments = pathname.split('/').filter(p => p.length > 2);
+      
+      // Must have at least one meaningful segment
+      if (pathSegments.length === 0) {
+        console.log(`❌ No meaningful path segments`);
+        return false;
+      }
+
+      // For known trusted domains, be more lenient
+      const trustedDomains = ['space.com', 'nasa.gov', 'sciencenews.org', 'astronomy.com', 'phys.org'];
+      const isTrustedDomain = trustedDomains.some(domain => hostname.includes(domain));
+      
+      if (isTrustedDomain) {
+        // Just ensure it's not obviously a homepage/category
+        const isLikelyArticle = pathSegments.length >= 1 && 
+                               pathSegments.some(segment => segment.length > 8);
+        console.log(`✅ Trusted domain (${hostname}): ${isLikelyArticle ? 'VALID' : 'INVALID'}`);
+        return isLikelyArticle;
+      }
+
+      // For other domains, look for article patterns
+      const hasArticlePattern = pathname.includes('article') || 
+                               pathname.includes('news') || 
+                               pathname.includes('story') ||
+                               /\d{4}\/\d{2}/.test(pathname) ||
+                               pathSegments.some(segment => segment.includes('-') && segment.length > 10);
+
+      console.log(`🔍 General domain: ${hasArticlePattern ? 'VALID' : 'INVALID'}`);
+      return hasArticlePattern;
     } catch (error) {
       console.error(`❌ URL validation error: ${error.message}`);
       return false;
