@@ -35,75 +35,70 @@ export class TrendingAnalyzer {
       console.log('✅ Google Custom Search API initialized');
     }
 
-    console.log('TrendingAnalyzer initialized with Google APIs (YouTube + Custom Search) - NO GEMINI');
+    console.log('🚀 Advanced TrendingAnalyzer initialized - Targeting reliable news sources for YouTube content');
   }
 
   async analyzeTrendingTopics(): Promise<void> {
     try {
       const currentDate = new Date();
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-
-      console.log(`🚀 Fetching REAL-TIME trending topics for ${currentDate.toDateString()}`);
-      console.log(`📅 Looking for trending data from last 24 hours (since ${yesterday.toDateString()})`);
+      console.log(`🔥 ADVANCED TRENDING ANALYSIS: Scanning reliable news sources for YouTube-ready content`);
 
       // Step 1: Clean up old topics
       await this.cleanupOldTopics();
 
-      // Step 2: Get REAL current trending topics using Google Custom Search only
+      // Step 2: Get trending content from RELIABLE NEWS SOURCES
       const [
-        spaceTrending,
-        geographyTrending,
-        scienceTrending,
-        natureTrending,
-        geographyFactsTrending
+        spaceNews,
+        geographyNews,
+        scienceBreakthroughs,
+        natureDiscoveries,
+        worldFacts
       ] = await Promise.all([
-        this.getGoogleSearchTrending('space news discovery today astronomy recent'),
-        this.getGoogleSearchTrending('geography world facts countries discoveries recent'),
-        this.getGoogleSearchTrending('science breakthrough discovery research recent'),
-        this.getGoogleSearchTrending('nature wildlife environment discoveries recent'),
-        this.getGoogleSearchTrending('world geography facts amazing discoveries recent')
+        this.getReliableNewsContent('space astronomy NASA discovery breakthrough mars moon', 'space_news'),
+        this.getReliableNewsContent('geography world countries facts discovery amazing', 'geography_facts'),
+        this.getReliableNewsContent('science breakthrough discovery research innovation', 'science_facts'),
+        this.getReliableNewsContent('nature wildlife environment discovery species', 'nature_facts'),
+        this.getReliableNewsContent('world facts amazing discovery geography countries', 'geography_news')
       ]);
 
       const allTopics = [
-        ...spaceTrending,
-        ...geographyTrending,
-        ...scienceTrending,
-        ...natureTrending,
-        ...geographyFactsTrending
+        ...spaceNews,
+        ...geographyNews,
+        ...scienceBreakthroughs,
+        ...natureDiscoveries,
+        ...worldFacts
       ];
 
-      // Step 3: Add current timestamps
-      const topicsWithCurrentTimestamps = this.addCurrentTimestamps(allTopics);
+      console.log(`📊 ANALYSIS RESULTS: Found ${allTopics.length} potential YouTube topics from reliable sources`);
 
-      // Step 4: Filter and process topics
-      const filteredTopics = await this.filterExistingContent(topicsWithCurrentTimestamps);
-      const finalTopics = this.processDuplicatesAndPrioritize(filteredTopics);
+      // Step 3: Enhanced filtering for YouTube content
+      const youtubeReadyTopics = await this.filterForYouTubeContent(allTopics);
+      const finalTopics = this.prioritizeByEngagement(youtubeReadyTopics);
 
-      // Step 5: Store new trending topics
+      // Step 4: Store trending topics
       for (const topic of finalTopics) {
         await storage.createTrendingTopic(topic);
       }
 
       await storage.createActivityLog({
         type: 'trending',
-        title: 'Real-Time Trending Analysis Completed',
-        description: `Fetched ${finalTopics.length} current trending topics from last 24 hours`,
+        title: 'Advanced Trending Analysis - YouTube Ready Content',
+        description: `Found ${finalTopics.length} high-quality topics from reliable news sources`,
         status: 'success',
         metadata: { 
           count: finalTopics.length,
           date: currentDate.toISOString().split('T')[0],
-          realTime: true,
-          dataFreshness: 'last_24_hours'
+          sources: 'reliable_news_sites',
+          contentQuality: 'youtube_optimized'
         }
       });
 
-      console.log(`✅ Real-time analysis complete. Found ${finalTopics.length} current trending topics.`);
+      console.log(`✅ ANALYSIS COMPLETE: ${finalTopics.length} YouTube-ready trending topics stored`);
     } catch (error) {
-      console.error('❌ Error fetching real-time trending topics:', error);
+      console.error('❌ Advanced trending analysis failed:', error);
       await storage.createActivityLog({
         type: 'error',
-        title: 'Real-Time Trending Analysis Failed',
+        title: 'Advanced Trending Analysis Failed',
         description: `Error: ${error.message}`,
         status: 'error',
         metadata: { error: error.message }
@@ -111,481 +106,365 @@ export class TrendingAnalyzer {
     }
   }
 
-  
-
-  private async getYouTubeTrendingTopics(region: string = 'IN', categoryId: string = '28'): Promise<InsertTrendingTopic[]> {
+  private async getReliableNewsContent(query: string, category: string): Promise<InsertTrendingTopic[]> {
     try {
-      // Try multiple approaches to get trending videos
-      const attempts = [
-        // First try with specific category
-        { regionCode: region, videoCategoryId: categoryId },
-        // Fallback to general trending without category
-        { regionCode: region },
-        // Fallback to US region if regional fails
-        { regionCode: 'US', videoCategoryId: categoryId },
-        // Final fallback - US general trending
-        { regionCode: 'US' }
-      ];
+      console.log(`🔍 SCANNING RELIABLE SOURCES for: ${query}`);
+      console.log(`📰 Target category: ${category}`);
 
-      for (const params of attempts) {
-        try {
-          const response = await this.youtube.videos.list({
-            part: ['snippet', 'statistics'],
-            chart: 'mostPopular',
-            maxResults: 10,
-            ...params
-          });
+      // Get today's date for recent content
+      const today = new Date();
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const twoDaysAgo = new Date(today);
+      twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
 
-          const currentDate = new Date();
-          const topics: InsertTrendingTopic[] = [];
+      // Enhanced search with reliable news sources prioritized
+      const enhancedQuery = `${query} site:space.com OR site:nasa.gov OR site:bbc.com/science OR site:nationalgeographic.com OR site:sciencenews.org OR site:newscientist.com OR site:smithsonianmag.com OR site:scientificamerican.com`;
 
-          if (response.data.items && response.data.items.length > 0) {
-            for (const video of response.data.items) {
-              const publishedAt = new Date(video.snippet.publishedAt);
-              const hoursAgo = (currentDate.getTime() - publishedAt.getTime()) / (1000 * 60 * 60);
-
-              // Include videos from last 48 hours (more lenient for trending)
-              if (hoursAgo <= 48) {
-                topics.push({
-                  title: video.snippet.title,
-                  description: video.snippet.description?.substring(0, 200) || 'Trending YouTube video',
-                  searchVolume: parseInt(video.statistics?.viewCount || '1000000'),
-                  priority: 'high',
-                  category: region === 'IN' ? 'india_news' : 'global_news',
-                  source: 'youtube_trending',
-                  trending_data: {
-                    date: currentDate.toISOString().split('T')[0],
-                    timestamp: currentDate.toISOString(),
-                    timeframe: 'last_48_hours',
-                    sourceUrl: `https://www.youtube.com/watch?v=${video.id}`,
-                    realTime: true,
-                    dataFreshness: 'current',
-                    videoId: video.id,
-                    channelTitle: video.snippet.channelTitle,
-                    region: params.regionCode,
-                    category: params.videoCategoryId || 'general'
-                  },
-                  status: 'pending'
-                });
-              }
-            }
-
-            console.log(`🎬 Found ${topics.length} trending YouTube videos for region ${params.regionCode} (category: ${params.videoCategoryId || 'general'})`);
-            return topics.slice(0, 5); // Return top 5 videos
-          }
-        } catch (attemptError) {
-          console.log(`⚠️ YouTube API attempt failed for region ${params.regionCode}, category ${params.videoCategoryId || 'general'}:`, attemptError.message);
-          continue; // Try next approach
-        }
-      }
-
-      console.log('❌ All YouTube API attempts failed, returning empty array');
-      return [];
-    } catch (error) {
-      console.error('❌ YouTube API error:', error.message);
-      return [];
-    }
-  }
-
-  private async getGoogleSearchTrending(query: string): Promise<InsertTrendingTopic[]> {
-    try {
-      const currentDate = new Date();
-      const yesterdayDate = new Date();
-      yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+      console.log(`🎯 ENHANCED SEARCH QUERY: ${enhancedQuery}`);
 
       const response = await this.customSearch.cse.list({
         cx: process.env.GOOGLE_CUSTOM_SEARCH_ENGINE_ID,
-        q: `${query} after:${yesterdayDate.toISOString().split('T')[0]}`,
-        num: 5,
-        sort: 'date'
+        q: enhancedQuery,
+        num: 8,
+        sort: 'date',
+        dateRestrict: 'd2' // Last 2 days for fresh content
       });
 
       const topics: InsertTrendingTopic[] = [];
 
-      if (response.data.items) {
-        for (const item of response.data.items) {
-          console.log(`🔍 Extracting full content from: ${item.link}`);
-          
-          // Extract full content from the article
-          const fullContent = await this.extractFullArticleContent(item.link, item.snippet);
-          
-          // Determine category based on query keywords
-          let category = 'global_news';
-          if (query.includes('space') || query.includes('astronomy')) {
-            category = 'space_news';
-          } else if (query.includes('geography') || query.includes('world')) {
-            category = 'geography_facts';
-          } else if (query.includes('science')) {
-            category = 'science_facts';
-          } else if (query.includes('nature') || query.includes('wildlife')) {
-            category = 'nature_facts';
-          }
+      if (response.data.items && response.data.items.length > 0) {
+        console.log(`📊 Found ${response.data.items.length} results from reliable sources`);
 
-          topics.push({
-            title: item.title,
-            description: fullContent.description,
-            searchVolume: Math.floor(Math.random() * 3000000) + 1000000, // Estimated
-            priority: 'high',
-            category: category,
-            source: 'google_search',
-            trending_data: {
-              date: currentDate.toISOString().split('T')[0],
-              timestamp: currentDate.toISOString(),
-              timeframe: 'last_24_hours',
-              sourceUrl: item.link,
-              realTime: true,
-              dataFreshness: 'current',
-              fullContent: fullContent.fullText,
-              extractedAt: currentDate.toISOString()
-            },
-            status: 'pending'
-          });
+        for (const item of response.data.items) {
+          console.log(`\n🔍 PROCESSING: ${item.title}`);
+          console.log(`🌐 SOURCE: ${item.link}`);
+          console.log(`📝 SNIPPET: ${item.snippet?.substring(0, 100)}...`);
+
+          // Enhanced content extraction with better error handling
+          const contentData = await this.extractHighQualityContent(item.link, item.snippet || '', item.title);
+
+          if (contentData.isGoodContent) {
+            console.log(`✅ HIGH-QUALITY CONTENT EXTRACTED`);
+            console.log(`  📏 Length: ${contentData.fullText.length} characters`);
+            console.log(`  🎯 YouTube Ready: ${contentData.youtubeReady ? 'YES' : 'NO'}`);
+            console.log(`  ⭐ Engagement Score: ${contentData.engagementScore}/10`);
+
+            topics.push({
+              title: this.optimizeForYouTube(item.title, category),
+              description: contentData.description,
+              searchVolume: this.estimateSearchVolume(contentData.engagementScore, category),
+              priority: contentData.engagementScore >= 7 ? 'high' : 'medium',
+              category: category,
+              source: 'reliable_news',
+              trending_data: {
+                date: today.toISOString().split('T')[0],
+                timestamp: today.toISOString(),
+                timeframe: 'last_48_hours',
+                sourceUrl: item.link,
+                realTime: true,
+                dataFreshness: 'current',
+                fullContent: contentData.fullText,
+                youtubeOptimized: true,
+                engagementScore: contentData.engagementScore,
+                contentQuality: contentData.isGoodContent ? 'high' : 'medium',
+                extractedAt: today.toISOString(),
+                sourceDomain: this.extractDomain(item.link),
+                wordCount: contentData.wordCount
+              },
+              status: 'pending'
+            });
+          } else {
+            console.log(`❌ POOR QUALITY CONTENT - Skipping`);
+          }
         }
+      } else {
+        console.log(`⚠️ No results found for: ${query}`);
       }
 
-      console.log(`🔍 Found ${topics.length} trending search results with full content for: ${query}`);
+      console.log(`📈 CATEGORY RESULTS: ${topics.length} high-quality topics for ${category}`);
       return topics;
+
     } catch (error) {
-      console.error('❌ Google Search API error:', error);
+      console.error(`❌ Error getting reliable news for ${category}:`, error.message);
       return [];
     }
   }
 
-  private async extractFullArticleContent(url: string, fallbackSnippet: string): Promise<{ description: string; fullText: string }> {
+  private async extractHighQualityContent(url: string, fallbackSnippet: string, title: string): Promise<{
+    description: string;
+    fullText: string;
+    isGoodContent: boolean;
+    youtubeReady: boolean;
+    engagementScore: number;
+    wordCount: number;
+  }> {
     try {
-      console.log(`🔍 SCRAPER START: Fetching content from ${url}`);
-      console.log(`📝 Fallback snippet length: ${fallbackSnippet.length} chars`);
-      
-      // Set timeout and headers to mimic browser request
+      console.log(`🔧 ADVANCED CONTENT EXTRACTION from: ${url}`);
+
       const response = await fetch(url, {
-        timeout: 15000,
+        timeout: 20000,
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
           'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-          'Accept-Language': 'en-US,en;q=0.5',
-          'Accept-Encoding': 'gzip, deflate',
-          'DNT': '1',
-          'Connection': 'keep-alive',
-          'Cache-Control': 'no-cache'
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
         }
       });
 
-      console.log(`🌐 HTTP Response: ${response.status} ${response.statusText}`);
-      console.log(`📦 Content-Type: ${response.headers.get('content-type')}`);
-
       if (!response.ok) {
-        console.warn(`⚠️ HTTP Error ${response.status} for ${url}`);
-        return { description: fallbackSnippet, fullText: fallbackSnippet };
+        console.warn(`⚠️ HTTP ${response.status} for ${url}`);
+        return this.createFallbackContent(fallbackSnippet, title);
       }
 
       const html = await response.text();
-      console.log(`📄 HTML received: ${html.length} characters`);
-      
       const $ = cheerio.load(html);
-      console.log(`🔧 Cheerio loaded, DOM elements found: ${$('*').length}`);
 
-      // Remove unwanted elements
-      const unwantedSelectors = 'script, style, nav, header, footer, aside, .advertisement, .ads, .social-share, .comments, .related-articles, .sidebar';
-      $(unwantedSelectors).remove();
-      console.log(`🧹 Removed unwanted elements with selectors: ${unwantedSelectors}`);
+      // Remove unwanted elements more thoroughly
+      const unwantedSelectors = [
+        'script', 'style', 'nav', 'header', 'footer', 'aside',
+        '.advertisement', '.ads', '.ad', '.social-share', '.share',
+        '.comments', '.comment', '.related-articles', '.related',
+        '.sidebar', '.menu', '.navigation', '.breadcrumb',
+        '.cookie', '.newsletter', '.popup', '.modal',
+        '[data-ad]', '[class*="ad-"]', '[id*="ad-"]',
+        '.social-media', '.social-links', '.author-bio'
+      ];
 
-      // Enhanced content selectors with more specific targeting
-      const contentSelectors = [
-        'article',
-        '[role="main"]',
-        '.article-content',
-        '.post-content', 
-        '.entry-content',
-        '.content',
-        '.story-body',
-        '.article-body',
-        'main',
-        '.main-content',
-        '#main-content',
-        '.article-text',
-        '.story-content',
-        '.post-body',
-        '.entry-text',
-        '.article-wrapper',
-        '.content-body',
-        '.text-content',
-        '.story-text',
-        '.article-inner',
-        '[data-testid="article-body"]',
-        '[data-module="ArticleBody"]',
-        '.story-content__inner',
-        '.article-content__body',
-        '.entry__content',
-        '.field-item',
-        '.node-content',
-        '.view-content',
-        '.mw-parser-output', // Wikipedia specific
-        '#bodyContent', // Wikipedia specific
-        '.post__content',
-        '.article__content',
-        '.content-wrapper'
+      unwantedSelectors.forEach(selector => $(selector).remove());
+
+      // Advanced content selectors for reliable news sites
+      const reliableContentSelectors = [
+        // NASA specific
+        '#maincontent', '.hds-content-item',
+        // BBC specific
+        '[data-component="text-block"]', '.story-body__inner',
+        // National Geographic
+        '.article__content', '.parsys_column',
+        // Science News
+        '.post-content', '.entry-content',
+        // New Scientist
+        '.article-content', '.content-body',
+        // Scientific American
+        '.article-content', '.article-body',
+        // Smithsonian
+        '.article-body', '.field-item',
+        // General reliable selectors
+        'article', '[role="main"]', '.main-content',
+        '.article-content', '.story-content', '.post-body',
+        '.content', '.text-content', 'main'
       ];
 
       let extractedText = '';
-      let foundContent = false;
       let usedSelector = '';
 
-      console.log(`🎯 Trying ${contentSelectors.length} content selectors...`);
-
-      for (const selector of contentSelectors) {
+      // Try each selector and get the best content
+      for (const selector of reliableContentSelectors) {
         const elements = $(selector);
-        console.log(`  📍 Selector "${selector}": found ${elements.length} elements`);
-        
         if (elements.length > 0) {
-          // Extract text from paragraphs within the content area
-          const paragraphs = elements.find('p').map((_, el) => $(el).text().trim()).get();
-          console.log(`    📝 Found ${paragraphs.length} paragraphs in ${selector}`);
-          
-          if (paragraphs.length > 0) {
+          const paragraphs = elements.find('p, div').map((_, el) => {
+            const text = $(el).text().trim();
+            return text.length > 30 ? text : null; // Filter out short/empty paragraphs
+          }).get().filter(Boolean);
+
+          if (paragraphs.length >= 3) { // Need at least 3 substantial paragraphs
             const combinedText = paragraphs.join(' ').trim();
-            console.log(`    📏 Combined text length: ${combinedText.length} chars`);
-            
-            if (combinedText.length > 200) {
+            if (combinedText.length > 500) { // Substantial content
               extractedText = combinedText;
-              foundContent = true;
               usedSelector = selector;
-              console.log(`✅ SUCCESS with selector: ${selector} (${combinedText.length} chars)`);
               break;
             }
           }
         }
       }
 
-      // Fallback 1: extract all paragraphs if specific selectors didn't work
-      if (!foundContent) {
-        console.log(`🔄 FALLBACK 1: Extracting all paragraphs...`);
+      // If no good content found, try alternative extraction
+      if (extractedText.length < 500) {
         const allParagraphs = $('p').map((_, el) => $(el).text().trim()).get();
-        const filteredParagraphs = allParagraphs.filter(p => p.length > 20);
-        console.log(`  📝 Total paragraphs: ${allParagraphs.length}, filtered: ${filteredParagraphs.length}`);
-        
-        extractedText = filteredParagraphs.join(' ').trim();
-        console.log(`  📏 Fallback 1 text length: ${extractedText.length} chars`);
-        
-        if (extractedText.length > 200) {
-          foundContent = true;
-          usedSelector = 'all-paragraphs';
-          console.log(`✅ SUCCESS with fallback 1: all paragraphs (${extractedText.length} chars)`);
+        const goodParagraphs = allParagraphs.filter(p => p.length > 50 && p.length < 1000);
+        if (goodParagraphs.length >= 2) {
+          extractedText = goodParagraphs.slice(0, 8).join(' ').trim();
+          usedSelector = 'filtered-paragraphs';
         }
       }
 
-      // Fallback 2: try div elements with substantial text content
-      if (!foundContent && extractedText.length < 200) {
-        console.log(`🔄 FALLBACK 2: Extracting from div elements...`);
-        const divElements = $('div').filter((_, el) => {
-          const text = $(el).text().trim();
-          return text.length > 100 && text.length < 10000; // Reasonable content length
-        }).map((_, el) => $(el).text().trim()).get();
-        
-        console.log(`  📦 Found ${divElements.length} suitable div elements`);
-        
-        if (divElements.length > 0) {
-          extractedText = divElements.slice(0, 5).join(' ').trim(); // Take first 5 divs
-          usedSelector = 'filtered-divs';
-          console.log(`✅ SUCCESS with fallback 2: filtered divs (${extractedText.length} chars)`);
-        }
-      }
+      // Clean and analyze the content
+      extractedText = this.cleanExtractedText(extractedText);
+      const analysis = this.analyzeContentQuality(extractedText, title, url);
 
-      // Fallback 3: extract from body but filter out navigation, ads, etc.
-      if (extractedText.length < 100) {
-        console.log(`🔄 FALLBACK 3: Extracting from body...`);
-        $('body').find('nav, header, footer, aside, .navigation, .menu, .sidebar, .ad, .advertisement, .social, .share, .related, .comments').remove();
-        const bodyText = $('body').text().trim();
-        console.log(`  📏 Body text length: ${bodyText.length} chars`);
-        
-        if (bodyText.length > 200) {
-          extractedText = bodyText;
-          usedSelector = 'body-text';
-          console.log(`✅ SUCCESS with fallback 3: body text (${bodyText.length} chars)`);
-        }
-      }
+      console.log(`📊 CONTENT ANALYSIS RESULTS:`);
+      console.log(`  📏 Length: ${extractedText.length} chars`);
+      console.log(`  📝 Words: ${analysis.wordCount}`);
+      console.log(`  ⭐ Engagement Score: ${analysis.engagementScore}/10`);
+      console.log(`  🎯 YouTube Ready: ${analysis.youtubeReady}`);
+      console.log(`  ✅ Good Content: ${analysis.isGoodContent}`);
+      console.log(`  🔧 Extracted via: ${usedSelector}`);
 
-      // Clean up the extracted text
-      const originalLength = extractedText.length;
-      extractedText = extractedText
-        .replace(/\s+/g, ' ')
-        .replace(/\n+/g, ' ')
-        .replace(/\t+/g, ' ')
-        .trim();
-      
-      console.log(`🧹 Text cleaned: ${originalLength} → ${extractedText.length} chars`);
-
-      // If we have substantial content, use it; otherwise fall back to snippet
-      if (extractedText.length > 100) {
-        console.log(`🎉 SCRAPER SUCCESS!`);
-        console.log(`  📊 Final stats:`);
-        console.log(`    - URL: ${url}`);
-        console.log(`    - Method: ${usedSelector}`);
-        console.log(`    - Extracted: ${extractedText.length} characters`);
-        console.log(`    - Preview: "${extractedText.substring(0, 100)}..."`);
-        
-        // Create a good description (first 500 chars) and keep full text
-        const description = extractedText.length > 500 
-          ? extractedText.substring(0, 500) + '...'
-          : extractedText;
-
+      if (analysis.isGoodContent) {
         return {
-          description: description,
-          fullText: extractedText
+          description: extractedText.substring(0, 800) + (extractedText.length > 800 ? '...' : ''),
+          fullText: extractedText,
+          isGoodContent: true,
+          youtubeReady: analysis.youtubeReady,
+          engagementScore: analysis.engagementScore,
+          wordCount: analysis.wordCount
         };
-      } else {
-        console.warn(`❌ SCRAPER FAILED: Insufficient content extracted from ${url}`);
-        console.warn(`  📊 Final length: ${extractedText.length} chars (needed >100)`);
-        console.warn(`  🔄 Using fallback snippet: ${fallbackSnippet.length} chars`);
-        return { description: fallbackSnippet, fullText: fallbackSnippet };
       }
+
+      return this.createFallbackContent(fallbackSnippet, title);
 
     } catch (error) {
-      console.error(`💥 SCRAPER ERROR for ${url}:`);
-      console.error(`  ❌ Error type: ${error.name}`);
-      console.error(`  ❌ Error message: ${error.message}`);
-      console.error(`  🔄 Using fallback snippet: ${fallbackSnippet.length} chars`);
-      return { description: fallbackSnippet, fullText: fallbackSnippet };
+      console.error(`💥 EXTRACTION ERROR for ${url}: ${error.message}`);
+      return this.createFallbackContent(fallbackSnippet, title);
     }
   }
 
-  private async getRealTimeGeographyTrending(): Promise<InsertTrendingTopic[]> {
-    const topics: InsertTrendingTopic[] = [];
+  private analyzeContentQuality(text: string, title: string, url: string): {
+    isGoodContent: boolean;
+    youtubeReady: boolean;
+    engagementScore: number;
+    wordCount: number;
+  } {
+    const wordCount = text.split(/\s+/).filter(w => w.length > 2).length;
+    let score = 0;
 
-    // Get trending from multiple regions for geography content
-    const regions = [
-      { code: 'US', name: 'United States' },
-      { code: 'GB', name: 'United Kingdom' },
-      { code: 'CA', name: 'Canada' },
-      { code: 'AU', name: 'Australia' },
-      { code: 'IN', name: 'India' }
+    // Length scoring
+    if (wordCount >= 200) score += 2;
+    if (wordCount >= 400) score += 1;
+    if (wordCount >= 600) score += 1;
+
+    // Content quality indicators
+    const qualityKeywords = [
+      'discovery', 'breakthrough', 'research', 'study', 'scientists', 'researchers',
+      'new', 'first time', 'amazing', 'incredible', 'surprising', 'reveals',
+      'found', 'discovered', 'according to', 'experts', 'findings'
     ];
 
-    // Try to get at least some data from any region
-    let successfulRegions = 0;
-    const maxRegions = 2; // Limit to prevent too many API calls
+    const foundKeywords = qualityKeywords.filter(keyword => 
+      text.toLowerCase().includes(keyword.toLowerCase())
+    ).length;
 
-    for (const region of regions) {
-      if (successfulRegions >= maxRegions) break;
+    score += Math.min(foundKeywords, 3); // Max 3 points for keywords
 
-      try {
-        const regionTopics = await this.getYouTubeTrendingTopics(region.code, '27'); // Education category
-        if (regionTopics.length > 0) {
-          topics.push(...regionTopics.slice(0, 2).map(topic => ({
-            ...topic,
-            category: 'geography',
-            trending_data: {
-              ...topic.trending_data,
-              region: region.name
-            }
-          })));
-          successfulRegions++;
-          console.log(`✅ Successfully got ${regionTopics.length} topics from ${region.name}`);
-        }
-      } catch (error) {
-        console.log(`⚠️ Failed to get trending topics for region ${region.name}:`, error.message);
-        continue;
-      }
+    // Engagement factors
+    const engagementWords = [
+      'amazing', 'incredible', 'shocking', 'surprising', 'unbelievable',
+      'mind-blowing', 'fascinating', 'extraordinary', 'remarkable'
+    ];
+
+    const engagementCount = engagementWords.filter(word => 
+      text.toLowerCase().includes(word) || title.toLowerCase().includes(word)
+    ).length;
+
+    score += Math.min(engagementCount, 2); // Max 2 points for engagement
+
+    // Reliable source bonus
+    const reliableDomains = ['nasa.gov', 'bbc.com', 'nationalgeographic.com', 'sciencenews.org'];
+    if (reliableDomains.some(domain => url.includes(domain))) {
+      score += 2;
     }
 
-    // If no YouTube data available, fall back to Google Search
-    if (topics.length === 0) {
-      console.log('🔄 No YouTube data available, falling back to Google Search geography trending');
-      return await this.getGoogleSearchTrending('geography world facts countries recent');
-    }
+    const isGoodContent = wordCount >= 200 && score >= 5;
+    const youtubeReady = wordCount >= 300 && score >= 6;
 
-    return topics.slice(0, 4); // Return top 4 geography topics
+    return {
+      isGoodContent,
+      youtubeReady,
+      engagementScore: Math.min(score, 10),
+      wordCount
+    };
   }
 
-  
+  private createFallbackContent(snippet: string, title: string): {
+    description: string;
+    fullText: string;
+    isGoodContent: boolean;
+    youtubeReady: boolean;
+    engagementScore: number;
+    wordCount: number;
+  } {
+    const fallbackText = snippet || `${title} - This is an interesting topic that could make great YouTube content.`;
+    return {
+      description: fallbackText,
+      fullText: fallbackText,
+      isGoodContent: false,
+      youtubeReady: false,
+      engagementScore: 3,
+      wordCount: fallbackText.split(' ').length
+    };
+  }
 
-  private generateCurrentFallback(category: string, count: number): InsertTrendingTopic[] {
-    const currentDate = new Date();
-    const todayString = currentDate.toISOString().split('T')[0];
+  private cleanExtractedText(text: string): string {
+    return text
+      .replace(/\s+/g, ' ')
+      .replace(/\n+/g, ' ')
+      .replace(/\t+/g, ' ')
+      .replace(/[^\w\s.,!?;:'"()-]/g, '')
+      .trim();
+  }
 
-    const fallbacks: Record<string, InsertTrendingTopic[]> = {
-      space_news: [{
-        title: `Major Space Discovery Announced Today - ${todayString}`,
-        description: `Significant astronomical discovery made today affecting our understanding of the universe`,
-        searchVolume: 2800000,
-        priority: "high",
-        category: "space_news",
-        source: "current_fallback",
-        trending_data: { 
-          date: todayString, 
-          timestamp: currentDate.toISOString(),
-          timeframe: 'current_day',
-          realTime: true,
-          sourceUrl: "https://space-news.com"
-        },
-        status: "pending"
-      }],
-      geography_news: [{
-        title: `Fascinating Geography Discovery Today - ${todayString}`,
-        description: `Amazing geographical fact or discovery revealed today`,
-        searchVolume: 1500000,
-        priority: "medium",
-        category: "geography_news",
-        source: "current_fallback",
-        trending_data: { 
-          date: todayString, 
-          timestamp: currentDate.toISOString(),
-          timeframe: 'current_day',
-          realTime: true,
-          sourceUrl: "https://geography-news.com"
-        },
-        status: "pending"
-      }],
-      science_facts: [{
-        title: `Breakthrough Science Discovery Today - ${todayString}`,
-        description: `Significant scientific breakthrough announced today affecting our understanding`,
-        searchVolume: 1800000,
-        priority: "medium",
-        category: "science_facts",
-        source: "current_fallback",
-        trending_data: { 
-          date: todayString, 
-          timestamp: currentDate.toISOString(),
-          timeframe: 'current_day',
-          realTime: true,
-          sourceUrl: "https://science-news.com"
-        },
-        status: "pending"
-      }],
-      nature_facts: [{
-        title: `Amazing Nature Discovery Today - ${todayString}`,
-        description: `Fascinating wildlife or environmental discovery made today`,
-        searchVolume: 1200000,
-        priority: "medium",
-        category: "nature_facts",
-        source: "current_fallback",
-        trending_data: { 
-          date: todayString, 
-          timestamp: currentDate.toISOString(),
-          timeframe: 'current_day',
-          realTime: true,
-          sourceUrl: "https://nature-news.com"
-        },
-        status: "pending"
-      }],
-      geography_facts: [{
-        title: `Incredible Geography Fact Revealed Today - ${todayString}`,
-        description: `Mind-blowing geographical fact or world discovery shared today`,
-        searchVolume: 900000,
-        priority: "medium",
-        category: "geography_facts",
-        source: "current_fallback",
-        trending_data: { 
-          date: todayString, 
-          timestamp: currentDate.toISOString(),
-          timeframe: 'current_day',
-          realTime: true,
-          sourceUrl: "https://world-facts.com"
-        },
-        status: "pending"
-      }]
+  private optimizeForYouTube(title: string, category: string): string {
+    // Add engaging prefixes based on category
+    const prefixes = {
+      space_news: ['🚀 BREAKING:', '🌟 AMAZING SPACE:', '🛸 INCREDIBLE:'],
+      science_facts: ['🧬 SCIENCE BREAKTHROUGH:', '⚗️ AMAZING DISCOVERY:', '🔬 INCREDIBLE SCIENCE:'],
+      geography_facts: ['🌍 AMAZING WORLD FACT:', '🗺️ INCREDIBLE GEOGRAPHY:', '🌎 MIND-BLOWING:'],
+      nature_facts: ['🌿 AMAZING NATURE:', '🦋 INCREDIBLE WILDLIFE:', '🌺 NATURE\'S SECRET:'],
+      geography_news: ['🌍 WORLD NEWS:', '🗺️ GEOGRAPHY UPDATE:', '🌎 GLOBAL DISCOVERY:']
     };
 
-    return (fallbacks[category] || []).slice(0, count);
+    const categoryPrefixes = prefixes[category] || ['🔥 TRENDING:'];
+    const randomPrefix = categoryPrefixes[Math.floor(Math.random() * categoryPrefixes.length)];
+
+    return `${randomPrefix} ${title}`.substring(0, 100);
+  }
+
+  private estimateSearchVolume(engagementScore: number, category: string): number {
+    const baseVolumes = {
+      space_news: 2000000,
+      science_facts: 1500000,
+      geography_facts: 1000000,
+      nature_facts: 1200000,
+      geography_news: 800000
+    };
+
+    const base = baseVolumes[category] || 1000000;
+    const multiplier = 0.5 + (engagementScore / 20); // 0.5 to 1.0 multiplier
+
+    return Math.floor(base * multiplier);
+  }
+
+  private extractDomain(url: string): string {
+    try {
+      return new URL(url).hostname;
+    } catch {
+      return 'unknown';
+    }
+  }
+
+  private async filterForYouTubeContent(topics: InsertTrendingTopic[]): Promise<InsertTrendingTopic[]> {
+    // Filter for YouTube-ready content
+    const filtered = topics.filter(topic => {
+      const trendingData = topic.trending_data as any;
+      return trendingData.youtubeOptimized && 
+             trendingData.engagementScore >= 5 &&
+             trendingData.wordCount >= 200;
+    });
+
+    console.log(`🎬 YOUTUBE FILTER: ${filtered.length}/${topics.length} topics are YouTube-ready`);
+    return filtered;
+  }
+
+  private prioritizeByEngagement(topics: InsertTrendingTopic[]): InsertTrendingTopic[] {
+    return topics
+      .sort((a, b) => {
+        const aData = a.trending_data as any;
+        const bData = b.trending_data as any;
+        return (bData.engagementScore || 0) - (aData.engagementScore || 0);
+      })
+      .slice(0, 15); // Top 15 most engaging topics
   }
 
   private async cleanupOldTopics(): Promise<void> {
@@ -594,70 +473,10 @@ export class TrendingAnalyzer {
       twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
 
       await storage.deleteOldTrendingTopics(twentyFourHoursAgo);
-      console.log('🧹 Cleaned up trending topics older than 24 hours');
+      console.log('🧹 Cleaned up old trending topics');
     } catch (error) {
       console.error('Error cleaning up old topics:', error);
     }
-  }
-
-  private async filterExistingContent(topics: InsertTrendingTopic[]): Promise<InsertTrendingTopic[]> {
-    try {
-      const existingJobs = await storage.getContentJobs(100);
-      const existingTitles = existingJobs.map(job => job.title.toLowerCase());
-
-      const uniqueTopics = topics.filter(topic => {
-        const topicWords = topic.title.toLowerCase().split(' ');
-        const isUnique = !existingTitles.some(existingTitle => {
-          const commonWords = topicWords.filter(word => 
-            existingTitle.includes(word) && word.length > 3
-          );
-          return commonWords.length >= 2;
-        });
-        return isUnique;
-      });
-
-      console.log(`🔍 Filtered ${topics.length - uniqueTopics.length} duplicate topics`);
-      return uniqueTopics;
-    } catch (error) {
-      console.error('Error filtering existing content:', error);
-      return topics;
-    }
-  }
-
-  private addCurrentTimestamps(topics: InsertTrendingTopic[]): InsertTrendingTopic[] {
-    const now = new Date();
-    return topics.map((topic, index) => {
-      // Current topics should have very recent timestamps (last 6 hours)
-      const minutesAgo = Math.floor(Math.random() * 360) + 10; // 10 minutes to 6 hours ago
-      const topicTime = new Date(now.getTime() - (minutesAgo * 60 * 1000));
-
-      return {
-        ...topic,
-        trending_data: {
-          ...topic.trending_data,
-          timestamp: topicTime.toISOString(),
-          minutesAgo: minutesAgo,
-          currentDay: true
-        }
-      };
-    });
-  }
-
-  private processDuplicatesAndPrioritize(topics: InsertTrendingTopic[]): InsertTrendingTopic[] {
-    const uniqueTopics = new Map<string, InsertTrendingTopic>();
-
-    topics.forEach(topic => {
-      const key = topic.title.toLowerCase().replace(/[^\w\s]/g, '').trim();
-      const existing = uniqueTopics.get(key);
-
-      if (!existing || topic.searchVolume > existing.searchVolume) {
-        uniqueTopics.set(key, topic);
-      }
-    });
-
-    return Array.from(uniqueTopics.values())
-      .sort((a, b) => b.searchVolume - a.searchVolume)
-      .slice(0, 12); // Limit to 12 most relevant topics
   }
 }
 
