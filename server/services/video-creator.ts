@@ -256,7 +256,7 @@ export class VideoCreator {
       `hqdn3d=2:1:2:1`,
       
       // Subtle vignette for focus
-      `vignette=PI/6',
+      `vignette=PI/6`,
       
       // Final color enhancement
       `eq=contrast=1.15:brightness=0.02:saturation=1.25:gamma=0.95`
