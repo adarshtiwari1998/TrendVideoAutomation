@@ -100,27 +100,48 @@ export class VideoCreator {
 
   private async generateAudio(script: string, jobId: number): Promise<string> {
     try {
-      // Use enhanced TTS with natural Indian accent
+      // Use natural Indian accent with conversational tone
       const audioPath = await textToSpeechService.generateSpeech({
-        text: script,
+        text: this.enhanceScriptForNaturalSpeech(script),
         outputPath: path.join(this.outputDir, `audio_${jobId}.mp3`),
-        voice: 'en-IN-Wavenet-A', // Indian English female voice
-        speed: 0.95,
-        pitch: 0.0
+        voice: 'en-IN-Neural2-D', // Premium Indian English male voice
+        speed: 0.92, // Slightly slower for better comprehension
+        pitch: -1.0 // Slightly lower pitch for authority
       });
 
-      // Enhance audio quality with noise reduction and normalization
+      // Professional audio enhancement - broadcast quality
       const enhancedAudioPath = path.join(this.outputDir, `audio_enhanced_${jobId}.mp3`);
 
       await execAsync(`ffmpeg -i "${audioPath}" ` +
-        `-af "highpass=f=200,lowpass=f=3000,dynaudnorm=f=500:g=31,volume=1.2" ` +
-        `-b:a 128k "${enhancedAudioPath}" -y`);
+        `-af "highpass=f=85,lowpass=f=8000,compand=.3|.3:1|1:-90/-60|-60/-40|-40/-30|-20/-20:6:0:-90:0.2,` +
+        `equalizer=f=200:width_type=h:width=100:g=2,` +
+        `equalizer=f=1000:width_type=h:width=200:g=1,` +
+        `dynaudnorm=f=75:g=25:p=0.95,volume=1.3" ` +
+        `-b:a 192k "${enhancedAudioPath}" -y`);
 
       return enhancedAudioPath;
     } catch (error) {
       console.error('Audio generation failed:', error);
       throw error;
     }
+  }
+
+  private enhanceScriptForNaturalSpeech(script: string): string {
+    // Add natural pauses and emphasis for Indian speaking style
+    let enhanced = script
+      .replace(/\. /g, '... ') // Add pauses after sentences
+      .replace(/\, /g, ', ') // Natural comma pauses
+      .replace(/\! /g, '! ') // Excitement emphasis
+      .replace(/\? /g, '? ') // Question emphasis
+      .replace(/India/g, 'भारत') // Use Hindi name occasionally
+      .replace(/important/g, 'very important') // Add emphasis
+      .replace(/amazing/g, 'truly amazing'); // Natural expressions
+
+    // Add natural Indian expressions
+    enhanced = `Namaste friends! ${enhanced}`;
+    enhanced += ` Thank you for watching, and don't forget to like and subscribe for more updates!`;
+
+    return enhanced;
   }
 
   private async createVisualContent(job: any, audioPath: string): Promise<string> {
@@ -130,22 +151,147 @@ export class VideoCreator {
       const duration = parseFloat(stdout.trim());
 
       const isShort = job.videoType === 'short';
-      const dimensions = isShort ? '1080:1920' : '1920:1080'; // Portrait for shorts, landscape for long
+      const dimensions = isShort ? '1080:1920' : '1920:1080';
 
-      // Create dynamic background with animated gradients
-      const backgroundPath = await this.createDynamicBackground(job.id, duration, isShort);
+      // Create professional broadcast-style background
+      const backgroundPath = await this.createBroadcastBackground(job, duration, isShort);
 
-      // Add animated text overlays with script content
-      const textOverlayPath = await this.addTextOverlays(backgroundPath, job.script, duration, isShort);
+      // Add professional lower thirds and text animations
+      const textOverlayPath = await this.addProfessionalTextOverlays(backgroundPath, job, duration, isShort);
 
-      // Add engaging visual elements
-      const visualEffectsPath = await this.addVisualEffects(textOverlayPath, duration, isShort);
+      // Add broadcast-quality visual effects and transitions
+      const visualEffectsPath = await this.addBroadcastEffects(textOverlayPath, duration, isShort);
 
-      return visualEffectsPath;
+      // Add professional graphics and branding
+      const brandedPath = await this.addProfessionalBranding(visualEffectsPath, job, duration, isShort);
+
+      return brandedPath;
     } catch (error) {
       console.error('Visual content creation failed:', error);
       throw error;
     }
+  }
+
+  private async createBroadcastBackground(job: any, duration: number, isShort: boolean): Promise<string> {
+    const outputPath = path.join(this.outputDir, `broadcast_bg_${job.id}.mp4`);
+    const dimensions = isShort ? '1080x1920' : '1920x1080';
+    const category = job.metadata?.category || 'general';
+
+    // Professional news-style animated background
+    const command = `ffmpeg -f lavfi ` +
+      `-i "color=c=#0a1428:size=${dimensions}:duration=${duration}:rate=30" ` +
+      `-f lavfi -i "color=c=#1e3a8a:size=${dimensions}:duration=${duration}:rate=30" ` +
+      `-filter_complex "` +
+      `[0][1]blend=all_mode=multiply:all_opacity=0.3,` +
+      `geq=r='128+64*sin(2*PI*t/15+x/100)':g='64+32*sin(2*PI*t/12+y/80)':b='192+64*sin(2*PI*t/10)',` +
+      `noise=alls=15:allf=t+u:c0f=0.2,` +
+      `drawgrid=width=iw/20:height=ih/20:thickness=1:color=white@0.05,` +
+      `fade=in:0:30:alpha=1,fade=out:${Math.max(0, duration*30-30)}:30:alpha=1` +
+      `" -c:v libx264 -preset medium -crf 18 "${outputPath}" -y`;
+
+    await execAsync(command);
+    return outputPath;
+  }
+
+  private async addProfessionalTextOverlays(backgroundPath: string, job: any, duration: number, isShort: boolean): Promise<string> {
+    const outputPath = path.join(this.outputDir, `professional_text_${job.id}.mp4`);
+    
+    // Split script into meaningful segments
+    const sentences = job.script.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    const segmentDuration = duration / sentences.length;
+
+    let textFilters = '';
+    const fontSize = isShort ? 52 : 42;
+    const titleFontSize = isShort ? 72 : 56;
+
+    // Add main title at the beginning
+    textFilters += `drawtext=text='${job.title.replace(/'/g, "\\'")}':` +
+      `fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:` +
+      `fontsize=${titleFontSize}:fontcolor=#FFD700:` +
+      `x=(w-text_w)/2:y=${isShort ? 'h*0.15' : 'h*0.12'}:` +
+      `bordercolor=#000000:borderw=4:shadowcolor=#000000:shadowx=3:shadowy=3:` +
+      `enable='between(t,1,4)',`;
+
+    // Add animated text segments
+    sentences.forEach((sentence, index) => {
+      const startTime = 4 + (index * segmentDuration); // Start after title
+      const endTime = 4 + ((index + 1) * segmentDuration);
+      const cleanText = sentence.trim().replace(/'/g, "\\'").replace(/"/g, '\\"');
+
+      textFilters += `drawtext=text='${cleanText}':` +
+        `fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:` +
+        `fontsize=${fontSize}:fontcolor=#FFFFFF:` +
+        `x=(w-text_w)/2:y=${isShort ? 'h*0.75' : 'h*0.82'}:` +
+        `bordercolor=#000000:borderw=3:shadowcolor=#000000:shadowx=2:shadowy=2:` +
+        `enable='between(t,${startTime},${endTime})':` +
+        `alpha='if(lt(t,${startTime+0.5}),(t-${startTime})/0.5,if(gt(t,${endTime-0.5}),(${endTime}-t)/0.5,1))'`;
+
+      if (index < sentences.length - 1) textFilters += ',';
+    });
+
+    const command = `ffmpeg -i "${backgroundPath}" ` +
+      `-vf "${textFilters}" ` +
+      `-c:v libx264 -preset medium -crf 18 "${outputPath}" -y`;
+
+    await execAsync(command);
+    return outputPath;
+  }
+
+  private async addBroadcastEffects(inputPath: string, duration: number, isShort: boolean): Promise<string> {
+    const outputPath = path.join(this.outputDir, `broadcast_effects_${Date.now()}.mp4`);
+
+    // Professional broadcast effects
+    const effectsFilter = [
+      // Subtle zoom and pan for engagement
+      `zoompan=z='if(lte(zoom,1.0),1.5,max(1.001,zoom-0.0015))':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'`,
+      
+      // Professional color grading
+      `curves=psfile=/dev/stdin:interp=cubic`,
+      `colorbalance=rs=0.1:gs=0.0:bs=-0.1:rm=0.05:gm=0.0:bm=-0.05`,
+      
+      // Broadcast-style sharpening
+      `unsharp=luma_msize_x=5:luma_msize_y=5:luma_amount=1.2:chroma_msize_x=3:chroma_msize_y=3:chroma_amount=0.8`,
+      
+      // Professional noise reduction
+      `hqdn3d=2:1:2:1`,
+      
+      // Subtle vignette for focus
+      `vignette=PI/6',
+      
+      // Final color enhancement
+      `eq=contrast=1.15:brightness=0.02:saturation=1.25:gamma=0.95`
+    ].join(',');
+
+    const command = `ffmpeg -i "${inputPath}" ` +
+      `-vf "${effectsFilter}" ` +
+      `-c:v libx264 -preset slow -crf 16 "${outputPath}" -y`;
+
+    await execAsync(command);
+    return outputPath;
+  }
+
+  private async addProfessionalBranding(inputPath: string, job: any, duration: number, isShort: boolean): Promise<string> {
+    const outputPath = path.join(this.outputDir, `branded_${job.id}.mp4`);
+
+    // Add subscribe button and channel branding
+    const brandingFilter = [
+      // Channel watermark in corner
+      `drawtext=text='YOUR CHANNEL':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:` +
+      `fontsize=24:fontcolor=white@0.7:x=w-tw-20:y=20:bordercolor=black@0.5:borderw=2`,
+
+      // Subscribe reminder
+      `drawtext=text='SUBSCRIBE for Daily Updates':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:` +
+      `fontsize=${isShort ? 28 : 32}:fontcolor=#FF0000:` +
+      `x=(w-text_w)/2:y=${isShort ? 'h-100' : 'h-80'}:` +
+      `bordercolor=white:borderw=2:enable='between(t,${duration-8},${duration-3})'`
+    ].join(',');
+
+    const command = `ffmpeg -i "${inputPath}" ` +
+      `-vf "${brandingFilter}" ` +
+      `-c:v libx264 -preset medium -crf 18 "${outputPath}" -y`;
+
+    await execAsync(command);
+    return outputPath;
   }
 
   private async createDynamicBackground(jobId: number, duration: number, isShort: boolean): Promise<string> {

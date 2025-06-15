@@ -100,13 +100,13 @@ export class AutomationPipeline {
         metadata: { thumbnailPath, resolution: videoType === 'short' ? '1080x1920' : '1280x720' }
       });
       
-      // Step 4: Organize files in Google Drive (Must complete first)
+      // Step 4: Organize complete video package in Google Drive (Must complete first)
       await storage.createPipelineLog({
         jobId: job.id,
         step: 'file_organization',
         status: 'starting',
-        message: 'Organizing files in Google Drive',
-        details: 'Uploading video and thumbnail to structured folders',
+        message: 'Uploading complete video package to Google Drive',
+        details: 'Uploading final MP4 video (with embedded audio) and professional thumbnail',
         progress: 92
       });
 

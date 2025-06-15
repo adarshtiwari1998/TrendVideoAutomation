@@ -81,7 +81,7 @@ export class ThumbnailGenerator {
     const outputPath = path.join(process.cwd(), 'generated', 'thumbnails', `${job.id}_youtube_thumbnail.jpg`);
 
     try {
-      console.log('🎨 Creating professional thumbnail with FFmpeg...');
+      console.log('🎨 Creating professional YouTube-style thumbnail...');
 
       // Ensure output directory exists
       const outputDir = path.dirname(outputPath);
@@ -89,17 +89,19 @@ export class ThumbnailGenerator {
         fs.mkdirSync(outputDir, { recursive: true });
       }
 
-      // Get a reliable background image
-      const backgroundPath = await this.getBackgroundImage(job.metadata?.category || 'general');
+      // Get professional background
+      const backgroundPath = await this.getProfessionalBackground(job.metadata?.category || 'general');
 
-      // Clean title for display (remove excessive length and special chars)
-      const thumbnailTitle = this.createThumbnailTitle(job.title);
+      // Create engaging title
+      const thumbnailTitle = this.createEngagingTitle(job.title);
       const dimensions = job.videoType === 'short' ? '1080x1920' : '1280x720';
       const isVertical = job.videoType === 'short';
       const category = job.metadata?.category || 'general';
-      const colors = this.getCategoryColors(category);
-      const fontSize = isVertical ? Math.min(80, 1080 / 12) : Math.min(60, 1280 / 20);
-      const titleY = isVertical ? 1920 * 0.15 : 720 * 0.2;
+      
+      // Professional YouTube color scheme
+      const colors = this.getYouTubeColors(category);
+      const titleFontSize = isVertical ? 85 : 65;
+      const subtitleFontSize = isVertical ? 45 : 35;
 
       // Escape title for FFmpeg
       const escapedTitle = thumbnailTitle.replace(/'/g, "\\'").replace(/"/g, '\\"');
@@ -418,18 +420,128 @@ export class ThumbnailGenerator {
     return keywords[category] || 'professional modern background';
   }
 
-  private getCategoryColors(category: string): any {
+  private getYouTubeColors(category: string): any {
+    // Professional YouTube thumbnail color schemes
     const colorSchemes = {
-      technology: { bg: '#1e40af', text: '#ffffff', border: '#000000' },
-      sports: { bg: '#dc2626', text: '#ffffff', border: '#000000' },
-      business: { bg: '#059669', text: '#ffffff', border: '#000000' },
-      politics: { bg: '#7c2d12', text: '#ffffff', border: '#000000' },
-      health: { bg: '#0891b2', text: '#ffffff', border: '#000000' },
-      environment: { bg: '#166534', text: '#ffffff', border: '#000000' },
-      science: { bg: '#581c87', text: '#ffffff', border: '#000000' }
+      technology: { 
+        bg: 'linear_gradient(45deg,#FF6B35,#F7931E)', 
+        text: '#FFFFFF', 
+        accent: '#00D4FF',
+        shadow: '#000000',
+        highlight: '#FFD700'
+      },
+      sports: { 
+        bg: 'linear_gradient(45deg,#FF416C,#FF4B2B)', 
+        text: '#FFFFFF', 
+        accent: '#00FF87',
+        shadow: '#000000',
+        highlight: '#FFD700'
+      },
+      business: { 
+        bg: 'linear_gradient(45deg,#4776E6,#8E54E9)', 
+        text: '#FFFFFF', 
+        accent: '#00FF87',
+        shadow: '#000000',
+        highlight: '#FFD700'
+      },
+      politics: { 
+        bg: 'linear_gradient(45deg,#FC466B,#3F5EFB)', 
+        text: '#FFFFFF', 
+        accent: '#FFD700',
+        shadow: '#000000',
+        highlight: '#00FF87'
+      },
+      health: { 
+        bg: 'linear_gradient(45deg,#FDBB2D,#22C1C3)', 
+        text: '#FFFFFF', 
+        accent: '#FF6B6B',
+        shadow: '#000000',
+        highlight: '#4ECDC4'
+      },
+      environment: { 
+        bg: 'linear_gradient(45deg,#56AB2F,#A8E6CF)', 
+        text: '#FFFFFF', 
+        accent: '#FFD93D',
+        shadow: '#000000',
+        highlight: '#6BCF7F'
+      },
+      science: { 
+        bg: 'linear_gradient(45deg,#667eea,#764ba2)', 
+        text: '#FFFFFF', 
+        accent: '#FF6B9D',
+        shadow: '#000000',
+        highlight: '#C5A3FF'
+      }
     };
 
-    return colorSchemes[category] || { bg: '#1f2937', text: '#ffffff', border: '#000000' };
+    return colorSchemes[category] || { 
+      bg: 'linear_gradient(45deg,#FF6B35,#F7931E)', 
+      text: '#FFFFFF', 
+      accent: '#00D4FF',
+      shadow: '#000000',
+      highlight: '#FFD700'
+    };
+  }
+
+  private createEngagingTitle(originalTitle: string): string {
+    // Create YouTube-style engaging titles
+    let title = originalTitle
+      .replace(/[^\w\s!?-]/g, '')
+      .trim()
+      .toUpperCase();
+
+    // Add engaging elements
+    if (title.length > 45) {
+      title = title.substring(0, 42) + '...';
+    }
+
+    // Add YouTube-style excitement
+    if (!title.includes('!') && !title.includes('?')) {
+      title = title + '!';
+    }
+
+    // Add power words
+    if (title.includes('BREAKING') || title.includes('SHOCKING') || title.includes('AMAZING')) {
+      return title;
+    }
+
+    // Add engaging prefix for news
+    const engagingPrefixes = ['BREAKING:', 'SHOCKING:', 'EXCLUSIVE:', 'LATEST:', 'AMAZING:'];
+    const randomPrefix = engagingPrefixes[Math.floor(Math.random() * engagingPrefixes.length)];
+    
+    return `${randomPrefix} ${title}`;
+  }
+
+  private async getProfessionalBackground(category: string): Promise<string> {
+    const backgroundDir = path.join(process.cwd(), 'generated', 'backgrounds');
+    if (!fs.existsSync(backgroundDir)) {
+      fs.mkdirSync(backgroundDir, { recursive: true });
+    }
+
+    const backgroundPath = path.join(backgroundDir, `pro_${category}_bg.jpg`);
+
+    // Create professional gradient backgrounds similar to top YouTubers
+    try {
+      const colors = this.getYouTubeColors(category);
+      
+      const command = `ffmpeg -f lavfi -i "color=c=#FF6B35:size=1280x720:duration=1" ` +
+        `-f lavfi -i "color=c=#F7931E:size=1280x720:duration=1" ` +
+        `-filter_complex "[0][1]blend=all_mode=screen:all_opacity=0.5,` +
+        `geq=r='255*0.8':g='107*0.8+100*sin(2*PI*X/W)':b='53*0.8+50*cos(2*PI*Y/H)',` +
+        `noise=alls=8:allf=t+u:c0f=0.1" ` +
+        `-frames:v 1 "${backgroundPath}" -y`;
+
+      execSync(command, { stdio: 'pipe' });
+      return backgroundPath;
+    } catch (error) {
+      console.warn('Failed to create professional background:', error.message);
+      return await this.createSolidBackground(category, backgroundPath);
+    }
+  }
+
+  private getCategoryColors(category: string): any {
+    // Fallback to YouTube colors
+    return this.getYouTubeColors(category);
   }
 
   private async validateYouTubeThumbnail(thumbnailPath: string): Promise<void> {

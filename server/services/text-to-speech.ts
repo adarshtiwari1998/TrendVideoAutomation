@@ -51,13 +51,16 @@ export class TextToSpeechService {
 
   async generateSpeech(options: TTSOptions): Promise<string> {
     try {
-      const { text, outputPath, voice = 'en-IN-Wavenet-D', speed = 1.0, pitch = 0 } = options;
+      const { text, outputPath, voice = 'en-IN-Neural2-D', speed = 0.92, pitch = -1.0 } = options;
 
-      // First, try Google Cloud TTS
+      // First, try Google Cloud TTS with enhanced SSML
       try {
-        // Configure the synthesis request
+        // Create SSML for natural Indian speech
+        const ssmlText = this.createNaturalSSML(text, voice);
+        
+        // Configure the synthesis request for natural Indian accent
         const request = {
-          input: { text },
+          input: { ssml: ssmlText },
           voice: {
             languageCode: 'en-IN',
             name: voice,
@@ -67,8 +70,9 @@ export class TextToSpeechService {
             audioEncoding: 'MP3' as const,
             speakingRate: speed,
             pitch: pitch,
-            volumeGainDb: 0,
-            sampleRateHertz: 22050,
+            volumeGainDb: 2.0, // Slightly louder for clarity
+            sampleRateHertz: 24000, // Higher quality
+            effectsProfileId: ['telephony-class-application'], // Better voice quality
           },
         };
 
@@ -195,6 +199,29 @@ export class TextToSpeechService {
     }
 
     return chunks.length > 0 ? chunks : [text];
+  }
+
+  private createNaturalSSML(text: string, voice: string): string {
+    // Add natural emphasis and pauses for Indian speaking style
+    let ssmlText = text
+      // Add emphasis on important words
+      .replace(/\b(important|amazing|incredible|breaking|latest)\b/gi, '<emphasis level="strong">$1</emphasis>')
+      // Add pauses for natural flow
+      .replace(/\. /g, '.<break time="0.8s"/> ')
+      .replace(/, /g, ',<break time="0.3s"/> ')
+      .replace(/! /g, '!<break time="0.5s"/> ')
+      .replace(/\? /g, '?<break time="0.6s"/> ')
+      // Add prosody for emotional delivery
+      .replace(/\b(shocking|surprising|unbelievable)\b/gi, '<prosody rate="slow" pitch="+2st">$1</prosody>')
+      // Add breathing pauses
+      .replace(/(\w+)(\. )(\w+)/g, '$1$2<break time="0.4s"/>$3');
+
+    // Wrap in SSML tags with Indian pronunciation hints
+    return `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-IN">
+      <prosody rate="0.92" pitch="-1st" volume="+2dB">
+        ${ssmlText}
+      </prosody>
+    </speak>`;
   }
 
   getAvailableVoices() {

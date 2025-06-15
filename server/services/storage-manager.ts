@@ -17,7 +17,7 @@ export class StorageManager {
 
   private async initializeAsync() {
     const credentials = this.getCredentials();
-    
+
     if (!credentials) {
       console.warn('⚠️  Google Drive API disabled - credentials not available');
       this.drive = null;
@@ -30,7 +30,7 @@ export class StorageManager {
     if (typeof privateKey === 'string') {
       // Replace escaped newlines and ensure proper formatting
       privateKey = privateKey.replace(/\\n/g, '\n').trim();
-      
+
       // Ensure the key starts and ends with proper markers
       if (!privateKey.startsWith('-----BEGIN PRIVATE KEY-----')) {
         console.warn('⚠️  Private key missing BEGIN marker');
@@ -70,7 +70,7 @@ export class StorageManager {
 
     try {
       const credentials = JSON.parse(fs.readFileSync(credentialsPath, 'utf8'));
-      
+
       // Validate that the credentials have required fields
       if (!credentials.client_email || !credentials.private_key || !credentials.project_id) {
         console.warn('⚠️  Invalid Google credentials - missing required fields');
@@ -90,7 +90,7 @@ export class StorageManager {
         console.warn('⚠️  Invalid private key format');
         return null;
       }
-      
+
       return credentials;
     } catch (error) {
       console.warn('⚠️  Invalid Google credentials file format:', error.message);
@@ -166,12 +166,12 @@ export class StorageManager {
       if (!this.drive) {
         return false;
       }
-      
+
       const credentials = this.getCredentials();
       if (!credentials) {
         return false;
       }
-      
+
       return credentials.client_email !== 'default@example.com' && 
              credentials.private_key !== 'default-key' &&
              credentials.client_email && 
@@ -303,7 +303,7 @@ export class StorageManager {
       console.log('Creating real file stream for:', filePath);
       return fs.createReadStream(filePath);
     }
-    
+
     // Otherwise create a mock readable stream
     console.log('Creating mock file stream for:', filePath);
     const { Readable } = require('stream');
@@ -365,6 +365,81 @@ export class StorageManager {
         status: 'error',
         metadata: { error: error.message }
       });
+    }
+  }
+
+  async uploadVideo(videoPath: string, thumbnailPath: string, title: string): Promise<string> {
+    try {
+      console.log('📁 Uploading complete video package to Google Drive...');
+
+      if (!this.isAuthenticated) {
+        console.warn('⚠️ Google Drive not authenticated, skipping upload');
+        return 'mock-drive-url';
+      }
+
+      // Create folder structure for the video
+      const dateFolderName = new Date().toISOString().split('T')[0];
+      const dateFolder = await this.createFolder(dateFolderName, this.baseFolderId);
+      const videoFolder = await this.createFolder(title.substring(0, 50), dateFolder);
+
+      // Ensure we're uploading the actual video file (not audio)
+      if (!videoPath.endsWith('.mp4')) {
+        throw new Error('Invalid video file - must be MP4 format');
+      }
+
+      // Upload final video file (with audio embedded)
+      const videoFile = await this.drive.files.create({
+        requestBody: {
+          name: `${title}_FINAL.mp4`,
+          parents: [videoFolder],
+          description: 'Professional YouTube video with embedded audio and effects'
+        },
+        media: {
+          body: this.getMockFileStream(videoPath)
+        }
+      });
+
+      // Upload high-quality thumbnail
+      const thumbnailFile = await this.drive.files.create({
+        requestBody: {
+          name: `${title}_THUMBNAIL.jpg`,
+          parents: [videoFolder],
+          description: 'Professional YouTube thumbnail'
+        },
+        media: {
+          body: this.getMockFileStream(thumbnailPath)
+        }
+      });
+
+      // Create metadata file for tracking
+      const metadata = {
+        title,
+        videoId: videoFile.data.id,
+        thumbnailId: thumbnailFile.data.id,
+        uploadDate: new Date().toISOString(),
+        videoPath,
+        thumbnailPath,
+        status: 'ready_for_youtube'
+      };
+
+      await this.drive.files.create({
+        requestBody: {
+          name: `${title}_METADATA.json`,
+          parents: [videoFolder]
+        },
+        media: {
+          body: JSON.stringify(metadata, null, 2)
+        }
+      });
+
+      console.log(`✅ Complete video package uploaded to Google Drive`);
+      console.log(`📹 Video file: ${videoFile.data.id}`);
+      console.log(`🖼️ Thumbnail file: ${thumbnailFile.data.id}`);
+
+      return `https://drive.google.com/drive/folders/${videoFolder}`;
+    } catch (error) {
+      console.error('Google Drive video upload error:', error);
+      throw error;
     }
   }
 }

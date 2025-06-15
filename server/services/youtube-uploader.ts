@@ -28,12 +28,16 @@ export class YouTubeUploader {
       key: privateKey,
       scopes: [
         'https://www.googleapis.com/auth/youtube.upload',
-        'https://www.googleapis.com/auth/youtube'
+        'https://www.googleapis.com/auth/youtube',
+        'https://www.googleapis.com/auth/youtube.force-ssl'
       ],
     });
 
     this.youtube = google.youtube({ version: 'v3', auth });
-    this.channelId = process.env.YOUTUBE_CHANNEL_ID || process.env.CHANNEL_ID || '';
+    // Ensure we use the correct channel ID
+    this.channelId = 'UCGE8f6bSgTLbimVSZY5qrqg';
+    
+    console.log(`✅ YouTube uploader initialized for channel: ${this.channelId}`);
   }
 
   private getCredentials(): any {
@@ -180,28 +184,34 @@ export class YouTubeUploader {
     const category = job.metadata?.category || 'general';
     const isShort = job.videoType === 'short';
 
-    const description = `${job.script?.substring(0, 200)}...
+    const description = `${job.script?.substring(0, 150)}...
 
-🔔 SUBSCRIBE for daily updates on trending topics!
-👍 LIKE if this video helped you stay informed!
-💬 COMMENT your thoughts below!
+🔥 Welcome to our channel! Get the latest trending news and updates from India and around the world.
 
-📱 Follow us for more:
-• Latest trending news
-• In-depth analysis
-• Global and India-focused content
+🔔 SUBSCRIBE और BELL ICON दबाएं for instant notifications!
+👍 अगर आपको यह video पसंद आया तो LIKE करना न भूलें!
+💬 COMMENT में बताएं आपकी क्या राय है!
+📤 SHARE करें अपने दोस्तों के साथ!
 
-${isShort ? '#Shorts ' : ''}#${category} #India #Trending #News #${new Date().getFullYear()}
+📱 Connect with us:
+• Breaking News & Updates
+• In-depth Analysis in Hindi & English  
+• India-focused Content
+• Global Trending Topics
+
+${isShort ? '#Shorts ' : ''}#${category} #India #Trending #News #BreakingNews #Latest #${new Date().getFullYear()} #Hindi #English
 
 ---
-This video was created with AI assistance for educational and informational purposes.`;
+Professional content created for educational and informational purposes.
+सभी जानकारी शैक्षणिक और सूचनात्मक उद्देश्यों के लिए है।`;
 
-    const baseTags = ['trending', 'india', 'news', 'viral', category];
-    const shortTags = isShort ? ['shorts', 'short', 'quick'] : ['analysis', 'detailed', 'explained'];
+    const baseTags = ['trending', 'india', 'news', 'viral', 'breaking', 'latest', 'hindi', 'english', category];
+    const shortTags = isShort ? ['shorts', 'short', 'quick', 'viral'] : ['analysis', 'detailed', 'explained', 'indepth'];
+    const indianTags = ['भारत', 'समाचार', 'ट्रेंडिंग', 'ब्रेकिंग', 'ताजा'];
 
     return {
       description,
-      tags: [...baseTags, ...shortTags, ...this.getCategoryTags(category)]
+      tags: [...baseTags, ...shortTags, ...indianTags, ...this.getCategoryTags(category)]
     };
   }
 
