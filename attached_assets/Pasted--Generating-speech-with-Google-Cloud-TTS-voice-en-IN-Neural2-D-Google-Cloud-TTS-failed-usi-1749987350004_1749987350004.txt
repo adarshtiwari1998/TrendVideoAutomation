@@ -1,0 +1,27 @@
+🎤 Generating speech with Google Cloud TTS - voice: en-IN-Neural2-D
+⚠️ Google Cloud TTS failed, using advanced fallback: 3 INVALID_ARGUMENT: Requested male voice, but voice en-IN-Neural2-D is a female voice.
+🔄 Generating advanced fallback audio...
+✅ Advanced fallback audio created: /home/runner/workspace/temp/videos/audio_76.mp3 (23118KB)
+Audio file validation failed, recreating...
+11:31:45 AM [express] GET /api/dashboard/scheduled-videos 304 in 476ms :: {"scheduled":[],"processing…
+11:31:45 AM [express] GET /api/dashboard/active-pipeline 304 in 492ms :: {"active":[{"id":76,"title":…
+11:31:47 AM [express] GET /api/dashboard/active-pipeline 304 in 523ms :: {"active":[{"id":76,"title":…
+✅ Created fallback audio: /home/runner/workspace/temp/videos/fallback_audio_76.mp3 (4095KB, 262s)
+❌ Video creation failed for job 76: ReferenceError: createCanvas is not defined
+    at VideoCreator.createVideoWithNodeJS (/home/runner/workspace/server/services/video-creator.ts:293:20)
+    at VideoCreator.createAlternativeVideo (/home/runner/workspace/server/services/video-creator.ts:79:34)
+    at async VideoCreator.createVideo (/home/runner/workspace/server/services/video-creator.ts:38:16)
+    at async AutomationPipeline.processTrendingTopic (/home/runner/workspace/server/automation/pipeline.ts:118:21)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:202:19)
+❌ Video creation failed: ReferenceError: createCanvas is not defined
+    at VideoCreator.createVideoWithNodeJS (/home/runner/workspace/server/services/video-creator.ts:293:20)
+    at VideoCreator.createAlternativeVideo (/home/runner/workspace/server/services/video-creator.ts:79:34)
+    at async VideoCreator.createVideo (/home/runner/workspace/server/services/video-creator.ts:38:16)
+    at async AutomationPipeline.processTrendingTopic (/home/runner/workspace/server/automation/pipeline.ts:118:21)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:202:19)
+❌ Pipeline error: ReferenceError: createCanvas is not defined
+    at VideoCreator.createVideoWithNodeJS (/home/runner/workspace/server/services/video-creator.ts:293:20)
+    at VideoCreator.createAlternativeVideo (/home/runner/workspace/server/services/video-creator.ts:79:34)
+    at async VideoCreator.createVideo (/home/runner/workspace/server/services/video-creator.ts:38:16)
+    at async AutomationPipeline.processTrendingTopic (/home/runner/workspace/server/automation/pipeline.ts:118:21)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:202:19)
