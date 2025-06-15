@@ -245,9 +245,16 @@ export class ProfessionalVideoCreator {
         assets.push(imagePath);
       } catch (error) {
         console.warn(`Failed to download background for scene ${i}, using fallback`);
-        // Create a professional gradient background as fallback
-        const fallbackPath = await this.createGradientBackground(i);
-        assets.push(fallbackPath);
+        try {
+          // Create a professional gradient background as fallback
+          const fallbackPath = await this.createGradientBackground(i);
+          assets.push(fallbackPath);
+        } catch (gradientError) {
+          console.warn(`Gradient creation failed for scene ${i}, using simple fallback`);
+          // Create a simple colored background as final fallback
+          const simpleFallbackPath = await this.createSimpleBackground(i);
+          assets.push(simpleFallbackPath);
+        }
       }
     }
 
@@ -311,9 +318,30 @@ export class ProfessionalVideoCreator {
     const gradient = gradients[sceneIndex % gradients.length];
     const colors = gradient.split(',');
 
+    // Create a simple solid color background instead of complex gradient to avoid FFmpeg issues
     const command = `ffmpeg -f lavfi -i "color=c=${colors[0]}:size=1920x1080:duration=1" ` +
-      `-vf "geq=r='128+64*sin(2*PI*t/10+x/100)':g='64+32*sin(2*PI*t/8+y/80)':b='192+64*sin(2*PI*t/12)'" ` +
       `-frames:v 1 "${outputPath}" -y`;
+
+    await execAsync(command);
+    return outputPath;
+  }
+
+  private async createSimpleBackground(sceneIndex: number): Promise<string> {
+    const outputPath = path.join(this.backgroundsDir, `simple_${sceneIndex}_bg.jpg`);
+
+    const colors = [
+      '#1a1a2e', // Deep blue
+      '#2d1b69', // Purple
+      '#8360c3', // Light purple
+      '#ee0979', // Pink
+      '#0f0c29'  // Dark blue
+    ];
+
+    const color = colors[sceneIndex % colors.length];
+
+    // Create the simplest possible background - just a solid color
+    const command = `ffmpeg -f lavfi -i "color=c=${color}:size=1920x1080" ` +
+      `-t 1 -frames:v 1 "${outputPath}" -y`;
 
     await execAsync(command);
     return outputPath;
