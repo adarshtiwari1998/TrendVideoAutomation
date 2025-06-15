@@ -1,0 +1,42 @@
+Unsplash request failed, using fallback
+12:25:42 PM [express] GET /api/dashboard/active-pipeline 304 in 470ms :: {"active":[{"id":81,"title":…
+Failed to download background for scene 0, using fallback
+❌ Professional video creation failed for job 81: Error: Command failed: ffmpeg -f lavfi -i "color=c=#1a1a2e:size=1920x1080:duration=1" -vf "geq=r='128+64*sin(2*PI*t/10+x/100)':g='64+32*sin(2*PI*t/8+y/80)':b='192+64*sin(2*PI*t/12)'" -frames:v 1 "/home/runner/workspace/generated/backgrounds/gradient_0_bg.jpg" -y
+ffmpeg version 6.0-static https://johnvansickle.com/ffmpeg/  Copyright (c) 2000-2023 the FFmpeg developers
+  built with gcc 8 (Debian 8.3.0-6)
+  configuration: --enable-gpl --enable-version3 --enable-static --disable-debug --disable-ffplay --disable-indev=sndio --disable-outdev=sndio --cc=gcc --enable-fontconfig --enable-frei0r --enable-gnutls --enable-gmp --enable-libgme --enable-gray --enable-libaom --enable-libfribidi --enable-libass --enable-libvmaf --enable-libfreetype --enable-libmp3lame --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libopenjpeg --enable-librubberband --enable-libsoxr --enable-libspeex --enable-libsrt --enable-libvorbis --enable-libopus --enable-libtheora --enable-libvidstab --enable-libvo-amrwbenc --enable-libvpx --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxml2 --enable-libdav1d --enable-libxvid --enable-libzvbi --enable-libzimg
+  libavutil      58.  2.100 / 58.  2.100
+  libavcodec     60.  3.100 / 60.  3.100
+  libavformat    60.  3.100 / 60.  3.100
+  libavdevice    60.  1.100 / 60.  1.100
+  libavfilter     9.  3.100 /  9.  3.100
+  libswscale      7.  1.100 /  7.  1.100
+  libswresample   4. 10.100 /  4. 10.100
+  libpostproc    57.  1.100 / 57.  1.100
+Input #0, lavfi, from 'color=c=#1a1a2e:size=1920x1080:duration=1':
+  Duration: N/A, start: 0.000000, bitrate: N/A
+  Stream #0:0: Video: wrapped_avframe, yuv420p, 1920x1080 [SAR 1:1 DAR 16:9], 25 fps, 25 tbr, 25 tbn
+Stream mapping:
+  Stream #0:0 -> #0:0 (wrapped_avframe (native) -> mjpeg (native))
+Press [q] to stop, [?] for help
+[Parsed_geq_0 @ 0x733adc0] [Eval @ 0x7ffed8978a10] Undefined constant or missing '(' in 't/8+y/80)'
+[AVFilterGraph @ 0x73398c0] Error initializing filters
+Error reinitializing filters!
+Failed to inject frame into filter network: Invalid argument
+Error while processing the decoded data for stream #0:0
+Conversion failed!
+
+    at genericNodeError (node:internal/errors:984:15)
+    at wrappedFn (node:internal/errors:538:14)
+    at ChildProcess.exithandler (node:child_process:422:12)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1104:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5) {
+  code: 1,
+  killed: false,
+  signal: null,
+  cmd: `ffmpeg -f lavfi -i "color=c=#1a1a2e:size=1920x1080:duration=1" -vf "geq=r='128+64*sin(2*PI*t/10+x/100)':g='64+32*sin(2*PI*t/8+y/80)':b='192+64*sin(2*PI*t/12)'" -frames:v 1 "/home/runner/workspace/generated/backgrounds/gradient_0_bg.jpg" -y`,
+  stdout: '',
+  stderr: 'ffmpeg version 6.0-static https://johnvansickle.com/ffmpeg/  Copyright (c) 2000-2023 the FFmpeg developers\n' +
+    '  built with gcc 8 (Debian 8.3.0-6)\n' +
+    '  configuration: --enable-gpl --enable-version3 --enable-static --disable-debug --disable-ffplay --disable-indev=sndio --disable-outdev=sndio --cc=gcc --enable-fontconfig --enable-frei0r --enable-gnutls --enable-gmp --enable-libgme --enable-gray --enable-libaom --enable-libfribidi --enable-libass --enable-libvmaf --enable-libfreetype --enable-libmp3lame --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libopenjpeg --enable-librubberband --enable-libsoxr --enable-libspeex --enable-libsrt --enable-libvorbis --enable-libopus --enable-libtheora --enable-libvidstab --enable-libvo-amrwbenc --enable-libvpx --
