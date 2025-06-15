@@ -1,0 +1,54 @@
+   const specificArticleQuery = `${query} "article" OR "news" OR "story" OR "report" OR "research" OR "study" OR "breakthrough" OR "discovery" -"home" -"category" -"tag" -"index" filetype:html`;
+      
+      // Dynamic site targeting based on category and query content
+      const dynamicSiteQuery = this.buildDynamicSiteQuery(query, category);
+      
+      // Combine specific article search with dynamic site targeting
+      const spaceAndScienceQuery = `${specificArticleQuery} ${dynamicSiteQuery}`;
+
+      console.log(`🎯 DYNAMIC SEARCH QUERY: ${spaceAndScienceQuery.substring(0, 200)}...`);
+
+      const topics: InsertTrendingTopic[] = [];
+      let totalProcessed = 0;
+      let validArticles = 0;
+
+      // Try multiple searches with different dynamic approaches to get at least 10 posts
+      const searchAttempts = [
+        { query: spaceAndScienceQuery, num: 10 },
+        { query: `${query} recent news article 2025 -"home" -"category" -"humans-in-space" -"science-nature"`, num: 10 },
+        { query: `${query} discovery article today -"index" -"tag" -"category"`, num: 10 },
+        { query: `${query} breakthrough news article -"home" -"main" -"category" ${this.getTopSourcesForCategory(category)}`, num: 10 },
+        { query: `${query} news discovery -"category" -"tag" -"section" filetype:html`, num: 10 },
+        { query: `"${query.split(' ')[0]}" news article discovery recent -"home" -"index" -"category"`, num: 10 }
+      ];
+
+      for (const searchAttempt of searchAttempts) {
+        if (validArticles >= 10) break; // Stop if we have enough articles
+
+        console.log(`\n🔍 SEARCH ATTEMPT: ${searchAttempt.query.substring(0, 100)}...`);
+
+        try {
+          const response = await this.customSearch.cse.list({
+            cx: process.env.GOOGLE_CUSTOM_SEARCH_ENGINE_ID,
+            q: searchAttempt.query,
+            num: searchAttempt.num,
+            sort: 'date',
+            dateRestrict: 'd2', // Last 48 hours
+            cr: 'countryUS', // Focus on US sources for English content
+            lr: 'lang_en' // English language results
+          });
+
+          if (response.data.items && response.data.items.length > 0) {
+            console.log(`📊 Found ${response.data.items.length} potential articles from space & science sources`);
+
+            for (const item of response.data.items) {
+              totalProcessed++;
+              console.log(`\n🔍 PROCESSING ARTICLE ${totalProcessed}: ${item.title}`);
+              console.log(`🌐 URL: ${item.link}`);
+              console.log(`📝 SNIPPET: ${item.snippet?.substring(0, 100)}...`);
+
+              // STRICT URL VALIDATION - Must be a specific article, not homepage
+              if (!this.isSpecificArticleUrl(item.link)) {
+                console.log(`❌ NOT A SPECIFIC ARTICLE URL - Homepage/Category detected: ${item.link}`);
+                continue;
+              }
