@@ -35,21 +35,89 @@ export class ContentGenerator {
       
       console.log('✅ Gemini API response received, length:', text.length);
       
-      // Try to parse JSON response, fallback to plain text
+      // Clean and filter the content to remove Gemini's own commentary
+      const cleanedScript = this.cleanAndFilterScript(text);
+      
+      // Try to parse JSON response first
       try {
-        const parsed = JSON.parse(text);
+        const parsed = JSON.parse(cleanedScript);
         console.log('📄 Parsed JSON response successfully');
-        return parsed.script || text;
+        return this.validateAndCleanScript(parsed.script || cleanedScript);
       } catch {
-        console.log('📄 Using plain text response');
-        return text;
+        console.log('📄 Using cleaned plain text response');
+        return this.validateAndCleanScript(cleanedScript);
       }
       
     } catch (error) {
       console.error('❌ Gemini script generation error:', error.message);
-      console.log('🔄 Using fallback script generation...');
-      return this.getFallbackScript(topic, videoType);
+      console.log('🔄 Using intelligent fallback script generation...');
+      return this.getIntelligentFallbackScript(topic, videoType);
     }
+  }
+
+  private cleanAndFilterScript(rawText: string): string {
+    // Remove Gemini's meta-commentary and system responses
+    let cleaned = rawText
+      // Remove JSON wrapper if it exists but keep the content
+      .replace(/^```json\s*\n?/i, '')
+      .replace(/\n?```\s*$/i, '')
+      // Remove Gemini's explanatory text
+      .replace(/Here's a.*?script.*?:/i, '')
+      .replace(/I'll create.*?for you.*?\./i, '')
+      .replace(/This script.*?includes.*?\./i, '')
+      .replace(/Note:.*?\n/gi, '')
+      // Remove system instructions that leaked through
+      .replace(/Return JSON format:.*$/i, '')
+      .replace(/\{"script":\s*"/i, '')
+      .replace(/",\s*"visual_cues":.*$/i, '')
+      // Clean up multiple newlines and spaces
+      .replace(/\n\s*\n\s*\n/g, '\n\n')
+      .trim();
+
+    // If it looks like JSON, try to extract just the script content
+    if (cleaned.includes('"script"')) {
+      try {
+        const jsonMatch = cleaned.match(/\{"script":\s*"(.*?)"/s);
+        if (jsonMatch) {
+          cleaned = jsonMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
+        }
+      } catch (e) {
+        // Continue with text cleaning
+      }
+    }
+
+    return cleaned;
+  }
+
+  private validateAndCleanScript(script: string): string {
+    // Ensure the script is actual content, not system messages
+    const invalidPatterns = [
+      /^(I'll|I'm|Here's|This is)/i,
+      /^(Sure|Certainly|Of course)/i,
+      /^(Let me|I can)/i,
+      /(API|Gemini|model|generate|create)/i
+    ];
+
+    // Check if script contains invalid patterns at the start
+    for (const pattern of invalidPatterns) {
+      if (pattern.test(script.substring(0, 100))) {
+        console.warn('⚠️ Detected system text in script, using fallback');
+        return '';
+      }
+    }
+
+    // Clean the script content
+    return script
+      .replace(/\[.*?\]/g, '') // Remove stage directions
+      .replace(/\(.*?\)/g, '') // Remove parenthetical notes
+      .replace(/^\s*[-*]\s*/gm, '') // Remove bullet points
+      .replace(/^Step \d+:.*$/gm, '') // Remove step indicators
+      .replace(/^\d+\.\s*/gm, '') // Remove numbered lists
+      .split('\n')
+      .filter(line => line.trim().length > 0)
+      .filter(line => !line.match(/^(Note:|Remember:|Important:)/i))
+      .join('\n')
+      .trim();
   }
 
   private createPrompt(topic: TrendingTopic, videoType: 'long_form' | 'short'): string {
@@ -57,40 +125,85 @@ export class ContentGenerator {
     const audience = 'Indian and global audience interested in ' + topic.category;
     
     return `
-Create a ${duration} ${videoType} video script about: "${topic.title}"
+Write ONLY the video script content for a ${duration} ${videoType} video about: "${topic.title}"
 
-Topic Details:
-- Description: ${topic.description}
-- Category: ${topic.category}
-- Search Volume: ${topic.searchVolume.toLocaleString()}
-- Priority: ${topic.priority}
+Topic: ${topic.description}
+Category: ${topic.category}
 
-Requirements:
-1. Target audience: ${audience}
-2. Tone: Engaging, informative, conversational (human-like, not robotic)
-3. Structure: Hook → Main content → Call to action
-4. Include specific facts, statistics, and examples
-5. Make it suitable for professional video editing with visual cues
-6. Include natural pauses for animation/effect placement
-7. End with engagement prompts (like, subscribe, comment)
+STRICT REQUIREMENTS:
+- Write ONLY the actual spoken content
+- NO explanations, NO system messages, NO meta-commentary
+- Start directly with the video content
+- Natural, conversational tone for Indian English speakers
+- Include specific facts about the topic
+- Make it engaging and informative
 
 ${videoType === 'long_form' ? `
-For long-form content:
-- Break into 3-4 main sections
-- Include detailed explanations and examples
-- Add storytelling elements
-- Include multiple engagement hooks throughout
+Structure (600-800 words):
+1. Strong hook (first 15 seconds)
+2. Main explanation with facts
+3. Real-world implications
+4. Call to action
 ` : `
-For YouTube Shorts:
-- Grab attention in first 3 seconds
-- One clear main message
-- Quick facts and statistics
-- Strong visual storytelling
-- Trending hashtags suggestion
+Structure (150-200 words):
+1. Attention-grabbing opening (3 seconds)
+2. Key facts quickly
+3. Strong conclusion with CTA
 `}
 
-Return JSON format: {"script": "your_script_here", "visual_cues": ["cue1", "cue2"], "hashtags": ["#tag1", "#tag2"]}
+Write ONLY the script content that will be spoken. No JSON, no formatting, no instructions.
     `;
+  }
+
+  private getIntelligentFallbackScript(topic: TrendingTopic, videoType: 'long_form' | 'short'): string {
+    // Create intelligent content based on topic details
+    const { title, description, category } = topic;
+    
+    if (videoType === 'short') {
+      return `Breaking news about ${title}! 
+
+This development in ${category} is absolutely significant. ${description}
+
+Here's what makes this important: This breakthrough affects millions of people and represents a major advancement in the field.
+
+The implications are far-reaching. Industry experts are calling this a game-changer that could transform how we approach ${category}.
+
+What's particularly exciting is the potential for real-world applications. This discovery opens up new possibilities and solutions to existing challenges.
+
+This is just the beginning. We're witnessing history in the making with ${title}.
+
+What are your thoughts on this development? Share in the comments below! Don't forget to like and subscribe for more breaking news and trending topics!`;
+    } else {
+      return `Welcome back! Today we're diving deep into something truly remarkable: ${title}.
+
+This breakthrough in ${category} represents a significant advancement that deserves our attention. ${description}
+
+Let me break this down for you. The significance of this development cannot be overstated. It's the result of years of research and represents a major step forward in our understanding.
+
+The technical aspects are fascinating. Researchers have made discoveries that challenge conventional thinking and open up entirely new possibilities. This isn't just theoretical - it has real-world applications that could benefit millions of people.
+
+From a global perspective, this development comes at a crucial time. With the challenges we face today, innovations like this offer hope and concrete solutions.
+
+Industry experts are already discussing the potential impact. We're looking at applications in multiple sectors, from technology to healthcare to environmental solutions.
+
+The economic implications alone are significant. This could create new markets, reduce costs, and generate substantial opportunities for growth and development.
+
+Looking ahead, the next few years will be critical. The transition from research to practical implementation will determine how quickly we can realize the benefits of this breakthrough.
+
+What excites me most is the potential for unexpected applications. Often, the most impactful uses of new discoveries are ones nobody initially predicted.
+
+This represents more than just scientific progress - it's a testament to human ingenuity and our capacity for innovation.
+
+The implications extend far beyond ${category}, potentially affecting how we approach challenges across multiple fields.
+
+I encourage you to stay informed about developments in this area. The pace of progress is accelerating, and new discoveries are happening regularly.
+
+What are your thoughts on this breakthrough? How do you think it might affect your life or work? I'd love to hear your perspectives in the comments.
+
+If you found this analysis valuable, please give this video a thumbs up. And if you haven't already, subscribe and hit the notification bell for more in-depth coverage of science and innovation.
+
+Thank you for watching, and I'll see you in the next video!`;
+    }
   }
 
   private getSystemPrompt(videoType: 'long_form' | 'short'): string {

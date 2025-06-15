@@ -8,12 +8,14 @@ import { FFmpegInstaller } from './ffmpeg-installer';
 
 // Graceful canvas import with fallback
 let createCanvas: any = null;
+let Canvas: any = null;
 try {
-  const canvasModule = require('canvas');
-  createCanvas = canvasModule.createCanvas;
+  Canvas = require('canvas');
+  createCanvas = Canvas.createCanvas;
   console.log('✅ Canvas library loaded successfully');
 } catch (error) {
   console.warn('⚠️ Canvas library not available, using fallback methods');
+  console.warn('Canvas error:', error.message);
 }
 
 const execAsync = promisify(exec);
@@ -186,30 +188,64 @@ export class VideoCreator {
     const width = isShort ? 1080 : 1920;
     const height = isShort ? 1920 : 1080;
     
-    // Split script into segments for animated display
-    const sentences = jobData.script.split(/[.!?]+/).filter(s => s.trim().length > 0);
-    const segmentDuration = duration / sentences.length;
+    if (!createCanvas || !Canvas) {
+      console.warn('Canvas not available for text animations, using FFmpeg text overlay');
+      return await this.addFFmpegTextOverlay(backgroundPath, jobData, duration, isShort);
+    }
     
-    // Create text overlay frames
-    const canvas = createCanvas(width, height);
-    const ctx = canvas.getContext('2d');
+    try {
+      // Split script into segments for animated display
+      const sentences = jobData.script.split(/[.!?]+/).filter(s => s.trim().length > 0);
+      const segmentDuration = duration / sentences.length;
+      
+      // Create text overlay frames
+      const canvas = createCanvas(width, height);
+      const ctx = canvas.getContext('2d');
+      
+      // Set up text styling
+      ctx.font = `bold ${isShort ? 48 : 64}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#FFFFFF';
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 3;
+      
+      // Add title at the top
+      const titleY = isShort ? height * 0.15 : height * 0.1;
+      ctx.strokeText(jobData.title.substring(0, 50), width/2, titleY);
+      ctx.fillText(jobData.title.substring(0, 50), width/2, titleY);
+      
+      const textOverlay = canvas.toBuffer('image/png');
+      await fs.writeFile(outputPath.replace('.mp4', '_overlay.png'), textOverlay);
+      
+      return backgroundPath; // Return background for now, proper compositing would require ffmpeg
+      
+    } catch (canvasError) {
+      console.error('Canvas text animation failed:', canvasError.message);
+      return await this.addFFmpegTextOverlay(backgroundPath, jobData, duration, isShort);
+    }
+  }
+
+  private async addFFmpegTextOverlay(backgroundPath: string, jobData: any, duration: number, isShort: boolean): Promise<string> {
+    const outputPath = path.join(this.outputDir, `with_ffmpeg_text_${jobData.id}.mp4`);
     
-    // Set up text styling
-    ctx.font = `bold ${isShort ? 48 : 64}px Arial`;
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#FFFFFF';
-    ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 3;
-    
-    // Add title at the top
-    const titleY = isShort ? height * 0.15 : height * 0.1;
-    ctx.strokeText(jobData.title.substring(0, 50), width/2, titleY);
-    ctx.fillText(jobData.title.substring(0, 50), width/2, titleY);
-    
-    const textOverlay = canvas.toBuffer('image/png');
-    await fs.writeFile(outputPath.replace('.mp4', '_overlay.png'), textOverlay);
-    
-    return backgroundPath; // Return background for now, proper compositing would require ffmpeg
+    try {
+      // Escape title for FFmpeg
+      const escapedTitle = jobData.title.replace(/'/g, "\\'").replace(/"/g, '\\"').substring(0, 50);
+      
+      const command = `ffmpeg -i "${backgroundPath}" ` +
+        `-vf "drawtext=text='${escapedTitle}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:` +
+        `fontsize=${isShort ? 48 : 64}:fontcolor=#FFFFFF:` +
+        `x=(w-text_w)/2:y=${isShort ? 'h*0.15' : 'h*0.1'}:` +
+        `bordercolor=#000000:borderw=3" ` +
+        `-c:v libx264 -preset medium -crf 20 "${outputPath}" -y`;
+
+      await execAsync(command);
+      return outputPath;
+      
+    } catch (error) {
+      console.error('FFmpeg text overlay failed:', error);
+      return backgroundPath; // Return original if text overlay fails
+    }
   }
 
   private async framesToVideo(frames: string[], outputPath: string, fps: number): Promise<void> {
@@ -304,51 +340,58 @@ export class VideoCreator {
     const width = isShort ? 1080 : 1920;
     const height = isShort ? 1920 : 1080;
     
-    if (!createCanvas) {
+    if (!createCanvas || !Canvas) {
       console.warn('Canvas not available, using FFmpeg-only video creation');
       return await this.createFFmpegOnlyVideo(jobData, duration, isShort, jobId);
     }
     
-    // Create professional video using Canvas
-    const canvas = createCanvas(width, height);
-    const ctx = canvas.getContext('2d');
-    
-    // Professional gradient background
-    const gradient = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, Math.max(width, height)/2);
-    gradient.addColorStop(0, '#1a1a2e');
-    gradient.addColorStop(0.5, '#16213e');
-    gradient.addColorStop(1, '#0f172a');
-    
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, width, height);
-    
-    // Add title with professional styling
-    ctx.font = `bold ${isShort ? 72 : 84}px Arial`;
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#FFD700';
-    ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 4;
-    
-    const title = jobData.title.substring(0, isShort ? 35 : 50);
-    const titleY = isShort ? height * 0.2 : height * 0.15;
-    
-    ctx.strokeText(title, width/2, titleY);
-    ctx.fillText(title, width/2, titleY);
-    
-    // Add news ticker style elements
-    ctx.font = `${isShort ? 32 : 42}px Arial`;
-    ctx.fillStyle = '#FF4444';
-    ctx.fillText('BREAKING NEWS', width/2, titleY + 100);
-    
-    // Save as image first, then convert to video
-    const imageBuffer = canvas.toBuffer('image/jpeg', { quality: 0.9 });
-    const imagePath = outputPath.replace('.mp4', '.jpg');
-    await fs.writeFile(imagePath, imageBuffer);
-    
-    // Create video from static image
-    await this.imageToVideo(imagePath, outputPath, duration);
-    
-    return outputPath;
+    try {
+      // Create professional video using Canvas
+      const canvas = createCanvas(width, height);
+      const ctx = canvas.getContext('2d');
+      
+      // Professional gradient background
+      const gradient = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, Math.max(width, height)/2);
+      gradient.addColorStop(0, '#1a1a2e');
+      gradient.addColorStop(0.5, '#16213e');
+      gradient.addColorStop(1, '#0f172a');
+      
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+      
+      // Add title with professional styling
+      ctx.font = `bold ${isShort ? 72 : 84}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#FFD700';
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 4;
+      
+      const title = jobData.title.substring(0, isShort ? 35 : 50);
+      const titleY = isShort ? height * 0.2 : height * 0.15;
+      
+      ctx.strokeText(title, width/2, titleY);
+      ctx.fillText(title, width/2, titleY);
+      
+      // Add news ticker style elements
+      ctx.font = `${isShort ? 32 : 42}px Arial`;
+      ctx.fillStyle = '#FF4444';
+      ctx.fillText('BREAKING NEWS', width/2, titleY + 100);
+      
+      // Save as image first, then convert to video
+      const imageBuffer = canvas.toBuffer('image/jpeg', { quality: 0.9 });
+      const imagePath = outputPath.replace('.mp4', '.jpg');
+      await fs.writeFile(imagePath, imageBuffer);
+      
+      // Create video from static image
+      await this.imageToVideo(imagePath, outputPath, duration);
+      
+      return outputPath;
+      
+    } catch (canvasError) {
+      console.error('Canvas operation failed:', canvasError.message);
+      console.warn('Falling back to FFmpeg-only video creation');
+      return await this.createFFmpegOnlyVideo(jobData, duration, isShort, jobId);
+    }
   }
 
   private async imageToVideo(imagePath: string, outputPath: string, duration: number): Promise<void> {

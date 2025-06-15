@@ -121,16 +121,27 @@ export class TextToSpeechService {
   }
 
   private async generateSingleChunk(text: string, outputPath: string, voice: string, speed: number, pitch: number): Promise<string> {
-    // Fix voice configuration - Neural2-D is actually female according to Google Cloud TTS
-    const voiceGender = voice === 'en-IN-Neural2-D' ? 'FEMALE' : 
-                       voice.includes('Neural2-B') || voice.includes('Wavenet-B') || voice.includes('Standard-B') || voice.includes('Standard-D') ? 'MALE' : 'FEMALE';
+    // Correct voice gender mapping for Google Cloud TTS voices
+    const getVoiceGender = (voiceName: string): 'MALE' | 'FEMALE' => {
+      const maleVoices = ['en-IN-Neural2-B', 'en-IN-Wavenet-B', 'en-IN-Standard-B', 'en-IN-Standard-D'];
+      const femaleVoices = ['en-IN-Neural2-A', 'en-IN-Neural2-C', 'en-IN-Neural2-D', 'en-IN-Wavenet-A', 'en-IN-Wavenet-C', 'en-IN-Standard-A', 'en-IN-Standard-C'];
+      
+      if (maleVoices.includes(voiceName)) return 'MALE';
+      if (femaleVoices.includes(voiceName)) return 'FEMALE';
+      return 'MALE'; // Default fallback
+    };
+
+    const voiceGender = getVoiceGender(voice);
+    
+    // Clean the text to ensure it's actual content
+    const cleanText = this.cleanTextForSpeech(text);
     
     const request = {
-      input: { text: text },
+      input: { text: cleanText },
       voice: {
         languageCode: 'en-IN',
         name: voice,
-        ssmlGender: voiceGender as const,
+        ssmlGender: voiceGender,
       },
       audioConfig: {
         audioEncoding: 'MP3' as const,
@@ -142,7 +153,7 @@ export class TextToSpeechService {
       },
     };
 
-    console.log(`🎤 Generating speech with Google Cloud TTS - voice: ${voice}`);
+    console.log(`🎤 Generating speech with Google Cloud TTS - voice: ${voice} (${voiceGender})`);
 
     // Perform the text-to-speech request
     const [response] = await this.client.synthesizeSpeech(request);
@@ -160,6 +171,18 @@ export class TextToSpeechService {
 
     console.log(`✅ Audio saved to: ${outputPath}`);
     return outputPath;
+  }
+
+  private cleanTextForSpeech(text: string): string {
+    // Remove any system messages or meta-commentary that might have leaked through
+    return text
+      .replace(/^(I'll|I'm|Here's|This is).*?\./i, '') // Remove system introductions
+      .replace(/^(Sure|Certainly|Of course).*?\./i, '') // Remove confirmations
+      .replace(/\[.*?\]/g, '') // Remove stage directions
+      .replace(/\(.*?\)/g, '') // Remove parenthetical notes
+      .replace(/API|Gemini|model|generate/gi, 'system') // Replace technical terms
+      .replace(/\n{3,}/g, '\n\n') // Clean up excessive newlines
+      .trim();
   }
 
   private async generateAndCombineChunks(chunks: string[], outputPath: string, voice: string, speed: number, pitch: number): Promise<string> {
