@@ -699,12 +699,12 @@ export class ProfessionalVideoCreator {
       : cleanText;
 
     // Use simple text overlay without complex effects to avoid FFmpeg errors
-    return `drawtext=text=${displayText}:` +
+    return `drawtext=text='${displayText}':` +
       `fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:` +
       `fontsize=${fontSize}:fontcolor=${textColor}:` +
       `x=${x}:y=${y}:` +
       `bordercolor=${borderColor}:borderw=3:` +
-      `enable=between\\(t\\,${startTime}\\,${startTime + duration}\\),`;
+      `enable=between\\(t\\,${startTime}\\,${startTime + duration}\\)`;
   }
 
   private createSceneTransition(transition: VideoScene['transition'], sceneIndex: number, duration: number): string {
