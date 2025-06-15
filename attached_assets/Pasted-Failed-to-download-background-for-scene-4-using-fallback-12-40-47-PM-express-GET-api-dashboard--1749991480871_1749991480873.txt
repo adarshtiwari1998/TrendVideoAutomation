@@ -1,0 +1,93 @@
+Failed to download background for scene 4, using fallback
+12:40:47 PM [express] GET /api/dashboard/active-pipeline 304 in 472ms :: {"active":[{"id":82,"title":…
+Unsplash request failed, using fallback
+Failed to download background for scene 5, using fallback
+Unsplash request failed, using fallback
+Failed to download background for scene 6, using fallback
+Unsplash request failed, using fallback
+Failed to download background for scene 7, using fallback
+Unsplash request failed, using fallback
+12:40:48 PM [express] GET /api/dashboard/active-pipeline 304 in 466ms :: {"active":[{"id":82,"title":…
+Failed to download background for scene 8, using fallback
+Unsplash request failed, using fallback
+12:40:49 PM [express] GET /api/dashboard/active-pipeline 304 in 468ms :: {"active":[{"id":82,"title":…
+Failed to download background for scene 9, using fallback
+Unsplash request failed, using fallback
+Failed to download background for scene 10, using fallback
+12:40:49 PM [express] GET /api/pipeline/logs 304 in 465ms :: [{"id":305,"job_id":82,"step":"video_cre…
+Unsplash request failed, using fallback
+Failed to download background for scene 11, using fallback
+12:40:50 PM [express] GET /api/dashboard/active-pipeline 304 in 467ms :: {"active":[{"id":82,"title":…
+Unsplash request failed, using fallback
+Failed to download background for scene 12, using fallback
+Unsplash request failed, using fallback
+Failed to download background for scene 13, using fallback
+Unsplash request failed, using fallback
+Failed to download background for scene 14, using fallback
+Unsplash request failed, using fallback
+Failed to download background for scene 15, using fallback
+12:40:52 PM [express] GET /api/dashboard/active-pipeline 200 in 485ms :: {"active":[{"id":82,"title":…
+Unsplash request failed, using fallback
+Failed to download background for scene 16, using fallback
+12:40:52 PM [express] GET /api/dashboard/recent-activity 200 in 235ms :: [{"id":1400,"type":"generati…
+Unsplash request failed, using fallback
+Failed to download background for scene 17, using fallback
+12:40:53 PM [express] GET /api/dashboard/system-status 304 in 470ms :: {"components":[{"name":"Trendi…
+Unsplash request failed, using fallback
+Failed to download background for scene 18, using fallback
+Unsplash request failed, using fallback
+12:40:53 PM [express] GET /api/dashboard/scheduled-videos 200 in 467ms :: {"scheduled":[],"processing…
+12:40:53 PM [express] GET /api/dashboard/stats 200 in 773ms :: {"todayVideos":0,"todayShorts":0,"succ…
+Failed to download background for scene 19, using fallback
+Unsplash request failed, using fallback
+Failed to download background for scene 20, using fallback
+Unsplash request failed, using fallback
+Failed to download background for scene 21, using fallback
+Unsplash request failed, using fallback
+Failed to download background for scene 22, using fallback
+12:40:55 PM [express] GET /api/dashboard/active-pipeline 304 in 1704ms :: {"active":[{"id":82,"title"…
+Unsplash request failed, using fallback
+Failed to download background for scene 23, using fallback
+Unsplash request failed, using fallback
+Failed to download background for scene 24, using fallback
+Unsplash request failed, using fallback
+Failed to download background for scene 25, using fallback
+12:40:56 PM [express] GET /api/dashboard/active-pipeline 304 in 464ms :: {"active":[{"id":82,"title":…
+Unsplash request failed, using fallback
+Failed to download background for scene 26, using fallback
+12:40:57 PM [express] GET /api/dashboard/active-pipeline 304 in 466ms :: {"active":[{"id":82,"title":…
+Unsplash request failed, using fallback
+Failed to download background for scene 27, using fallback
+Unsplash request failed, using fallback
+12:40:57 PM [express] GET /api/pipeline/logs 304 in 464ms :: [{"id":305,"job_id":82,"step":"video_cre…
+Failed to download background for scene 28, using fallback
+Unsplash request failed, using fallback
+12:40:58 PM [express] GET /api/dashboard/active-pipeline 304 in 465ms :: {"active":[{"id":82,"title":…
+Failed to download background for scene 29, using fallback
+Unsplash request failed, using fallback
+Failed to download background for scene 30, using fallback
+Unsplash request failed, using fallback
+Failed to download background for scene 31, using fallback
+Unsplash request failed, using fallback
+Failed to download background for scene 32, using fallback
+12:40:59 PM [express] GET /api/dashboard/active-pipeline 304 in 464ms :: {"active":[{"id":82,"title":…
+Unsplash request failed, using fallback
+Failed to download background for scene 33, using fallback
+12:41:00 PM [express] GET /api/dashboard/active-pipeline 304 in 468ms :: {"active":[{"id":82,"title":…
+Unsplash request failed, using fallback
+Failed to download background for scene 34, using fallback
+Unsplash request failed, using fallback
+12:41:00 PM [express] GET /api/pipeline/logs 304 in 464ms :: [{"id":305,"job_id":82,"step":"video_cre…
+Failed to download background for scene 35, using fallback
+Unsplash request failed, using fallback
+12:41:01 PM [express] GET /api/dashboard/active-pipeline 304 in 479ms :: {"active":[{"id":82,"title":…
+Failed to download background for scene 36, using fallback
+Unsplash request failed, using fallback
+Failed to download background for scene 37, using fallback
+Unsplash request failed, using fallback
+Failed to download background for scene 38, using fallback
+Unsplash request failed, using fallback
+Failed to download background for scene 39, using fallback
+Unsplash request failed, using fallback
+Failed to download background for scene 40, using fallback
+Unsplash request failed, using fallb
