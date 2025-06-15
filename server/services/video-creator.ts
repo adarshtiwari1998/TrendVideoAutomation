@@ -48,6 +48,9 @@ export class ProfessionalVideoCreator {
 
       console.log(`🎬 Starting PROFESSIONAL video creation for job ${jobData.id}`);
 
+      // Ensure FFmpeg is available before starting
+      await this.ensureFFmpegAvailable();
+
       const isShort = jobData.videoType === 'short';
       const targetDuration = isShort ? 120 : 640; // 2 min for shorts, 10+ min for long-form
 
@@ -872,14 +875,36 @@ export class ProfessionalVideoCreator {
 
   private async ensureFFmpegAvailable(): Promise<void> {
     try {
-      // Try to install ffmpeg via nix if not available
-      const { execSync } = require('child_process');
-      console.log('🔧 Installing FFmpeg...');
-      execSync('nix-env -iA nixpkgs.ffmpeg-full', { stdio: 'inherit', timeout: 120000 });
-      console.log('✅ FFmpeg installation completed');
-    } catch (error) {
-      console.warn('⚠️ Could not install FFmpeg automatically');
-      throw new Error('FFmpeg not available and could not be installed');
+      // Check if FFmpeg is already available
+      await execAsync('which ffmpeg');
+      await execAsync('which ffprobe');
+      console.log('✅ FFmpeg tools already available');
+      return;
+    } catch (checkError) {
+      console.log('🔧 FFmpeg not found, installing...');
+      
+      try {
+        // Try to install ffmpeg via nix
+        const { execSync } = require('child_process');
+        execSync('nix-env -iA nixpkgs.ffmpeg-full', { stdio: 'inherit', timeout: 180000 });
+        
+        // Verify installation
+        await execAsync('which ffmpeg');
+        await execAsync('which ffprobe');
+        console.log('✅ FFmpeg installation completed and verified');
+      } catch (installError) {
+        console.error('❌ Failed to install FFmpeg:', installError);
+        
+        // Try alternative installation method
+        try {
+          const { execSync } = require('child_process');
+          execSync('nix-shell -p ffmpeg-full --run "echo FFmpeg available"', { stdio: 'inherit', timeout: 60000 });
+          console.log('✅ FFmpeg available via nix-shell');
+        } catch (shellError) {
+          console.error('❌ All FFmpeg installation methods failed');
+          throw new Error('FFmpeg not available and could not be installed. Please install FFmpeg manually.');
+        }
+      }
     }
   }
 
