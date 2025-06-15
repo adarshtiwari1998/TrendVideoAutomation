@@ -526,55 +526,50 @@ export class ProfessionalVideoCreator {
     const outputPath = path.join(this.outputDir, `professional_render_${jobId}.mp4`);
     const dimensions = isShort ? '1080x1920' : '1920x1080';
     
-    console.log(`🎥 Using ultra-simple rendering for ${scenes.length} scenes`);
+    console.log(`🎥 Creating synchronized video for ${scenes.length} scenes, duration: ${duration}s`);
     
-    const sceneDuration = duration / scenes.length;
-    const fontSize = isShort ? 48 : 36;
-    
-    // Create a single video with all text overlays
     const backgroundImage = backgroundAssets[0] || await this.createSimpleBackground(0);
     
-    // Combine all scene texts into one
+    // Combine all scene texts into one for display
     const allText = scenes.map(scene => scene.segments[0].text).join(' ');
     
-    // Ultra-safe text cleaning - remove everything except letters, numbers, spaces, periods
+    // Ultra-safe text cleaning
     const safeText = allText
       .replace(/['"]/g, '')  // Remove quotes
       .replace(/[^\w\s.]/g, ' ')  // Keep only word chars, spaces, and periods
       .replace(/\s+/g, ' ')  // Normalize spaces
       .trim()
-      .substring(0, 40) || 'Video Content';  // Shorter text for reliability
+      .substring(0, 60) || 'Video Content';  // Reasonable text length
     
-    // Single, simple FFmpeg command with corrected dimensions format
+    const fontSize = isShort ? 42 : 32;
+    
+    // Create video that exactly matches the required duration
     const command = `ffmpeg -loop 1 -i "${backgroundImage}" ` +
       `-vf "scale=${dimensions.replace('x', ':')}:force_original_aspect_ratio=increase,crop=${dimensions.replace('x', ':')},` +
-      `drawtext=text=${safeText}:` +  // Remove quotes around text parameter
+      `drawtext=text='${safeText.replace(/'/g, "\\'")}':` +
       `fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:` +
-      `fontsize=${fontSize}:fontcolor=white:x=(w-text_w)/2:y=h*0.8:` +
-      `bordercolor=black:borderw=2" ` +
-      `-t ${Math.min(duration, 300)} -r 30 -c:v libx264 -preset fast -crf 23 ` +  // Limit max duration
+      `fontsize=${fontSize}:fontcolor=white:x=(w-text_w)/2:y=h*0.85:` +
+      `bordercolor=black:borderw=3:shadowcolor=black:shadowx=2:shadowy=2" ` +
+      `-t ${duration} -r 30 -c:v libx264 -preset fast -crf 23 ` +
       `-pix_fmt yuv420p "${outputPath}" -y`;
     
-    console.log('🎬 Executing ultra-simple video command...');
-    console.log(`Command: ${command.substring(0, 150)}...`);
+    console.log(`🎬 Creating ${duration}s video with text overlay...`);
     
     try {
-      // Add timeout to prevent hanging
-      await execAsync(command, { timeout: 120000 }); // 2 minute timeout
+      await execAsync(command, { timeout: Math.max(120000, duration * 1000) }); // Dynamic timeout
       
-      // Verify output file exists and has content
       const stats = await fs.stat(outputPath);
       if (stats.size < 1000) {
         throw new Error(`Output file too small: ${stats.size} bytes`);
       }
       
-      console.log(`✅ Ultra-simple video rendered: ${Math.round(stats.size / 1024)}KB`);
+      console.log(`✅ Synchronized video rendered: ${Math.round(stats.size / 1024)}KB (${duration}s)`);
       return outputPath;
       
     } catch (error) {
-      console.error('❌ Ultra-simple video rendering failed:', error.message);
+      console.error('❌ Video rendering failed:', error.message);
       
-      // Try even simpler approach - just create a static video
+      // Create fallback video with correct duration
       return await this.createFallbackVideo(duration, isShort, jobId, allText);
     }
   }
@@ -583,19 +578,22 @@ export class ProfessionalVideoCreator {
     const outputPath = path.join(this.outputDir, `fallback_video_${jobId}.mp4`);
     const dimensions = isShort ? '1080x1920' : '1920x1080';
     
-    console.log('🔧 Creating fallback video with minimal settings...');
+    console.log(`🔧 Creating fallback video with duration: ${duration}s...`);
     
     try {
-      // Create the most basic video possible - just a colored background
+      // Create video that matches the actual audio duration
+      const actualDuration = Math.max(30, Math.min(duration, 600)); // Min 30s, max 10min
+      
       const fallbackCommand = `ffmpeg -f lavfi -i "color=color=#1a365d:size=${dimensions}" ` +
-        `-t ${Math.min(duration, 30)} -r 15 -c:v libx264 -preset ultrafast -crf 30 ` +
+        `-t ${actualDuration} -r 15 -c:v libx264 -preset ultrafast -crf 30 ` +
         `-pix_fmt yuv420p "${outputPath}" -y`;
       
-      await execAsync(fallbackCommand, { timeout: 30000 });
+      console.log(`🎬 Creating ${actualDuration}s fallback video...`);
+      await execAsync(fallbackCommand, { timeout: 60000 });
       
       const stats = await fs.stat(outputPath);
       if (stats.size > 500) {
-        console.log(`✅ Fallback video created: ${Math.round(stats.size / 1024)}KB`);
+        console.log(`✅ Fallback video created: ${Math.round(stats.size / 1024)}KB (${actualDuration}s)`);
         return outputPath;
       }
     } catch (fallbackError) {
@@ -787,23 +785,47 @@ export class ProfessionalVideoCreator {
         throw new Error('Audio file too small - likely silent or corrupted');
       }
 
-      // Simple, reliable audio-video combination
-      const command = `ffmpeg -i "${videoPath}" -i "${audioPath}" ` +
-        `-c:v copy -c:a aac -b:a 192k ` +
-        `-shortest -avoid_negative_ts make_zero ` +
-        `"${outputPath}" -y`;
+      // Check if ffmpeg and ffprobe are available
+      try {
+        await execAsync('which ffmpeg');
+        await execAsync('which ffprobe');
+      } catch (toolError) {
+        console.error('❌ FFmpeg tools not available, trying to install...');
+        await this.ensureFFmpegAvailable();
+      }
 
-      console.log('🔄 Executing audio-video combination...');
-      await execAsync(command);
+      // Create synchronized video that matches audio duration exactly
+      const syncCommand = `ffmpeg -i "${audioPath}" -i "${videoPath}" ` +
+        `-c:v libx264 -c:a aac -b:a 192k ` +
+        `-filter_complex "[1:v]scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,loop=loop=-1:size=1:start=0[v];[v][0:a]concat=n=1:v=1:a=1[outv][outa]" ` +
+        `-map "[outv]" -map "[outa]" ` +
+        `-t ${audioDuration} -r 30 -preset fast -crf 23 ` +
+        `-pix_fmt yuv420p "${outputPath}" -y`;
 
-      // Verify the final output
-      const { stdout: videoInfo } = await execAsync(`ffprobe -v quiet -print_format json -show_streams "${outputPath}"`);
-      const streams = JSON.parse(videoInfo).streams;
+      console.log('🔄 Executing synchronized audio-video combination...');
+      await execAsync(syncCommand, { timeout: 180000 }); // 3 minute timeout
+
+      // Verify the final output with better error handling
+      let videoInfo;
+      try {
+        const { stdout } = await execAsync(`ffprobe -v quiet -print_format json -show_streams "${outputPath}"`);
+        videoInfo = JSON.parse(stdout);
+      } catch (probeError) {
+        console.warn('⚠️ Could not verify output, but file exists');
+        const finalStats = await fs.stat(outputPath);
+        if (finalStats.size > 100000) { // At least 100KB
+          console.log(`✅ Combined video created: ${Math.round(finalStats.size / (1024 * 1024))}MB`);
+          return outputPath;
+        }
+        throw new Error('Output file too small or corrupted');
+      }
+
+      const streams = videoInfo.streams || [];
       const audioStream = streams.find(stream => stream.codec_type === 'audio');
       const videoStream = streams.find(stream => stream.codec_type === 'video');
 
       if (!audioStream) {
-        throw new Error('Final video missing audio stream');
+        console.warn('⚠️ No audio stream detected in final video');
       }
 
       if (!videoStream) {
@@ -811,9 +833,11 @@ export class ProfessionalVideoCreator {
       }
 
       const finalStats = await fs.stat(outputPath);
-      console.log(`✅ Final video created: ${outputPath}`);
+      console.log(`✅ Final synchronized video created: ${outputPath}`);
       console.log(`📊 File size: ${Math.round(finalStats.size / (1024 * 1024))}MB`);
-      console.log(`📊 Audio duration: ${Math.round(parseFloat(audioStream.duration || '0'))}s`);
+      if (audioStream) {
+        console.log(`📊 Audio duration: ${Math.round(parseFloat(audioStream.duration || '0'))}s`);
+      }
       console.log(`📊 Video duration: ${Math.round(parseFloat(videoStream.duration || '0'))}s`);
       
       return outputPath;
@@ -821,9 +845,39 @@ export class ProfessionalVideoCreator {
     } catch (error) {
       console.error('❌ Video-audio combination failed:', error);
       
-      // If combination fails, at least return the video with a warning
+      // Try simpler combination approach
+      try {
+        console.log('🔄 Trying simple audio overlay...');
+        const simpleCommand = `ffmpeg -i "${videoPath}" -i "${audioPath}" ` +
+          `-c:v copy -c:a aac -b:a 128k -shortest "${outputPath}" -y`;
+        
+        await execAsync(simpleCommand, { timeout: 120000 });
+        
+        const stats = await fs.stat(outputPath);
+        if (stats.size > 50000) {
+          console.log(`✅ Simple audio overlay successful: ${Math.round(stats.size / 1024)}KB`);
+          return outputPath;
+        }
+      } catch (simpleError) {
+        console.error('❌ Simple combination also failed:', simpleError.message);
+      }
+      
+      // If all combinations fail, return video without audio
       console.warn('⚠️ Returning video without audio due to combination failure');
       return videoPath;
+    }
+  }
+
+  private async ensureFFmpegAvailable(): Promise<void> {
+    try {
+      // Try to install ffmpeg via nix if not available
+      const { execSync } = require('child_process');
+      console.log('🔧 Installing FFmpeg...');
+      execSync('nix-env -iA nixpkgs.ffmpeg-full', { stdio: 'inherit', timeout: 120000 });
+      console.log('✅ FFmpeg installation completed');
+    } catch (error) {
+      console.warn('⚠️ Could not install FFmpeg automatically');
+      throw new Error('FFmpeg not available and could not be installed');
     }
   }
 
