@@ -163,27 +163,39 @@ export class TextToSpeechService {
     console.log(`📝 Cleaning text for speech. Original length: ${text.length}`);
     console.log(`📝 First 200 chars: "${text.substring(0, 200)}..."`);
     
-    // First enhance the script to ensure it has proper intro/outro
-    const enhancedText = this.enhanceScriptForNaturalSpeech(text);
-    
-    // MINIMAL cleaning - preserve ALL content, only fix formatting
-    const cleaned = enhancedText
-      .replace(/\n{3,}/g, '\n\n') // Clean up excessive newlines only
-      .replace(/\s+/g, ' ') // Normalize whitespace only
+    // Remove production instructions and model pollution BEFORE enhancement
+    let cleaned = text
+      // Remove model instructions that pollute TTS
+      .replace(/^Upbeat.*?intro.*?logo\s*/i, '')
+      .replace(/^.*?music.*?intro.*?animated.*?logo\s*/i, '')
+      .replace(/^\[.*?\]\s*/gm, '') // Remove stage directions
+      .replace(/^.*?background.*?music.*?\s*/i, '')
+      .replace(/^.*?fade.*?in.*?out.*?\s*/i, '')
+      .replace(/^.*?visual.*?effect.*?\s*/i, '')
+      .replace(/^.*?transition.*?\s*/i, '')
+      .replace(/^.*?animation.*?\s*/i, '')
+      .replace(/^.*?sound.*?effect.*?\s*/i, '')
+      // Clean up formatting only
+      .replace(/\n{3,}/g, '\n\n')
+      .replace(/\s+/g, ' ')
       .trim();
 
-    console.log(`📝 Cleaned text length: ${cleaned.length}`);
-    console.log(`📝 Final text preview: "${cleaned.substring(0, 300)}..."`);
+    console.log(`📝 Cleaned text length after removing instructions: ${cleaned.length}`);
     
-    // Verify we haven't lost significant content
-    const contentLossPercentage = ((text.length - cleaned.length) / text.length) * 100;
-    if (contentLossPercentage > 20) {
-      console.warn(`⚠️ WARNING: Lost ${contentLossPercentage.toFixed(1)}% of original content during cleaning!`);
+    // Only enhance if we have substantial content
+    if (cleaned.length < 100) {
+      console.warn('⚠️ Text too short after cleaning instructions');
+      throw new Error('Insufficient content after removing model instructions');
     }
     
-    console.log(`✅ Content preserved: ${((cleaned.length / enhancedText.length) * 100).toFixed(1)}% of enhanced text`);
+    // Apply minimal enhancement for natural speech
+    const enhanced = this.enhanceScriptForNaturalSpeech(cleaned);
+
+    console.log(`📝 Final enhanced text length: ${enhanced.length}`);
+    console.log(`📝 Final text preview: "${enhanced.substring(0, 300)}..."`);
+    console.log(`🎤 Expected TTS duration: ~${Math.ceil(enhanced.length / 150)} minutes`);
     
-    return cleaned;
+    return enhanced;
   }
 
   private async generateAndCombineChunks(chunks: string[], outputPath: string, voice: string, speed: number, pitch: number): Promise<string> {

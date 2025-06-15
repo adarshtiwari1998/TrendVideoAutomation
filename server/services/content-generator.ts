@@ -10,7 +10,7 @@ export class ContentGenerator {
     if (!apiKey && process.env.NODE_ENV === 'production') {
       throw new Error("GEMINI_API_KEY environment variable is required in production");
     }
-    
+
     // Use mock key for development if not set
     this.gemini = new GoogleGenerativeAI(apiKey || 'dev-mock-gemini-key');
     console.log('ContentGenerator initialized with API key:', apiKey ? 'CONFIGURED' : 'MOCK_MODE');
@@ -18,26 +18,26 @@ export class ContentGenerator {
 
   async generateScript(topic: TrendingTopic, videoType: 'long_form' | 'short'): Promise<string> {
     console.log(`🤖 Generating ${videoType} script for topic: ${topic.title}`);
-    
+
     try {
       const prompt = this.createPrompt(topic, videoType);
       console.log('📝 Created prompt, calling Gemini API...');
-      
+
       const model = this.gemini.getGenerativeModel({ model: "gemini-1.5-pro" });
-      
+
       const result = await model.generateContent([
         this.getSystemPrompt(videoType),
         prompt
       ]);
-      
+
       const response = await result.response;
       const text = response.text();
-      
+
       console.log('✅ Gemini API response received, length:', text.length);
-      
+
       // Clean and filter the content to remove Gemini's own commentary
       const cleanedScript = this.cleanAndFilterScript(text);
-      
+
       // Try to parse JSON response first
       try {
         const parsed = JSON.parse(cleanedScript);
@@ -47,7 +47,7 @@ export class ContentGenerator {
         console.log('📄 Using cleaned plain text response');
         return this.validateAndCleanScript(cleanedScript);
       }
-      
+
     } catch (error) {
       console.error('❌ Gemini script generation error:', error.message);
       console.log('🔄 Using intelligent fallback script generation...');
@@ -191,7 +191,7 @@ export class ContentGenerator {
 
   private createPrompt(topic: TrendingTopic, videoType: 'long_form' | 'short'): string {
     const duration = videoType === 'long_form' ? '10-15 minutes' : '45-60 seconds';
-    
+
     return `
 You are a YouTube content creator making a ${duration} video about "${topic.title}".
 
@@ -248,7 +248,7 @@ Write the complete script as if you're speaking directly to your YouTube audienc
   private getIntelligentFallbackScript(topic: TrendingTopic, videoType: 'long_form' | 'short'): string {
     // Create intelligent content based on topic details
     const { title, description, category } = topic;
-    
+
     if (videoType === 'short') {
       return `Hello friends! Today something really interesting happened. Let me tell you about ${title} in a super simple way.
 
@@ -425,7 +425,7 @@ Thank you for joining me today, and I'll see you in the next video where we'll c
   async createContentJob(topicId: number, videoType: 'long_form' | 'short'): Promise<ContentJob> {
     const topic = await storage.getTrendingTopics(100);
     const selectedTopic = topic.find(t => t.id === topicId);
-    
+
     if (!selectedTopic) {
       throw new Error('Topic not found');
     }
@@ -476,6 +476,68 @@ Thank you for joining me today, and I'll see you in the next video where we'll c
 
     const options = titles[videoType];
     return options[Math.floor(Math.random() * options.length)];
+  }
+
+    private enhanceScriptForNaturalSpeech(script: string): string {
+    // Ensure we have actual content to enhance
+    if (!script || script.length < 50) {
+      console.warn('⚠️ Script too short or empty, cannot enhance');
+      throw new Error('Script content is insufficient for enhancement');
+    }
+
+    console.log(`📝 Original script to enhance: "${script.substring(0, 200)}..."`);
+    console.log(`📝 Full script length before enhancement: ${script.length} characters`);
+
+    // PRESERVE ALL ORIGINAL CONTENT and expand for 10+ minute duration
+    let enhanced = script.trim();
+
+    // Professional YouTube Channel Intro (Always add for branding)
+    const professionalIntro = `Hello everyone, and welcome back to our channel! I'm your host, and today we have something absolutely fascinating to share with you. Before we dive in, if this is your first time here, make sure to hit that subscribe button and ring the notification bell so you never miss our latest content. For our returning viewers, thank you for being part of our amazing community! `;
+
+    // Add comprehensive intro
+    enhanced = professionalIntro + enhanced;
+
+    // Expand content for 10+ minute target (aim for 1500+ words)
+    if (enhanced.length < 8000) {
+      // Add detailed analysis section
+      enhanced += ` Now, let me take you deeper into this topic because there's so much more to explore here. When we really examine this situation, we can see multiple layers of complexity that make this story truly remarkable. Let me break this down into several key points that will help you understand the full picture.
+
+First, let's talk about the background and context that led to this development. Understanding the history behind this is crucial because it shows us how we got to where we are today. This didn't happen overnight - it's the result of years of research, development, and hard work by dedicated professionals.
+
+Second, we need to consider the broader implications of what this means for society as a whole. This isn't just an isolated incident or discovery - it has far-reaching consequences that will affect millions of people around the world. The ripple effects of this development will be felt across multiple industries and sectors.
+
+Third, let's examine what the experts are saying about this situation. I've gathered insights from leading researchers, industry professionals, and thought leaders who have been following this story closely. Their perspectives provide valuable context that helps us understand the significance of these developments.
+
+Additionally, it's important to discuss the potential challenges and obstacles that lie ahead. While this is certainly exciting news, there are still hurdles to overcome and questions that need to be answered. Being realistic about these challenges doesn't diminish the importance of this development - it actually helps us appreciate the magnitude of what has been achieved.
+
+Furthermore, we should talk about what this means for the future. How will this discovery or development shape the world we live in? What new possibilities does it open up? What problems might it solve? These are the questions that really matter when we're looking at groundbreaking developments like this.`;
+    }
+
+    // Professional YouTube Outro with strong call-to-action
+    const professionalOutro = ` 
+
+And that brings us to the end of today's in-depth analysis. I hope you found this comprehensive breakdown as fascinating as I did. This topic really demonstrates how rapidly our world is changing and evolving, and it's exciting to be able to share these developments with all of you.
+
+Now, I'd love to hear your thoughts on this topic. What aspects do you find most interesting? Do you have any questions about what we discussed today? Please share your thoughts in the comments section below - I read every single comment and love engaging with our community.
+
+If you enjoyed this detailed exploration and want to see more content like this, please give this video a thumbs up. It really helps our channel grow and lets me know what type of content you want to see more of. 
+
+And if you haven't already, make sure to subscribe to our channel and hit that notification bell. We upload new content regularly, covering the latest developments in science, technology, and world events. By subscribing, you'll be the first to know when we release new videos.
+
+Don't forget to share this video with friends and family who might find this topic interesting. Sharing our content helps more people discover these fascinating topics and grows our amazing community.
+
+Finally, check out the description below for additional resources and links related to today's topic. I've included some great articles and studies that you might find interesting if you want to dive even deeper into this subject.
+
+Thank you so much for watching, for being part of our community, and for your continued support. Your engagement and enthusiasm make creating these videos incredibly rewarding. Until next time, keep learning, keep questioning, and keep exploring the amazing world around us. See you in the next video!`;
+
+    enhanced += professionalOutro;
+
+    console.log(`✅ Enhanced script length: ${enhanced.length} characters`);
+    console.log(`📝 Content growth: +${enhanced.length - script.length} characters`);
+    console.log(`📝 Target duration: ~${Math.ceil(enhanced.length / 150)} minutes (estimated)`);
+    console.log(`📝 Enhanced script preview: "${enhanced.substring(0, 300)}..."`);
+
+    return enhanced;
   }
 }
 

@@ -70,11 +70,8 @@ export class ProfessionalVideoCreator {
       // Step 6: Combine with audio using advanced audio processing
       const finalPath = await this.combineVideoWithAudio(videoPath, audioPath, jobId, isShort);
 
-      // Step 7: Apply final post-processing effects
-      const enhancedPath = await this.applyPostProcessingEffects(finalPath, jobId, isShort);
-
-      console.log(`✅ PROFESSIONAL video created: ${enhancedPath}`);
-      return enhancedPath;
+      console.log(`✅ PROFESSIONAL video created: ${finalPath}`);
+      return finalPath;
 
     } catch (error) {
       console.error(`❌ Professional video creation failed for job ${jobId}:`, error);
@@ -200,9 +197,9 @@ export class ProfessionalVideoCreator {
     const sentences = jobData.script.split(/[.!?]+/).filter(s => s.trim().length > 0);
     const scenes: VideoScene[] = [];
 
-    // Limit scenes to prevent FFmpeg command line overflow and ensure reasonable scene duration
-    const maxScenes = isShort ? 8 : 20; // Max 20 scenes for long videos, 8 for shorts
-    const minSceneDuration = isShort ? 7 : 15; // Minimum 15 seconds per scene for long videos
+    // Optimized scene settings for professional videos
+    const maxScenes = isShort ? 6 : 12; // Reduced scenes for better quality
+    const minSceneDuration = isShort ? 15 : 30; // Longer scenes for better readability
     
     // Calculate optimal scene count based on duration and limits
     const optimalSceneCount = Math.min(
@@ -214,8 +211,8 @@ export class ProfessionalVideoCreator {
     
     console.log(`🎬 Creating ${optimalSceneCount} scenes with ${sceneDuration.toFixed(1)}s duration each`);
 
-    // Group sentences into scenes
-    const sentencesPerScene = Math.max(1, Math.floor(sentences.length / optimalSceneCount));
+    // Group sentences into scenes with better text management
+    const sentencesPerScene = Math.max(2, Math.floor(sentences.length / optimalSceneCount));
     
     for (let i = 0; i < optimalSceneCount; i++) {
       const startSentenceIndex = i * sentencesPerScene;
@@ -223,10 +220,16 @@ export class ProfessionalVideoCreator {
         ? sentences.length 
         : (i + 1) * sentencesPerScene;
       
-      const sceneText = sentences
+      let sceneText = sentences
         .slice(startSentenceIndex, endSentenceIndex)
         .map(s => s.trim())
         .join('. ') + '.';
+
+      // Limit text length per scene for readability
+      if (sceneText.length > 200) {
+        const words = sceneText.split(' ');
+        sceneText = words.slice(0, 30).join(' ') + '...';
+      }
 
       const startTime = i * sceneDuration;
 
@@ -235,10 +238,10 @@ export class ProfessionalVideoCreator {
           text: sceneText,
           startTime,
           duration: sceneDuration,
-          animation: this.getRandomAnimation(),
-          position: i % 2 === 0 ? 'center' : 'bottom'
+          animation: 'fadeIn', // Use consistent animation for professionalism
+          position: 'center' // Always center for best readability
         }],
-        transition: this.getRandomTransition(),
+        transition: 'fade', // Use consistent transitions
         effects: this.getSceneEffects(i, isShort)
       });
     }
@@ -634,57 +637,47 @@ export class ProfessionalVideoCreator {
   }
 
   private createTextAnimation(segment: VideoSegment, isShort: boolean, startTime: number, duration: number): string {
-    const fontSize = isShort ? 64 : 48;
+    // Professional text settings
+    const fontSize = isShort ? 54 : 42; // Slightly smaller for better fit
     const textColor = '#FFFFFF';
     const borderColor = '#000000';
+    const maxWidth = isShort ? 'w*0.8' : 'w*0.9'; // Limit text width
 
-    let x = '(w-text_w)/2'; // center by default
-    let y = isShort ? 'h*0.75' : 'h*0.8';
+    // Always center text for professional appearance
+    const x = '(w-text_w)/2';
+    const y = isShort ? 'h*0.75' : 'h*0.8';
 
-    // Adjust position based on segment position
-    switch (segment.position) {
-      case 'top':
-        y = isShort ? 'h*0.15' : 'h*0.1';
-        break;
-      case 'bottom':
-        y = isShort ? 'h*0.85' : 'h*0.9';
-        break;
-      case 'left':
-        x = 'w*0.1';
-        break;
-      case 'right':
-        x = 'w*0.9-text_w';
-        break;
+    // Clean text for display (remove problematic characters)
+    const cleanText = segment.text
+      .replace(/'/g, '')
+      .replace(/"/g, '')
+      .replace(/[^\w\s.,!?-]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    // Ensure text doesn't exceed maximum width by wrapping
+    const words = cleanText.split(' ');
+    const maxWordsPerLine = isShort ? 8 : 12;
+    let displayText = '';
+    
+    if (words.length > maxWordsPerLine) {
+      displayText = words.slice(0, maxWordsPerLine).join(' ') + '...';
+    } else {
+      displayText = cleanText;
     }
 
-    // Create animation based on type
-    let animationEffect = '';
-    switch (segment.animation) {
-      case 'slideIn':
-        animationEffect = `:x='if(lt(t,${startTime}),w,${x})'`;
-        break;
-      case 'fadeIn':
-        animationEffect = `:alpha='if(lt(t,${startTime}),0,if(lt(t,${startTime+1}),(t-${startTime}),1))'`;
-        break;
-      case 'scaleIn':
-        animationEffect = `:fontsize='${fontSize}*if(lt(t,${startTime}),0.1,if(lt(t,${startTime+0.5}),${fontSize}*(t-${startTime})*2,${fontSize}))'`;
-        break;
-      case 'typewriter':
-        const textLength = segment.text.length;
-        animationEffect = `:text='${segment.text.substring(0, Math.floor(textLength * Math.min(1, Math.max(0, (1 - startTime) / duration))))}'`;
-        break;
-      default:
-        animationEffect = '';
-    }
+    // Simple fade in animation only (no complex animations that can overlap)
+    const fadeEffect = `:alpha='if(lt(t,${startTime}),0,if(lt(t,${startTime+1}),t-${startTime},1))'`;
 
-    return `drawtext=text='${segment.text.replace(/'/g, "\\'")}':` +
+    return `drawtext=text='${displayText}':` +
       `fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:` +
       `fontsize=${fontSize}:fontcolor=${textColor}:` +
       `x=${x}:y=${y}:` +
-      `bordercolor=${borderColor}:borderw=3:` +
-      `shadowcolor=#000000:shadowx=3:shadowy=3:` +
+      `bordercolor=${borderColor}:borderw=4:` +
+      `shadowcolor=#000000:shadowx=2:shadowy=2:` +
+      `box=1:boxcolor=black@0.5:boxborderw=10:` + // Add semi-transparent background box
       `enable='between(t,${startTime},${startTime + duration})'` +
-      animationEffect + ',';
+      fadeEffect + ',';
   }
 
   private createSceneTransition(transition: VideoScene['transition'], sceneIndex: number, duration: number): string {
@@ -708,38 +701,48 @@ export class ProfessionalVideoCreator {
   }
 
   private async combineVideoWithAudio(videoPath: string, audioPath: string, jobId: number, isShort: boolean): Promise<string> {
-    const outputPath = path.join(this.outputDir, `final_with_audio_${jobId}.mp4`);
+    const outputPath = path.join(this.outputDir, `professional_final_${jobId}.mp4`);
 
     console.log(`🔊 Combining video with professional audio...`);
 
     try {
-      // Get audio duration to ensure video matches
+      // Get audio duration to ensure video matches exactly
       const audioDuration = await this.getAudioDuration(audioPath);
+      console.log(`🎵 Audio duration for sync: ${audioDuration}s`);
 
+      // Enhanced audio-video combination with perfect sync
       const command = `ffmpeg -i "${videoPath}" -i "${audioPath}" ` +
         `-filter_complex "` +
         `[0:v]scale=${isShort ? '1080:1920' : '1920:1080'}:force_original_aspect_ratio=increase,` +
         `crop=${isShort ? '1080:1920' : '1920:1080'}[v];` +
-        `[1:a]volume=1.0,highpass=f=80,lowpass=f=12000,acompressor=threshold=-16dB:ratio=3[a]" ` +
+        `[1:a]volume=1.2,acompressor=threshold=-18dB:ratio=2.5:attack=5:release=50[a]" ` +
         `-map "[v]" -map "[a]" ` +
-        `-c:v libx264 -preset medium -crf 18 ` +
-        `-c:a aac -b:a 192k -ar 48000 ` +
+        `-c:v libx264 -preset medium -crf 16 ` +
+        `-c:a aac -b:a 256k -ar 48000 ` +
         `-t ${audioDuration} ` +
+        `-shortest ` + // Ensure video matches audio duration exactly
         `-movflags +faststart ` +
         `"${outputPath}" -y`;
 
       await execAsync(command);
 
-      // Verify audio is embedded
+      // Verify audio is embedded and synced
       const { stdout: videoInfo } = await execAsync(`ffprobe -v quiet -print_format json -show_streams "${outputPath}"`);
       const streams = JSON.parse(videoInfo).streams;
-      const hasAudio = streams.some(stream => stream.codec_type === 'audio');
+      const audioStream = streams.find(stream => stream.codec_type === 'audio');
+      const videoStream = streams.find(stream => stream.codec_type === 'video');
 
-      if (!hasAudio) {
-        throw new Error('Audio embedding failed');
+      if (!audioStream) {
+        throw new Error('Audio embedding failed - no audio stream found');
       }
 
-      console.log(`✅ Video with audio combined successfully`);
+      if (!videoStream) {
+        throw new Error('Video processing failed - no video stream found');
+      }
+
+      console.log(`✅ Final video with synced audio: ${outputPath}`);
+      console.log(`📊 Audio: ${Math.round(parseFloat(audioStream.duration || '0'))}s, Video: ${Math.round(parseFloat(videoStream.duration || '0'))}s`);
+      
       return outputPath;
 
     } catch (error) {
