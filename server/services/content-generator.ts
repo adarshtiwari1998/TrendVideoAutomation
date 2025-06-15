@@ -64,109 +64,148 @@ export class ContentGenerator {
       return '';
     }
 
-    // Clean the script content with proper formatting
-    let cleaned = rawScript
-      // Remove problematic formatting elements but preserve content
-      .replace(/\[.*?\]/g, '') // Remove stage directions
-      .replace(/\(.*?\)/g, '') // Remove parenthetical notes
-      .replace(/^\s*[-*]\s*/gm, '') // Remove bullet points
-      .replace(/^Step \d+:.*$/gm, '') // Remove step indicators
-      .replace(/^\d+\.\s*/gm, '') // Remove numbered lists
-      // Clean up text structure while preserving content
-      .split('\n')
-      .filter(line => line.trim().length > 5) // Keep meaningful lines
-      .filter(line => !line.match(/^(Note:|Remember:|Important:)/i))
-      .join(' ') // Join with spaces for natural flow
-      .replace(/\s+/g, ' ') // Normalize whitespace
-      .trim();
+    // For long-form videos, preserve more content with minimal cleaning
+    if (videoType === 'long_form') {
+      // Gentle cleaning that preserves content structure
+      let cleaned = rawScript
+        .replace(/\[Stage Direction\]/gi, '') // Remove only explicit stage directions
+        .replace(/\(Note: [^)]*\)/gi, '') // Remove only explicit notes
+        .replace(/^\s*\*\*.*\*\*\s*$/gm, '') // Remove markdown headers
+        .replace(/^\s*#{1,6}\s+/gm, '') // Remove markdown headers
+        .split('\n')
+        .filter(line => {
+          const trimmed = line.trim();
+          // Keep all substantial content lines
+          return trimmed.length > 10 && 
+                 !trimmed.match(/^(Meta:|System:|Note:|Remember:|Important:|Warning:)/i) &&
+                 !trimmed.match(/^\[.*\]$/) && // Remove bracketed instructions
+                 !trimmed.match(/^Here's|^This is|^I'll|^Let me/i); // Remove AI system responses
+        })
+        .join(' ') // Join with spaces for natural flow
+        .replace(/\s+/g, ' ') // Normalize whitespace
+        .trim();
 
-    // Ensure proper sentence structure for TTS
-    cleaned = cleaned
-      .replace(/([.!?])\s*([a-z])/g, '$1 $2') // Space after punctuation
-      .replace(/([a-zA-Z])([A-Z])/g, '$1. $2') // Add periods between sentences
-      .replace(/\s+/g, ' ') // Final whitespace cleanup
-      .replace(/([a-zA-Z])\s*$/g, '$1.'); // Add period at end
+      // Ensure proper sentence structure for TTS
+      cleaned = cleaned
+        .replace(/([.!?])\s*([a-z])/g, '$1 $2') // Space after punctuation
+        .replace(/\s+/g, ' ') // Final whitespace cleanup
+        .replace(/([a-zA-Z])\s*$/g, '$1.'); // Add period at end
 
-    console.log(`✅ Cleaned script length: ${cleaned.length} characters`);
+      console.log(`✅ Gentle cleaned script length: ${cleaned.length} characters`);
 
-    // Check for coherent content
-    const words = cleaned.split(' ').filter(w => w.length > 2);
-    if (words.length < 50) {
-      console.warn('⚠️ Script lacks sufficient content, using fallback');
-      return '';
+      // More lenient validation for long-form content
+      const words = cleaned.split(' ').filter(w => w.length > 2);
+      const estimatedDuration = words.length / 2.5; // ~2.5 words per second
+      console.log(`📊 Word count: ${words.length}, Estimated speech duration: ${Math.round(estimatedDuration)}s`);
+
+      // Accept if we have substantial content (minimum 8 minutes for flexibility)
+      if (words.length >= 1200 && estimatedDuration >= 480) { // 8 minutes minimum
+        console.log(`✅ Long-form script validated: ${Math.round(estimatedDuration/60)} minutes`);
+        return cleaned;
+      } else {
+        console.warn(`⚠️ Long-form script still too short (${Math.round(estimatedDuration/60)} min), extending with fallback`);
+        // Extend with fallback content instead of returning empty
+        const fallbackExtension = this.getIntelligentFallbackScript(topic, videoType);
+        return cleaned + ' ' + fallbackExtension;
+      }
+    } else {
+      // Standard cleaning for short videos
+      let cleaned = rawScript
+        .replace(/\[.*?\]/g, '') // Remove stage directions
+        .replace(/\(.*?\)/g, '') // Remove parenthetical notes
+        .replace(/^\s*[-*]\s*/gm, '') // Remove bullet points
+        .replace(/^Step \d+:.*$/gm, '') // Remove step indicators
+        .replace(/^\d+\.\s*/gm, '') // Remove numbered lists
+        .split('\n')
+        .filter(line => line.trim().length > 5)
+        .filter(line => !line.match(/^(Note:|Remember:|Important:)/i))
+        .join(' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      // Ensure proper sentence structure for TTS
+      cleaned = cleaned
+        .replace(/([.!?])\s*([a-z])/g, '$1 $2')
+        .replace(/([a-zA-Z])([A-Z])/g, '$1. $2')
+        .replace(/\s+/g, ' ')
+        .replace(/([a-zA-Z])\s*$/g, '$1.');
+
+      console.log(`✅ Cleaned script length: ${cleaned.length} characters`);
+
+      const words = cleaned.split(' ').filter(w => w.length > 2);
+      if (words.length < 50) {
+        console.warn('⚠️ Script lacks sufficient content, using fallback');
+        return '';
+      }
+
+      return cleaned;
     }
-
-    // Ensure minimum duration for long-form videos (10+ minutes)
-    const estimatedDuration = words.length / 2.5; // ~2.5 words per second
-    console.log(`📊 Estimated speech duration: ${Math.round(estimatedDuration)}s`);
-
-    if (videoType === 'long_form' && estimatedDuration < 600) { // 10 minutes minimum
-      console.warn(`⚠️ Long-form video too short (${Math.round(estimatedDuration)}s), using extended fallback`);
-      return '';
-    }
-
-    return cleaned;
   }
 
   private validateAndCleanScript(script: string): string {
     console.log(`🔍 Validating script: "${script.substring(0, 100)}..."`);
 
-    // Ensure the script is actual content, not system messages
-    const invalidPatterns = [
-      /^(I'll|I'm|Here's|This is)/i,
-      /^(Sure|Certainly|Of course)/i,
-      /^(Let me|I can)/i,
+    if (!script || script.trim().length < 50) {
+      console.warn('⚠️ Empty or very short script received');
+      return '';
+    }
+
+    // Light validation - only remove obvious system responses
+    const systemPatterns = [
+      /^(I'll create|I'll help|I'll generate)/i,
+      /^(Here's a script|Here's the script)/i,
+      /^(Sure, I can|Certainly, I can)/i,
     ];
 
-    // Check if script contains invalid patterns at the start
-    for (const pattern of invalidPatterns) {
-      if (pattern.test(script.substring(0, 100))) {
-        console.warn('⚠️ Detected system text in script, using fallback');
+    let isSystemResponse = false;
+    for (const pattern of systemPatterns) {
+      if (pattern.test(script.substring(0, 50))) {
+        console.warn('⚠️ Detected AI system response, extracting content...');
+        isSystemResponse = true;
+        break;
+      }
+    }
+
+    // If it's a system response, try to extract the actual script content
+    if (isSystemResponse) {
+      // Look for script content after common AI response patterns
+      const contentMatch = script.match(/(?:script|content):\s*["']?(.*?)["']?$/is) ||
+                          script.match(/(?:here's|here is)\s+(?:the\s+)?(?:script|content):\s*(.*)/is) ||
+                          script.match(/\n\n(.*)/s);
+      
+      if (contentMatch && contentMatch[1]) {
+        script = contentMatch[1].trim();
+        console.log('✅ Extracted script content from AI response');
+      } else {
+        console.warn('⚠️ Could not extract script content');
         return '';
       }
     }
 
-    // Clean the script content with proper formatting
+    // Minimal cleaning to preserve content
     let cleaned = script
-      // Remove problematic formatting elements but preserve content
-      .replace(/\[.*?\]/g, '') // Remove stage directions
-      .replace(/\(.*?\)/g, '') // Remove parenthetical notes
-      .replace(/^\s*[-*]\s*/gm, '') // Remove bullet points
-      .replace(/^Step \d+:.*$/gm, '') // Remove step indicators
-      .replace(/^\d+\.\s*/gm, '') // Remove numbered lists
-      // Clean up text structure while preserving content
-      .split('\n')
-      .filter(line => line.trim().length > 5) // Keep meaningful lines
-      .filter(line => !line.match(/^(Note:|Remember:|Important:)/i))
-      .join(' ') // Join with spaces for natural flow
+      .replace(/^\s*["'`]/g, '') // Remove leading quotes
+      .replace(/["'`]\s*$/g, '') // Remove trailing quotes
       .replace(/\s+/g, ' ') // Normalize whitespace
       .trim();
 
     // Ensure proper sentence structure for TTS
     cleaned = cleaned
       .replace(/([.!?])\s*([a-z])/g, '$1 $2') // Space after punctuation
-      .replace(/([a-zA-Z])([A-Z])/g, '$1. $2') // Add periods between sentences
       .replace(/\s+/g, ' ') // Final whitespace cleanup
       .replace(/([a-zA-Z])\s*$/g, '$1.'); // Add period at end
 
-    console.log(`✅ Cleaned script length: ${cleaned.length} characters`);
+    console.log(`✅ Minimally cleaned script length: ${cleaned.length} characters`);
 
-    // Ensure we have substantial content for video generation
-    if (cleaned.length < 200) {
-      console.warn('⚠️ Script too short for proper video, using fallback');
+    // Very basic validation - just ensure we have some content
+    if (cleaned.length < 100) {
+      console.warn('⚠️ Script too short after cleaning');
       return '';
     }
 
-    // Check for coherent content
     const words = cleaned.split(' ').filter(w => w.length > 2);
-    if (words.length < 50) {
-      console.warn('⚠️ Script lacks sufficient content, using fallback');
-      return '';
-    }
-
-    // Ensure minimum duration for long-form videos
     const estimatedDuration = words.length / 2.5; // ~2.5 words per second
-    console.log(`📊 Estimated speech duration: ${Math.round(estimatedDuration)}s`);
+    console.log(`📊 Word count: ${words.length}, Estimated speech duration: ${Math.round(estimatedDuration)}s`);
 
     return cleaned;
   }
