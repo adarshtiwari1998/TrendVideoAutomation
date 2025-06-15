@@ -1,0 +1,30 @@
+Video Script for Job 67
+
+```json
+{
+  "script": "Hey everyone, and namaste from [Your Name/Channel Name]! Have you ever seen pictures of the Great Barrier Reef? Absolutely stunning, right?  A vibrant underwater city teeming with life.  Well, today we're diving into some troubling news about this natural wonder.  Scientists are reporting a massive coral bleaching event, and it's not the first time. [PAUSE - Show a stunning visual of a healthy coral reef] This is the *fourth* major bleaching event in just seven years.  Let that sink in for a moment. [PAUSE - Transition to a visual of bleached coral] \n\n\nSo, what exactly is coral bleaching? Imagine a city losing its color, its vibrancy.  That's what's happening to the coral.  These vibrant colors come from tiny algae that live inside the coral, providing them with food and energy.  But when the ocean temperature rises – even just a couple of degrees –  these algae are expelled, leaving behind a ghostly white skeleton. [PAUSE - Show a close-up animation explaining the algae-coral relationship] \n\n\nNow, you might be thinking, 'Okay, warmer oceans, it's a global problem, what's the big deal for *us* in India?'  Well, everything is connected.  Think about it – the oceans regulate our climate, influence our monsoons, and are a major source of food. Damage to coral reefs like the Great Barrier Reef has ripple effects across the globe.  [PAUSE - Show visuals of monsoon patterns and global food chain impact]  This isn't just an environmental issue; it's an economic and social one too.  Imagine coastal communities that rely on fishing, or tourism, losing their livelihoods.  It's a domino effect. \n\n\nThe Great Barrier Reef, stretching over 2,300 kilometers, is a UNESCO World Heritage site and home to an incredible diversity of life.  Over 1,500 species of fish, 400 types of coral, and countless other organisms call it home. This bleaching event is a wake-up call.  [PAUSE - Show quick cuts of diverse marine life on the reef]  We can't afford to lose this natural treasure. [PAUSE -  Show a graph of increasing ocean temperatures over time] \n\n\nBut here's the thing: it's not too late. While the situation is dire, there's still hope.  Researchers are working tirelessly to monitor the damage and develop strategies to protect the reef.  And we can all play our part. From reducing our carbon footprint to supporting sustainable tourism, every action counts. [PAUSE - Show examples of individual actions and conservation efforts].  Let's not stand by and watch this wonder of the world fade away.  What are *your* thoughts on this?  Share your ideas and concerns in the comments below!  Don't forget to like this video if you found it informative, and subscribe to the channel for more content on environmental issues.  Until next time, take care and let's work together to protect our planet.",
+  "visual_cues": [
+    "Stunning visual of a healthy coral reef",
+    "Visual of bleached coral",
+    "Close-up animation explaining the algae-coral relationship",
+    "Visuals of monsoon patterns and global food chain impact",
+    "Quick cuts of diverse marine life on the reef",
+    "Graph of increasing ocean temperatures over time",
+    "Examples of individual actions and conservation efforts"
+  ],
+  "hashtags": [
+    "#CoralBleaching",
+    "#GreatBarrierReef",
+    "#ClimateChange",
+    "#EnvironmentalChanges",
+    "#SaveOurOceans",
+    "#OceanConservation",
+    "#India",
+    "#GlobalWarming",
+    "#SustainableLiving",
+    "#MarineLife"
+  ]
+}
+```
+
+Note: This is a text-only fallback due to video generation failure.
