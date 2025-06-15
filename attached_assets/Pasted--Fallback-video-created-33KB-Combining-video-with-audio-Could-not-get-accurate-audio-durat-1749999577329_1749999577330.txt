@@ -1,0 +1,46 @@
+✅ Fallback video created: 33KB
+🔊 Combining video with audio...
+Could not get accurate audio duration, using file-based estimate...
+📊 Estimated duration from file size: 439.68275s
+🎵 Detected audio duration: 439.68275s
+🎵 Audio file size: 6870KB
+🔄 Executing audio-video combination...
+2:58:57 PM [express] GET /api/dashboard/active-pipeline 304 in 600ms :: {"active":[{"id":90,"title":…
+2:58:58 PM [express] GET /api/dashboard/scheduled-videos 304 in 601ms :: {"scheduled":[],"processing…
+2:58:59 PM [express] GET /api/dashboard/active-pipeline 304 in 464ms :: {"active":[{"id":90,"title":…
+2:59:01 PM [express] GET /api/dashboard/active-pipeline 304 in 597ms :: {"active":[{"id":90,"title":…
+2:59:01 PM [express] GET /api/dashboard/scheduled-videos 304 in 474ms :: {"scheduled":[],"processing…
+❌ Video-audio combination failed: Error: Command failed: ffprobe -v quiet -print_format json -show_streams "/home/runner/workspace/temp/videos/professional_final_90.mp4"
+/bin/sh: 1: ffprobe: not found
+
+    at genericNodeError (node:internal/errors:984:15)
+    at wrappedFn (node:internal/errors:538:14)
+    at ChildProcess.exithandler (node:child_process:422:12)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1104:16)
+    at Socket.<anonymous> (node:internal/child_process:456:11)
+    at Socket.emit (node:events:518:28)
+    at Pipe.<anonymous> (node:net:343:12) {
+  code: 127,
+  killed: false,
+  signal: null,
+  cmd: 'ffprobe -v quiet -print_format json -show_streams "/home/runner/workspace/temp/videos/professional_final_90.mp4"',
+  stdout: '',
+  stderr: '/bin/sh: 1: ffprobe: not found\n'
+}
+⚠️ Returning video without audio due to combination failure
+✅ PROFESSIONAL video created: /home/runner/workspace/temp/videos/fallback_video_90.mp4
+Failed to get video info: Error: Command failed: ffprobe -v quiet -print_format json -show_format -show_streams "/home/runner/workspace/temp/videos/fallback_video_90.mp4"
+/bin/sh: 1: ffprobe: not found
+
+    at genericNodeError (node:internal/errors:984:15)
+    at wrappedFn (node:internal/errors:538:14)
+    at ChildProcess.exithandler (node:child_process:422:12)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1104:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5) {
+  code: 127,
+  killed: false,
+  signal: null,
+  cmd: 'ffprobe -v quiet -print_format json -show_format -show_streams "/home/runner/workspace/temp/videos/fallback_video_90.mp4"',
+  stdout: '',

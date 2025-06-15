@@ -1,0 +1,32 @@
+ :: {"active":[{"id":90,"title":…
+2:56:05 PM [express] GET /api/dashboard/scheduled-videos 200 in 468ms :: {"scheduled":[],"processing…
+2:56:07 PM [express] GET /api/dashboard/recent-activity 200 in 469ms :: [{"id":1428,"type":"generati…
+2:56:07 PM [express] GET /api/dashboard/system-status 304 in 466ms :: {"components":[{"name":"Trendi…
+2:56:07 PM [express] GET /api/dashboard/active-pipeline 304 in 471ms :: {"active":[{"id":90,"title":…
+🎬 Step 3: Starting video creation...
+2:56:07 PM [express] GET /api/dashboard/stats 200 in 708ms :: {"todayVideos":0,"todayShorts":0,"succ…
+🚀 Starting PROFESSIONAL video creation for job 90
+🎬 Starting PROFESSIONAL video creation for job 90
+🎙️ Generating professional audio for job 90...
+🎙️ Enhancing script for narration. Original length: 4302
+🎙️ Original script preview: "Upbeat, friendly music intro with colorful animated logo Hi everyone! Welcome back to my channel! Today were going to talk about something important happening far away, but it affects everyone, a bit ..."
+✅ Enhanced script length: 4335 characters
+🎙️ Enhanced script preview: "Upbeat, friendly music intro with colorful animated logo Hi everyone! Welcome back to my channel! today's update were going to talk about something very important happening far away, but it affects everyone, a bit like when your little brother makes a mess and everyone has to help clean it up! It’s ..."
+🎤 Starting Google Cloud TTS generation for text: "Upbeat, friendly music intro with colorful animated logo Hi everyone! Welcome back to my channel! to..."
+🎤 Text length: 4335 characters
+🔧 Testing Google Cloud TTS connection...
+✅ Google Cloud TTS connection successful
+📝 Splitting text into chunks. Total length: 4335, Max chunk: 3500
+📝 Created chunk 1: 2950 chars
+📝 Created final chunk 2: 1325 chars
+📝 Split into 2 chunks for TTS processing
+📝 Split into 2 chunks for processing
+📝 Cleaning text for speech. Original length: 2951
+📝 First 200 chars: "Upbeat, friendly music intro with colorful animated logo Hi everyone. Welcome back to my channel. today's update were going to talk about something very important happening far away, but it affects ev..."
+📝 Cleaned text length: 2901
+📝 Final text for TTS: "Upbeat, friendly music intro with colorful animated logo Hi everyone. Welcome back to my channel. today's update were going to talk about something very important happening far away, but it affects ev..."
+🎤 Expected TTS duration: ~194 seconds (4 minutes)
+🎤 Processing text for TTS - Length: 2901 chars
+🎤 Text to synthesize: "Upbeat, friendly music intro with colorful animated logo Hi everyone. Welcome back to my channel. to..."
+🎤 Generating speech with Google Cloud TTS - voice: en-IN-Neural2-B (MALE)
+🎤 Expected audio duration: ~208 seconds (based on ~14 chars/second
