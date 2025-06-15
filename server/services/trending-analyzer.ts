@@ -1,4 +1,3 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { google } from 'googleapis';
 import { storage } from '../storage';
 import type { InsertTrendingTopic } from '@shared/schema';
@@ -6,7 +5,6 @@ import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 
 export class TrendingAnalyzer {
-  private gemini: GoogleGenerativeAI;
   private youtube: any;
   private customSearch: any;
 
@@ -37,7 +35,7 @@ export class TrendingAnalyzer {
       console.log('✅ Google Custom Search API initialized');
     }
 
-    console.log('TrendingAnalyzer initialized with Google APIs for REAL trending data');
+    console.log('TrendingAnalyzer initialized with Google APIs (YouTube + Custom Search) - NO GEMINI');
   }
 
   async analyzeTrendingTopics(): Promise<void> {
@@ -255,33 +253,43 @@ export class TrendingAnalyzer {
 
   private async extractFullArticleContent(url: string, fallbackSnippet: string): Promise<{ description: string; fullText: string }> {
     try {
-      console.log(`📄 Fetching full content from: ${url}`);
+      console.log(`🔍 SCRAPER START: Fetching content from ${url}`);
+      console.log(`📝 Fallback snippet length: ${fallbackSnippet.length} chars`);
       
       // Set timeout and headers to mimic browser request
       const response = await fetch(url, {
-        timeout: 10000,
+        timeout: 15000,
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
           'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
           'Accept-Language': 'en-US,en;q=0.5',
           'Accept-Encoding': 'gzip, deflate',
           'DNT': '1',
-          'Connection': 'keep-alive'
+          'Connection': 'keep-alive',
+          'Cache-Control': 'no-cache'
         }
       });
 
+      console.log(`🌐 HTTP Response: ${response.status} ${response.statusText}`);
+      console.log(`📦 Content-Type: ${response.headers.get('content-type')}`);
+
       if (!response.ok) {
-        console.warn(`⚠️ Failed to fetch ${url}: ${response.status}`);
+        console.warn(`⚠️ HTTP Error ${response.status} for ${url}`);
         return { description: fallbackSnippet, fullText: fallbackSnippet };
       }
 
       const html = await response.text();
+      console.log(`📄 HTML received: ${html.length} characters`);
+      
       const $ = cheerio.load(html);
+      console.log(`🔧 Cheerio loaded, DOM elements found: ${$('*').length}`);
 
       // Remove unwanted elements
-      $('script, style, nav, header, footer, aside, .advertisement, .ads, .social-share').remove();
+      const unwantedSelectors = 'script, style, nav, header, footer, aside, .advertisement, .ads, .social-share, .comments, .related-articles, .sidebar';
+      $(unwantedSelectors).remove();
+      console.log(`🧹 Removed unwanted elements with selectors: ${unwantedSelectors}`);
 
-      // Try multiple selectors to find article content (enhanced list)
+      // Enhanced content selectors with more specific targeting
       const contentSelectors = [
         'article',
         '[role="main"]',
@@ -310,63 +318,110 @@ export class TrendingAnalyzer {
         '.entry__content',
         '.field-item',
         '.node-content',
-        '.view-content'
+        '.view-content',
+        '.mw-parser-output', // Wikipedia specific
+        '#bodyContent', // Wikipedia specific
+        '.post__content',
+        '.article__content',
+        '.content-wrapper'
       ];
 
       let extractedText = '';
       let foundContent = false;
+      let usedSelector = '';
+
+      console.log(`🎯 Trying ${contentSelectors.length} content selectors...`);
 
       for (const selector of contentSelectors) {
-        const element = $(selector);
-        if (element.length > 0) {
+        const elements = $(selector);
+        console.log(`  📍 Selector "${selector}": found ${elements.length} elements`);
+        
+        if (elements.length > 0) {
           // Extract text from paragraphs within the content area
-          const paragraphs = element.find('p').map((_, el) => $(el).text().trim()).get();
+          const paragraphs = elements.find('p').map((_, el) => $(el).text().trim()).get();
+          console.log(`    📝 Found ${paragraphs.length} paragraphs in ${selector}`);
+          
           if (paragraphs.length > 0) {
-            extractedText = paragraphs.join(' ').trim();
-            if (extractedText.length > 200) { // Ensure we have substantial content
+            const combinedText = paragraphs.join(' ').trim();
+            console.log(`    📏 Combined text length: ${combinedText.length} chars`);
+            
+            if (combinedText.length > 200) {
+              extractedText = combinedText;
               foundContent = true;
+              usedSelector = selector;
+              console.log(`✅ SUCCESS with selector: ${selector} (${combinedText.length} chars)`);
               break;
             }
           }
         }
       }
 
-      // Fallback: extract all paragraphs if specific selectors didn't work
+      // Fallback 1: extract all paragraphs if specific selectors didn't work
       if (!foundContent) {
+        console.log(`🔄 FALLBACK 1: Extracting all paragraphs...`);
         const allParagraphs = $('p').map((_, el) => $(el).text().trim()).get();
-        extractedText = allParagraphs.filter(p => p.length > 20).join(' ').trim();
-      }
-
-      // Additional fallback: try div elements with substantial text content
-      if (!foundContent && extractedText.length < 200) {
-        const divElements = $('div').filter((_, el) => {
-          const text = $(el).text().trim();
-          return text.length > 100 && text.length < 5000; // Reasonable content length
-        }).map((_, el) => $(el).text().trim()).get();
+        const filteredParagraphs = allParagraphs.filter(p => p.length > 20);
+        console.log(`  📝 Total paragraphs: ${allParagraphs.length}, filtered: ${filteredParagraphs.length}`);
         
-        if (divElements.length > 0) {
-          extractedText = divElements.join(' ').trim();
+        extractedText = filteredParagraphs.join(' ').trim();
+        console.log(`  📏 Fallback 1 text length: ${extractedText.length} chars`);
+        
+        if (extractedText.length > 200) {
+          foundContent = true;
+          usedSelector = 'all-paragraphs';
+          console.log(`✅ SUCCESS with fallback 1: all paragraphs (${extractedText.length} chars)`);
         }
       }
 
-      // Final fallback: extract from body but filter out navigation, ads, etc.
+      // Fallback 2: try div elements with substantial text content
+      if (!foundContent && extractedText.length < 200) {
+        console.log(`🔄 FALLBACK 2: Extracting from div elements...`);
+        const divElements = $('div').filter((_, el) => {
+          const text = $(el).text().trim();
+          return text.length > 100 && text.length < 10000; // Reasonable content length
+        }).map((_, el) => $(el).text().trim()).get();
+        
+        console.log(`  📦 Found ${divElements.length} suitable div elements`);
+        
+        if (divElements.length > 0) {
+          extractedText = divElements.slice(0, 5).join(' ').trim(); // Take first 5 divs
+          usedSelector = 'filtered-divs';
+          console.log(`✅ SUCCESS with fallback 2: filtered divs (${extractedText.length} chars)`);
+        }
+      }
+
+      // Fallback 3: extract from body but filter out navigation, ads, etc.
       if (extractedText.length < 100) {
+        console.log(`🔄 FALLBACK 3: Extracting from body...`);
         $('body').find('nav, header, footer, aside, .navigation, .menu, .sidebar, .ad, .advertisement, .social, .share, .related, .comments').remove();
         const bodyText = $('body').text().trim();
+        console.log(`  📏 Body text length: ${bodyText.length} chars`);
+        
         if (bodyText.length > 200) {
           extractedText = bodyText;
+          usedSelector = 'body-text';
+          console.log(`✅ SUCCESS with fallback 3: body text (${bodyText.length} chars)`);
         }
       }
 
       // Clean up the extracted text
+      const originalLength = extractedText.length;
       extractedText = extractedText
         .replace(/\s+/g, ' ')
         .replace(/\n+/g, ' ')
+        .replace(/\t+/g, ' ')
         .trim();
+      
+      console.log(`🧹 Text cleaned: ${originalLength} → ${extractedText.length} chars`);
 
       // If we have substantial content, use it; otherwise fall back to snippet
       if (extractedText.length > 100) {
-        console.log(`✅ Extracted ${extractedText.length} characters from ${url}`);
+        console.log(`🎉 SCRAPER SUCCESS!`);
+        console.log(`  📊 Final stats:`);
+        console.log(`    - URL: ${url}`);
+        console.log(`    - Method: ${usedSelector}`);
+        console.log(`    - Extracted: ${extractedText.length} characters`);
+        console.log(`    - Preview: "${extractedText.substring(0, 100)}..."`);
         
         // Create a good description (first 500 chars) and keep full text
         const description = extractedText.length > 500 
@@ -378,12 +433,17 @@ export class TrendingAnalyzer {
           fullText: extractedText
         };
       } else {
-        console.warn(`⚠️ Insufficient content extracted from ${url}, using fallback`);
+        console.warn(`❌ SCRAPER FAILED: Insufficient content extracted from ${url}`);
+        console.warn(`  📊 Final length: ${extractedText.length} chars (needed >100)`);
+        console.warn(`  🔄 Using fallback snippet: ${fallbackSnippet.length} chars`);
         return { description: fallbackSnippet, fullText: fallbackSnippet };
       }
 
     } catch (error) {
-      console.error(`❌ Error extracting content from ${url}:`, error.message);
+      console.error(`💥 SCRAPER ERROR for ${url}:`);
+      console.error(`  ❌ Error type: ${error.name}`);
+      console.error(`  ❌ Error message: ${error.message}`);
+      console.error(`  🔄 Using fallback snippet: ${fallbackSnippet.length} chars`);
       return { description: fallbackSnippet, fullText: fallbackSnippet };
     }
   }

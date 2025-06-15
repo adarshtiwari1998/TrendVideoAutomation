@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,8 +28,9 @@ export default function TrendingTopicsPage() {
   const queryClient = useQueryClient();
   const [selectedTopics, setSelectedTopics] = useState<number[]>([]);
   const [viewingTopic, setViewingTopic] = useState<TrendingTopic | null>(null);
+  const [selectedTopic, setSelectedTopic] = useState<TrendingTopic | null>(null);
 
-  const { data: topics = [], isLoading } = useQuery({
+  const { data: topicsData = [], isLoading } = useQuery({
     queryKey: ['trending-topics'],
     queryFn: async () => {
       const response = await fetch('/api/dashboard/trending-topics');
@@ -39,6 +39,8 @@ export default function TrendingTopicsPage() {
     },
     refetchInterval: 30000
   });
+
+  const topics = topicsData || [];
 
   // Check URL for view parameter
   useEffect(() => {
@@ -151,6 +153,18 @@ export default function TrendingTopicsPage() {
       default: return 'bg-gray-500';
     }
   };
+
+   const handleTopicClick = (topic: TrendingTopic) => {
+    setSelectedTopic(topic);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedTopic(null);
+  };
+
+  const filteredTopics = topics.filter(topic => {
+    return true;
+  });
 
   return (
     <div className="container mx-auto p-6">
@@ -319,7 +333,7 @@ export default function TrendingTopicsPage() {
               </Button>
             </div>
           </DialogHeader>
-          
+
           {viewingTopic && (
             <div className="space-y-4">
               {/* Topic metadata */}
