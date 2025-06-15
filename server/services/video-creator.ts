@@ -106,19 +106,35 @@ export class VideoCreator {
         cleanScript = 'Video Content Loading...';
       }
       
+      // Limit duration to prevent hanging (max 2 minutes for shorts, 5 minutes for long-form)
+      const maxDuration = isShort ? 120 : 300;
+      const safeDuration = Math.min(duration, maxDuration);
+      
+      console.log(`📹 Creating minimal video: ${safeDuration}s duration, ${dimensions} resolution`);
+      
       // Create a minimal video with text overlay and proper duration
-      const command = `ffmpeg -f lavfi -i "color=c=#1a1a2e:size=${dimensions}:duration=${duration}:rate=30" ` +
+      const command = `timeout 60 ffmpeg -f lavfi -i "color=c=#1a1a2e:size=${dimensions}:duration=${safeDuration}:rate=30" ` +
         `-vf "drawtext=text='${cleanScript}...':` +
         `fontsize=48:fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/2:` +
         `bordercolor=black:borderw=2" ` +
-        `-c:v libx264 -preset fast -crf 23 ` +
-        `-t ${duration} "${outputPath}" -y`;
+        `-c:v libx264 -preset ultrafast -crf 28 ` +
+        `-t ${safeDuration} "${outputPath}" -y`;
 
-      await execAsync(command);
+      console.log(`🎬 Executing FFmpeg command for job ${jobId}`);
+      
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Video creation timeout')), 90000); // 90 second timeout
+      });
+      
+      await Promise.race([
+        execAsync(command),
+        timeoutPromise
+      ]);
       
       // Verify file was created and has proper size
       const stats = await fs.stat(outputPath);
-      console.log(`📹 Created minimal video: ${outputPath} (${Math.round(stats.size / 1024)}KB)`);
+      console.log(`✅ Created minimal video: ${outputPath} (${Math.round(stats.size / 1024)}KB)`);
       
       if (stats.size < 1000) {
         throw new Error('Generated video file is too small');

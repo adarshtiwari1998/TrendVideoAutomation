@@ -101,12 +101,40 @@ export class AutomationPipeline {
 
       let videoPath;
       try {
-        videoPath = await videoCreator.createVideo(job.id);
+        // Add timeout for video creation to prevent hanging
+        const videoCreationPromise = videoCreator.createVideo(job.id);
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Video creation timeout after 5 minutes')), 300000);
+        });
+        
+        videoPath = await Promise.race([videoCreationPromise, timeoutPromise]);
+        
+        console.log(`✅ Video creation completed: ${videoPath}`);
+        
+        // Update metadata with video info
+        const videoStats = await fs.stat(videoPath);
+        const videoMetadata = {
+          videoPath,
+          fileSize: `${Math.round(videoStats.size / 1024)}KB`,
+          resolution: videoType === 'short' ? '1080x1920' : '1920x1080',
+          format: 'MP4',
+          createdAt: new Date().toISOString()
+        };
+        
+        await storage.updateContentJob(job.id, {
+          metadata: videoMetadata
+        });
+        
       } catch (videoError) {
         console.error('❌ Video creation failed:', videoError);
         await storage.updateContentJob(job.id, {
           status: 'failed',
-          progress: 40
+          progress: 40,
+          metadata: { 
+            error: videoError.message,
+            failedAt: new Date().toISOString(),
+            step: 'video_creation'
+          }
         });
         
         await storage.createPipelineLog({
@@ -115,7 +143,7 @@ export class AutomationPipeline {
           status: 'error',
           message: 'Video creation failed',
           details: videoError.message,
-          metadata: { error: videoError.message }
+          metadata: { error: videoError.message, timeout: videoError.message.includes('timeout') }
         });
         throw videoError;
       }

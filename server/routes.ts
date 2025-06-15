@@ -312,6 +312,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Kill specific stuck job
+  app.post("/api/jobs/:id/kill", async (req, res) => {
+    try {
+      const jobId = parseInt(req.params.id);
+      
+      // Update job status to failed
+      await storage.updateContentJob(jobId, {
+        status: 'failed',
+        progress: 0,
+        metadata: { 
+          error: 'Job manually killed due to being stuck',
+          killedAt: new Date().toISOString(),
+          killedBy: 'user'
+        }
+      });
+      
+      await storage.createPipelineLog({
+        jobId,
+        step: 'manual_kill',
+        status: 'error',
+        message: 'Job manually terminated',
+        details: 'User killed stuck job',
+        metadata: { killedAt: new Date().toISOString() }
+      });
+      
+      await storage.createActivityLog({
+        type: 'system',
+        title: 'Job Manually Killed',
+        description: `User manually killed stuck job ${jobId}`,
+        status: 'warning',
+        metadata: { jobId, action: 'manual_kill' }
+      });
+      
+      res.json({ success: true, message: `Job ${jobId} killed successfully` });
+    } catch (error) {
+      console.error("Kill job error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Delete single trending topic
   app.delete("/api/trending/:id", async (req, res) => {
     try {
