@@ -4,6 +4,7 @@ import { videoCreator } from '../services/video-creator';
 import { thumbnailGenerator } from '../services/thumbnail-generator';
 import { youtubeUploader } from '../services/youtube-uploader';
 import { storageManager } from '../services/storage-manager';
+import { promises as fs } from 'fs';
 import type { TrendingTopic, ContentJob } from '@shared/schema';
 
 export class AutomationPipeline {
@@ -37,7 +38,8 @@ export class AutomationPipeline {
           status: 'starting',
           message: `Starting ${videoType} script generation for topic ${topicId}`,
           details: 'AI script generation in progress using Gemini AI',
-          progress: 10
+          progress: 10,
+          createdAt: new Date()
         });
       }
 
@@ -51,7 +53,8 @@ export class AutomationPipeline {
         message: 'AI script generation completed successfully',
         details: `Generated engaging ${videoType} script with ${job.script?.length || 0} characters`,
         progress: 25,
-        metadata: { title: job.title, wordCount: job.script?.length || 0 }
+        metadata: { title: job.title, wordCount: job.script?.length || 0 },
+        createdAt: new Date()
       });
       
       // Step 2: Audio Generation (TTS)
@@ -67,7 +70,8 @@ export class AutomationPipeline {
         status: 'starting',
         message: 'Starting professional TTS audio generation',
         details: 'Converting script to high-quality speech with Indian accent',
-        progress: 25
+        progress: 25,
+        createdAt: new Date()
       });
 
       // Wait for audio generation to complete
@@ -80,7 +84,8 @@ export class AutomationPipeline {
         message: 'TTS audio generation completed',
         details: 'Generated professional Indian English narration with natural speech patterns',
         progress: 40,
-        metadata: { voice: 'en-IN-Neural2-D', duration: videoType === 'short' ? '60s' : '10m' }
+        metadata: { voice: 'en-IN-Neural2-D', duration: videoType === 'short' ? '60s' : '10m' },
+        createdAt: new Date()
       });
       
       // Step 3: Video Creation & Effects
@@ -96,7 +101,8 @@ export class AutomationPipeline {
         status: 'starting',
         message: 'Starting professional video creation',
         details: 'Creating video with broadcast-quality effects, animations, and visual elements',
-        progress: 40
+        progress: 40,
+        createdAt: new Date()
       });
 
       let videoPath;
@@ -112,14 +118,26 @@ export class AutomationPipeline {
         console.log(`✅ Video creation completed: ${videoPath}`);
         
         // Update metadata with video info
-        const videoStats = await fs.stat(videoPath);
-        const videoMetadata = {
-          videoPath,
-          fileSize: `${Math.round(videoStats.size / 1024)}KB`,
-          resolution: videoType === 'short' ? '1080x1920' : '1920x1080',
-          format: 'MP4',
-          createdAt: new Date().toISOString()
-        };
+        let videoMetadata = {};
+        try {
+          const videoStats = await fs.stat(videoPath);
+          videoMetadata = {
+            videoPath,
+            fileSize: `${Math.round(videoStats.size / 1024)}KB`,
+            resolution: videoType === 'short' ? '1080x1920' : '1920x1080',
+            format: 'MP4',
+            createdAt: new Date().toISOString()
+          };
+        } catch (fsError) {
+          console.warn('Could not get video file stats:', fsError.message);
+          videoMetadata = {
+            videoPath,
+            fileSize: 'Unknown',
+            resolution: videoType === 'short' ? '1080x1920' : '1920x1080',
+            format: 'MP4',
+            createdAt: new Date().toISOString()
+          };
+        }
         
         await storage.updateContentJob(job.id, {
           metadata: videoMetadata
@@ -143,7 +161,8 @@ export class AutomationPipeline {
           status: 'error',
           message: 'Video creation failed',
           details: videoError.message,
-          metadata: { error: videoError.message, timeout: videoError.message.includes('timeout') }
+          metadata: { error: videoError.message, timeout: videoError.message.includes('timeout') },
+          createdAt: new Date()
         });
         throw videoError;
       }
@@ -155,7 +174,13 @@ export class AutomationPipeline {
         message: 'Professional video creation completed',
         details: `Created high-quality ${videoType} video with professional editing and effects`,
         progress: 60,
-        metadata: { videoPath, duration: videoType === 'short' ? '0:58' : '8:42' }
+        metadata: { 
+          videoPath, 
+          duration: videoType === 'short' ? '0:58' : '8:42',
+          fileSize: videoMetadata?.fileSize || 'Unknown',
+          resolution: videoType === 'short' ? '1080x1920' : '1920x1080'
+        },
+        createdAt: new Date()
       });
       
       // Step 4: Video Conversion & Optimization
@@ -171,7 +196,8 @@ export class AutomationPipeline {
         status: 'starting',
         message: 'Starting final MP4 conversion and optimization',
         details: 'Optimizing video for YouTube upload with best quality settings',
-        progress: 60
+        progress: 60,
+        createdAt: new Date()
       });
 
       // Wait for video processing
@@ -184,7 +210,8 @@ export class AutomationPipeline {
         message: 'MP4 conversion and optimization completed',
         details: 'Video optimized for YouTube with embedded audio and perfect quality',
         progress: 75,
-        metadata: { format: 'MP4', quality: '1080p', audioEmbedded: true }
+        metadata: { format: 'MP4', quality: '1080p', audioEmbedded: true },
+        createdAt: new Date()
       });
       
       // Step 5: Thumbnail Generation
@@ -200,7 +227,8 @@ export class AutomationPipeline {
         status: 'starting',
         message: 'Generating eye-catching thumbnail with AI',
         details: 'Creating professional thumbnail designed for maximum click-through rate',
-        progress: 75
+        progress: 75,
+        createdAt: new Date()
       });
 
       const thumbnailPath = await thumbnailGenerator.generateThumbnail(job.id);
@@ -212,7 +240,8 @@ export class AutomationPipeline {
         message: 'Thumbnail generated successfully',
         details: 'Created optimized thumbnail with compelling visuals and text',
         progress: 85,
-        metadata: { thumbnailPath, resolution: videoType === 'short' ? '1080x1920' : '1280x720' }
+        metadata: { thumbnailPath, resolution: videoType === 'short' ? '1080x1920' : '1280x720' },
+        createdAt: new Date()
       });
       
       // Step 6: Google Drive Upload
