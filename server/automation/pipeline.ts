@@ -106,6 +106,8 @@ export class AutomationPipeline {
       });
 
       let videoPath;
+      let videoMetadata = {};
+      
       try {
         // Add timeout for video creation to prevent hanging
         const videoCreationPromise = videoCreator.createVideo(job.id);
@@ -118,7 +120,6 @@ export class AutomationPipeline {
         console.log(`✅ Video creation completed: ${videoPath}`);
         
         // Update metadata with video info
-        let videoMetadata = {};
         try {
           const videoStats = await fs.stat(videoPath);
           videoMetadata = {
