@@ -41,24 +41,12 @@ export function PipelinePreviewLogs({ selectedJobId }: PipelinePreviewLogsProps)
   const { data: logs, isLoading, error } = useQuery({
     queryKey: selectedJobId && selectedJobId > 0 
       ? ['/api/pipeline/logs', selectedJobId] 
-      : hasActiveJobs 
-        ? ['/api/pipeline/logs/active', activeJobIds] 
-        : ['/api/pipeline/logs/recent'],
+      : ['/api/pipeline/logs/recent'],
     queryFn: async () => {
       if (selectedJobId && selectedJobId > 0) {
         const response = await fetch(`/api/pipeline/logs/${selectedJobId}`);
         if (!response.ok) throw new Error('Failed to fetch job logs');
         return response.json();
-      } else if (hasActiveJobs) {
-        // Fetch logs for all active jobs
-        const allLogs = await Promise.all(
-          activeJobIds.map(async (jobId: number) => {
-            const response = await fetch(`/api/pipeline/logs/${jobId}`);
-            if (!response.ok) return [];
-            return response.json();
-          })
-        );
-        return allLogs.flat().sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
       } else {
         // Show recent logs when no active jobs
         const response = await fetch('/api/pipeline/logs?limit=20');
