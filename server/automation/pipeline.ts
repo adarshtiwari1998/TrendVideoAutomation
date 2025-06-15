@@ -26,14 +26,20 @@ export class AutomationPipeline {
         progress: 10
       });
       
-      await storage.createPipelineLog({
-        jobId: job.id,
-        step: 'script_generation',
-        status: 'starting',
-        message: `Starting ${videoType} script generation for topic ${topicId}`,
-        details: 'AI script generation in progress using Gemini AI',
-        progress: 10
-      });
+      // Check if log already exists to prevent duplicates
+      const existingLogs = await storage.getPipelineLogsByJob(job.id);
+      const hasScriptLog = existingLogs.some(log => log.step === 'script_generation' && log.status === 'starting');
+      
+      if (!hasScriptLog) {
+        await storage.createPipelineLog({
+          jobId: job.id,
+          step: 'script_generation',
+          status: 'starting',
+          message: `Starting ${videoType} script generation for topic ${topicId}`,
+          details: 'AI script generation in progress using Gemini AI',
+          progress: 10
+        });
+      }
 
       // Wait a moment to ensure script is fully generated
       await new Promise(resolve => setTimeout(resolve, 2000));

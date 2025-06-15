@@ -48,10 +48,15 @@ export function PipelinePreviewLogs({ selectedJobId }: PipelinePreviewLogsProps)
         if (!response.ok) throw new Error('Failed to fetch job logs');
         const data = await response.json();
         
-        // Remove duplicates and sort by timestamp
+        // Remove duplicates by keeping only the latest entry for each step per job
         const uniqueLogs = data.reduce((acc: any[], log: any) => {
-          const existing = acc.find(l => l.step === log.step && l.status === log.status && l.job_id === log.job_id);
-          if (!existing) {
+          const key = `${log.job_id}-${log.step}`;
+          const existing = acc.find(l => `${l.job_id}-${l.step}` === key);
+          
+          if (!existing || new Date(log.timestamp) > new Date(existing.timestamp)) {
+            if (existing) {
+              acc.splice(acc.indexOf(existing), 1);
+            }
             acc.push(log);
           }
           return acc;
@@ -137,7 +142,11 @@ export function PipelinePreviewLogs({ selectedJobId }: PipelinePreviewLogsProps)
   };
 
   const formatTimestamp = (timestamp: string) => {
-    return new Date(timestamp).toLocaleTimeString();
+    const date = new Date(timestamp);
+    if (isNaN(date.getTime())) {
+      return 'Invalid Date';
+    }
+    return date.toLocaleTimeString();
   };
 
   if (isLoading) {

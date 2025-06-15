@@ -63,21 +63,49 @@ export class VideoCreator {
 
   private async createFallbackVideo(script: string, jobId: number): Promise<string> {
     try {
-      // Try to generate audio first
-      let audioPath;
-      try {
-        audioPath = await this.generateAudio(script, jobId);
-        console.log('📱 Created audio-only content (fallback mode)');
-        return audioPath;
-      } catch (audioError) {
-        console.warn('⚠️ Audio generation failed, creating text-only video:', audioError.message);
-        
-        // Create a simple text-based video without audio
-        return await this.createTextOnlyVideo(script, jobId);
-      }
+      // Get job data to determine video type
+      const jobData = await storage.getContentJobById(jobId);
+      const isShort = jobData?.videoType === 'short';
+      const duration = isShort ? 120 : 600; // 2 minutes for shorts, 10 minutes for long-form
+      
+      console.log(`🔄 Creating fallback video: ${duration}s duration for ${jobData?.videoType}`);
+      
+      // Create a proper video file instead of text-only
+      return await this.createMinimalVideo(script, jobId, duration, isShort);
     } catch (error) {
       console.error('Fallback video creation failed:', error);
       throw error;
+    }
+  }
+
+  private async createMinimalVideo(script: string, jobId: number, duration: number, isShort: boolean): Promise<string> {
+    try {
+      const outputPath = path.join(this.outputDir, `minimal_video_${jobId}.mp4`);
+      const dimensions = isShort ? '1080x1920' : '1920x1080';
+      
+      // Create a minimal video with text overlay and proper duration
+      const command = `ffmpeg -f lavfi -i "color=c=#1a1a2e:size=${dimensions}:duration=${duration}:rate=30" ` +
+        `-vf "drawtext=text='${script.substring(0, 200).replace(/'/g, "\\'")}...':` +
+        `fontsize=48:fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/2:` +
+        `bordercolor=black:borderw=2" ` +
+        `-c:v libx264 -preset fast -crf 23 ` +
+        `-t ${duration} "${outputPath}" -y`;
+
+      await execAsync(command);
+      
+      // Verify file was created and has proper size
+      const stats = await fs.stat(outputPath);
+      console.log(`📹 Created minimal video: ${outputPath} (${Math.round(stats.size / 1024)}KB)`);
+      
+      if (stats.size < 1000) {
+        throw new Error('Generated video file is too small');
+      }
+      
+      return outputPath;
+    } catch (error) {
+      console.error('Minimal video creation failed:', error);
+      // Final fallback - create text file
+      return await this.createTextOnlyVideo(script, jobId);
     }
   }
 
@@ -86,7 +114,7 @@ export class VideoCreator {
       const outputPath = path.join(this.outputDir, `text_only_${jobId}.txt`);
       
       // Create a text file with the script content
-      const content = `Video Script for Job ${jobId}\n\n${script}\n\nNote: This is a text-only fallback due to TTS unavailability.`;
+      const content = `Video Script for Job ${jobId}\n\n${script}\n\nNote: This is a text-only fallback due to video generation failure.`;
       
       await fs.writeFile(outputPath, content, 'utf8');
       

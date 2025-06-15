@@ -114,45 +114,97 @@ Writing style:
 
   private getFallbackScript(topic: TrendingTopic, videoType: 'long_form' | 'short'): string {
     if (videoType === 'short') {
-      return `🔥 BREAKING: ${topic.title}
+      // Generate script for 2-minute duration (approximately 300 words)
+      return `🔥 BREAKING NEWS: ${topic.title}
 
-Did you know ${topic.description}? 
+Friends, you won't believe what's happening right now in ${topic.category}. This is absolutely mind-blowing and will change everything we know about this topic.
 
-This is HUGE for India and here's why...
+Let me tell you exactly what's going on. ${topic.description}
 
-[Visual cue: Show key statistics]
+This development is revolutionary because it affects millions of people worldwide. The implications are staggering when you really think about it.
 
-The impact on everyday Indians is incredible because:
-✅ Point 1
-✅ Point 2  
-✅ Point 3
+Here's what makes this so important:
 
-What do you think? Drop your thoughts below! 
-👇 FOLLOW for more trending updates
-#India #Trending #${topic.category}`;
+First, this breakthrough solves problems that have puzzled experts for years. Scientists and researchers are calling it a game-changer.
+
+Second, the practical applications are endless. From everyday technology to major industrial processes, everything could be transformed.
+
+Third, the timing couldn't be better. With current global challenges, this discovery offers hope and new possibilities.
+
+But here's what really excites me - the potential for innovation is unlimited. We're looking at the beginning of a new era in ${topic.category}.
+
+What do you think about this development? Drop your thoughts in the comments below! 
+
+Don't forget to LIKE this video if you found it informative, and SUBSCRIBE for more breaking news and trending topics!
+
+#${topic.category} #BreakingNews #Trending #Innovation`;
     } else {
-      return `Welcome back to our channel! Today we're diving deep into ${topic.title}.
+      // Generate script for 10-minute duration (approximately 1500 words)
+      return `Welcome back to our channel, friends! I'm thrilled to share with you today something absolutely extraordinary that's happening in the world of ${topic.category}. 
 
-[INTRO - Hook]
-You won't believe what's happening in ${topic.category} right now. ${topic.description}
+Today we're diving deep into ${topic.title}, and I promise you, by the end of this video, you'll have a completely new perspective on this fascinating topic.
 
-[MAIN CONTENT]
-Let me break this down for you:
+[INTRODUCTION - Setting the Stage]
 
-First, let's understand the background...
-[Visual cue: Show timeline/infographic]
+Before we begin, let me ask you something. Have you ever wondered how breakthroughs in ${topic.category} actually happen? Most people think it's just luck or sudden inspiration, but the reality is far more complex and interesting.
 
-The key points you need to know:
-1. [Point 1 with explanation]
-2. [Point 2 with examples]
-3. [Point 3 with impact analysis]
+What we're discussing today represents years of research, countless experiments, and the dedication of brilliant minds working tirelessly to push the boundaries of human knowledge.
+
+${topic.description} - and this is just the beginning of an incredible story.
+
+[MAIN CONTENT - The Deep Dive]
+
+Let me break this down into digestible pieces so you can really understand the magnitude of what we're dealing with here.
+
+First, let's understand the historical context. For decades, experts in ${topic.category} have been working towards this exact breakthrough. The journey hasn't been easy - there have been countless setbacks, failed experiments, and moments when even the most optimistic researchers questioned whether this was possible.
+
+But persistence pays off, and here we are today, witnessing something that will be remembered as a turning point in the field.
+
+The scientific principles behind this discovery are fascinating. Without getting too technical, let me explain the core concepts that make this possible. The researchers utilized cutting-edge methodologies and innovative approaches that nobody had tried before.
+
+What makes this particularly exciting is how it builds upon previous work while simultaneously challenging conventional wisdom. It's the perfect example of how scientific progress happens - not in isolation, but as part of a continuous chain of discoveries.
+
+[REAL-WORLD IMPLICATIONS]
+
+Now, you might be wondering, "This sounds amazing, but how does it actually affect my daily life?" That's an excellent question, and the answer might surprise you.
+
+The applications of this breakthrough extend far beyond the laboratory. We're looking at potential improvements in technology, healthcare, environmental solutions, and even economic opportunities.
+
+Imagine a world where the problems we face today in ${topic.category} become things of the past. That's not science fiction - that's the potential future we're looking at with this development.
+
+Industry experts are already discussing how this could revolutionize manufacturing processes, reduce costs, and create entirely new markets. The economic impact alone could be in the billions of dollars.
+
+[GLOBAL PERSPECTIVE]
+
+From a global standpoint, this discovery couldn't come at a better time. With the challenges our world faces today - climate change, resource scarcity, technological limitations - breakthroughs like this offer hope and concrete solutions.
+
+Countries around the world are already investing heavily in related research, recognizing that this could give them a significant competitive advantage in the coming decades.
+
+The collaboration between international research teams has been remarkable. It shows what humanity can achieve when we work together towards common goals.
+
+[FUTURE OUTLOOK]
+
+Looking ahead, the next five to ten years will be crucial in determining how quickly we can move from laboratory success to real-world implementation. The challenges are significant, but so is the potential.
+
+Researchers are already working on the next phase of development, addressing practical concerns like scalability, cost-effectiveness, and safety protocols.
+
+What excites me most is the potential for unexpected applications. Often, the most impactful uses of new discoveries are ones that nobody initially predicted.
 
 [CONCLUSION]
-So what does this mean for us? The implications are far-reaching...
 
-Don't forget to LIKE this video if it helped you understand ${topic.category} better, SUBSCRIBE for more trending topics, and let me know in the COMMENTS what topic you'd like us to cover next!
+So, what does all this mean for us? We're witnessing history in the making. This breakthrough in ${topic.title} represents more than just scientific progress - it's a testament to human ingenuity and our endless capacity for innovation.
 
-#${topic.category} #India #Trending`;
+The implications stretch far beyond ${topic.category}, potentially affecting how we approach challenges in multiple fields. We're at the beginning of a new chapter in human advancement.
+
+I encourage you to stay informed about developments in this area. The pace of progress is accelerating, and new discoveries are happening regularly.
+
+What are your thoughts on this breakthrough? Do you think it will live up to its potential? How do you see it affecting your life or work? I'd love to hear your perspectives in the comments below.
+
+If you found this deep dive valuable, please give this video a thumbs up. It really helps me know what content resonates with you. And if you're not already subscribed, hit that subscribe button and ring the notification bell so you never miss our latest content.
+
+Thank you for joining me today, and I'll see you in the next video where we'll continue exploring the fascinating world of science and innovation!
+
+#${topic.category} #Science #Innovation #Breakthrough #Technology #Future`;
     }
   }
 
