@@ -100,7 +100,7 @@ export class AutomationPipeline {
         metadata: { thumbnailPath, resolution: videoType === 'short' ? '1080x1920' : '1280x720' }
       });
       
-      // Step 4: Organize files in Google Drive
+      // Step 4: Organize files in Google Drive (Must complete first)
       await storage.createPipelineLog({
         jobId: job.id,
         step: 'file_organization',
@@ -116,36 +116,50 @@ export class AutomationPipeline {
         job.id
       );
       
-      await storage.updateContentJob(job.id, {
-        driveUrl: videoUrl,
-        status: 'completed',
-        progress: 100
-      });
-
+      // Ensure Google Drive upload is complete before proceeding
       await storage.createPipelineLog({
         jobId: job.id,
         step: 'file_organization',
         status: 'completed',
-        message: 'Files organized and uploaded to Google Drive',
-        details: 'Video and thumbnail stored in organized folder structure',
+        message: 'Files successfully uploaded to Google Drive',
+        details: 'Video and thumbnail stored in organized folder structure - ready for YouTube upload',
         progress: 95,
         metadata: { videoUrl, thumbnailUrl }
       });
       
-      // Step 5: Schedule for optimal upload time
+      // Step 5: Schedule for optimal YouTube upload time (Only after Google Drive is complete)
+      await storage.createPipelineLog({
+        jobId: job.id,
+        step: 'upload_scheduling',
+        status: 'starting',
+        message: 'Scheduling YouTube upload',
+        details: 'Setting optimal upload time based on audience analytics',
+        progress: 96
+      });
+
       const optimalTime = youtubeUploader.getOptimalUploadTime(videoType);
+      
+      // Update job with both Google Drive URL and scheduled time
       await storage.updateContentJob(job.id, {
-        scheduledTime: optimalTime
+        driveUrl: videoUrl,
+        scheduledTime: optimalTime,
+        status: 'ready_for_upload', // New status indicating ready for YouTube
+        progress: 100
       });
 
       await storage.createPipelineLog({
         jobId: job.id,
         step: 'upload_scheduling',
         status: 'completed',
-        message: 'Video scheduled for optimal upload time',
-        details: `Scheduled for ${optimalTime.toLocaleString()} based on audience analytics`,
+        message: 'Video scheduled for YouTube upload',
+        details: `Scheduled for ${optimalTime.toLocaleString()} - files ready in Google Drive`,
         progress: 100,
-        metadata: { scheduledTime: optimalTime.toISOString(), videoType }
+        metadata: { 
+          scheduledTime: optimalTime.toISOString(), 
+          videoType,
+          driveUrl: videoUrl,
+          thumbnailUrl: thumbnailUrl 
+        }
       });
       
       console.log(`Pipeline completed for job ${job.id}. Scheduled for: ${optimalTime}`);
@@ -204,13 +218,27 @@ export class AutomationPipeline {
       
       for (const job of scheduledJobs) {
         if (job.scheduledTime && job.scheduledTime <= now) {
-          console.log(`Uploading scheduled job ${job.id}: ${job.title}`);
+          console.log(`Processing scheduled job ${job.id}: ${job.title}`);
+          
+          // Verify Google Drive upload is complete before YouTube upload
+          if (!job.driveUrl) {
+            console.warn(`⚠️  Job ${job.id} not ready - Google Drive upload not completed yet`);
+            await storage.createActivityLog({
+              type: 'warning',
+              title: 'YouTube Upload Delayed',
+              description: `Job ${job.id} waiting for Google Drive upload to complete`,
+              status: 'warning',
+              metadata: { jobId: job.id, reason: 'Google Drive upload pending' }
+            });
+            continue;
+          }
           
           try {
+            console.log(`✅ Starting YouTube upload for job ${job.id} - Google Drive files confirmed`);
             const youtubeId = await youtubeUploader.uploadVideo(job.id);
-            console.log(`Successfully uploaded job ${job.id} to YouTube: ${youtubeId}`);
+            console.log(`✅ Successfully uploaded job ${job.id} to YouTube: ${youtubeId}`);
           } catch (uploadError) {
-            console.error(`Upload failed for job ${job.id}:`, uploadError);
+            console.error(`❌ Upload failed for job ${job.id}:`, uploadError);
             // Continue with other uploads even if one fails
           }
         }

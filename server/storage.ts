@@ -20,7 +20,7 @@ import {
   type InsertUser 
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, gte, sql } from "drizzle-orm";
+import { eq, desc, and, gte, sql, isNotNull, or } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -197,14 +197,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getScheduledContentJobs(): Promise<ContentJob[]> {
-    return await db
-      .select()
-      .from(contentJobs)
+    return await db.select().from(contentJobs)
       .where(
         and(
-          eq(contentJobs.status, 'completed'),
-          sql`${contentJobs.scheduledTime} IS NOT NULL`,
-          gte(contentJobs.scheduledTime, new Date())
+          or(
+            eq(contentJobs.status, 'completed'),
+            eq(contentJobs.status, 'ready_for_upload')
+          ),
+          isNotNull(contentJobs.scheduledTime),
+          isNotNull(contentJobs.driveUrl) // Ensure Google Drive upload is complete
         )
       )
       .orderBy(contentJobs.scheduledTime);

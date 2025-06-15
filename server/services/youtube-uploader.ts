@@ -62,9 +62,28 @@ export class YouTubeUploader {
         throw new Error('Video or thumbnail not ready');
       }
 
+      // Ensure Google Drive upload is complete before YouTube upload
+      if (!job.driveUrl) {
+        throw new Error('Google Drive upload not completed yet - files must be in Drive before YouTube upload');
+      }
+
+      console.log(`✅ Google Drive files confirmed ready - proceeding with YouTube upload for job ${jobId}`);
+
       await storage.updateContentJob(jobId, { 
         status: 'uploading', 
         progress: 95 
+      });
+
+      await storage.createActivityLog({
+        type: 'upload',
+        title: 'YouTube Upload Started',
+        description: `Starting YouTube upload for "${job.title}" - files confirmed in Google Drive`,
+        status: 'info',
+        metadata: { 
+          jobId, 
+          title: job.title,
+          driveUrl: job.driveUrl 
+        }
       });
 
       const uploadResponse = await this.performUpload(job);
