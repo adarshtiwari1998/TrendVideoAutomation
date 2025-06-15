@@ -338,40 +338,87 @@ export class TrendingAnalyzer {
       
       console.log(`🔍 Checking URL: ${hostname}${pathname}`);
       
-      // Immediate exclusions - definitely not articles
+      // ENHANCED EXCLUSIONS - definitely not articles
       const immediateExclusions = [
+        // Basic homepage/index patterns
         pathname === '/',
         pathname === '/index.html',
         pathname === '/home',
         pathname === '/about',
         pathname === '/contact',
+        pathname.endsWith('/index.php'),
+        pathname.endsWith('/index.html'),
+        pathname.endsWith('/'),
+        
+        // Category and listing pages
         pathname.includes('/category/'),
         pathname.includes('/categories/'),
         pathname.includes('/tag/'),
         pathname.includes('/tags/'),
+        pathname.includes('/archive/'),
+        pathname.includes('/archives/'),
+        pathname.includes('/collection/'),
+        pathname.includes('/collections/'),
+        pathname.includes('/series/'),
+        pathname.includes('/list/'),
+        pathname.includes('/listing/'),
+        pathname.includes('/directory/'),
+        
+        // Author and user pages
+        pathname.includes('/author/'),
+        pathname.includes('/authors/'),
+        pathname.includes('/user/'),
+        pathname.includes('/users/'),
+        pathname.includes('/profile/'),
+        pathname.includes('/profiles/'),
+        pathname.includes('/contributor/'),
+        pathname.includes('/contributors/'),
+        pathname.includes('/writer/'),
+        pathname.includes('/writers/'),
+        pathname.includes('/journalist/'),
+        pathname.includes('/journalists/'),
+        
+        // Search and feed pages
         pathname.includes('/search'),
         pathname.includes('/feed'),
         pathname.includes('/rss'),
         pathname.includes('/sitemap'),
-        pathname.includes('/archive'),
-        pathname.includes('/archives'),
-        pathname.endsWith('/index.php'),
-        pathname.endsWith('/index.html'),
-        pathname.endsWith('/'),
-        // Common non-article pages
+        
+        // User interaction pages
         pathname.includes('/login'),
         pathname.includes('/signup'),
         pathname.includes('/register'),
         pathname.includes('/subscribe'),
-        pathname.includes('/newsletter')
+        pathname.includes('/newsletter'),
+        pathname.includes('/contact'),
+        pathname.includes('/submit'),
+        
+        // Shop/commerce pages
+        pathname.includes('/shop/'),
+        pathname.includes('/store/'),
+        pathname.includes('/product/'),
+        pathname.includes('/products/'),
+        pathname.includes('/cart/'),
+        pathname.includes('/checkout/'),
+        pathname.includes('/order/'),
+        
+        // Generic pages
+        pathname.includes('/page/'),
+        pathname.includes('/pages/'),
+        pathname.includes('/section/'),
+        pathname.includes('/sections/'),
+        pathname.includes('/topic/'),
+        pathname.includes('/topics/'),
+        pathname.includes('/subject/'),
+        pathname.includes('/subjects/')
       ];
 
       if (immediateExclusions.some(condition => condition)) {
-        console.log(`❌ Homepage or category page: ${pathname}`);
+        console.log(`❌ Excluded page type: ${pathname}`);
         return false;
       }
 
-      // Count meaningful path segments (excluding empty segments)
+      // Check for URL patterns that indicate non-article pages
       const pathSegments = pathname.split('/').filter(p => p.length > 1);
       
       // Must have meaningful path segments for an article
@@ -380,28 +427,57 @@ export class TrendingAnalyzer {
         return false;
       }
 
-      // Strong article indicators - these are very likely to be actual articles
+      // Additional pattern-based exclusions
+      const nonArticlePatterns = [
+        // Generic single-word segments that indicate listing pages
+        pathSegments.length === 1 && ['news', 'articles', 'blog', 'posts', 'stories', 'events', 'about', 'contact'].includes(pathSegments[0]),
+        // Author page patterns (common formats)
+        pathSegments.some(segment => segment.match(/^[a-z-]+$/) && pathSegments.includes('authors')),
+        // Collection/category indicators
+        pathSegments.some(segment => ['collections', 'categories', 'topics', 'subjects', 'series'].includes(segment)),
+        // Shop/product patterns
+        pathSegments.some(segment => ['shop', 'store', 'products', 'items'].includes(segment)),
+        // Page/listing patterns
+        pathSegments.some(segment => segment.startsWith('page-') || segment.match(/^page\d+$/)),
+        // Year-only archives (not specific articles)
+        pathSegments.length === 1 && pathSegments[0].match(/^\d{4}$/),
+        // Month-only archives
+        pathSegments.length === 2 && pathSegments[0].match(/^\d{4}$/) && pathSegments[1].match(/^\d{2}$/),
+      ];
+
+      if (nonArticlePatterns.some(condition => condition)) {
+        console.log(`❌ Non-article pattern detected: ${pathname}`);
+        return false;
+      }
+
+      // STRONG ARTICLE INDICATORS - these are very likely to be actual articles
       const strongArticleIndicators = [
-        // Date patterns in URL
+        // Date patterns in URL (full date suggests specific article)
         /\d{4}\/\d{2}\/\d{2}/.test(pathname), // 2025/06/15
         /\d{4}-\d{2}-\d{2}/.test(pathname),   // 2025-06-15
-        /\d{4}\/\d{2}/.test(pathname),        // 2025/06
+        /\d{4}\/\d{2}\/\d{2}/.test(pathname), // 2025/06/15
+        
         // Article-specific paths
         pathname.includes('/article/'),
-        pathname.includes('/articles/'),
-        pathname.includes('/news/'),
+        pathname.includes('/articles/') && pathSegments.length > 2, // Must have more than just /articles/
+        pathname.includes('/news/') && pathSegments.length > 2,
         pathname.includes('/story/'),
-        pathname.includes('/stories/'),
+        pathname.includes('/stories/') && pathSegments.length > 2,
         pathname.includes('/post/'),
-        pathname.includes('/posts/'),
-        pathname.includes('/blog/'),
+        pathname.includes('/posts/') && pathSegments.length > 2,
+        pathname.includes('/blog/') && pathSegments.length > 2,
         pathname.includes('/press-release/'),
-        pathname.includes('/report/'),
-        pathname.includes('/research/'),
-        // Long meaningful segments (likely article titles)
-        pathSegments.some(segment => segment.includes('-') && segment.length > 8),
-        // Multiple meaningful segments suggesting article structure
-        pathSegments.length >= 3 && pathSegments.every(seg => seg.length > 3)
+        pathname.includes('/report/') && pathSegments.length > 2,
+        pathname.includes('/research/') && pathSegments.length > 2,
+        
+        // Long meaningful segments with hyphens (likely article titles)
+        pathSegments.some(segment => segment.includes('-') && segment.length > 12 && segment.split('-').length >= 3),
+        
+        // Multiple meaningful segments with good length
+        pathSegments.length >= 3 && pathSegments.every(seg => seg.length > 4) && pathSegments.some(seg => seg.length > 8),
+        
+        // Numeric ID patterns (common for articles)
+        pathSegments.some(segment => /^\d{6,}$/.test(segment)) // 6+ digit IDs
       ];
 
       if (strongArticleIndicators.some(condition => condition)) {
@@ -409,28 +485,35 @@ export class TrendingAnalyzer {
         return true;
       }
 
-      // For trusted domains, be more selective but still accept good patterns
+      // TRUSTED DOMAIN VALIDATION - more lenient for known good sources
       const trustedDomains = [
         'space.com', 'nasa.gov', 'sciencenews.org', 'astronomy.com', 
         'phys.org', 'sciencedaily.com', 'newscientist.com', 'astrobiology.com',
-        'universetoday.com', 'spacenews.com', 'nationalgeographic.com'
+        'universetoday.com', 'spacenews.com', 'nationalgeographic.com',
+        'thedebrief.org', 'livescience.com'
       ];
       
       const isTrustedDomain = trustedDomains.some(domain => hostname.includes(domain));
       
       if (isTrustedDomain) {
-        // For trusted domains, require at least 2 path segments and no trailing slash
+        // For trusted domains, require good article structure
         const isLikelyArticle = pathSegments.length >= 2 && 
                                !pathname.endsWith('/') &&
-                               pathSegments.some(segment => segment.length > 5);
+                               // Must have at least one long segment or hyphenated segment
+                               pathSegments.some(segment => segment.length > 8 || (segment.includes('-') && segment.length > 6)) &&
+                               // Exclude obvious non-article patterns even on trusted domains
+                               !pathSegments.some(seg => ['authors', 'author', 'collections', 'collection', 'categories', 'category', 'tags', 'tag'].includes(seg));
+        
         console.log(`🔍 Trusted domain (${hostname}): ${isLikelyArticle ? 'VALID' : 'INVALID'}`);
         return isLikelyArticle;
       }
 
-      // For other domains, require stronger evidence
+      // FOR OTHER DOMAINS - require very strong evidence
       const hasGoodPattern = pathSegments.length >= 2 && 
-                            pathSegments.some(segment => segment.includes('-') && segment.length > 6) &&
-                            !pathname.endsWith('/');
+                            pathSegments.some(segment => segment.includes('-') && segment.length > 8) &&
+                            !pathname.endsWith('/') &&
+                            // Additional check: must have meaningful content structure
+                            pathSegments.every(seg => seg.length > 3);
 
       console.log(`🔍 General domain: ${hasGoodPattern ? 'VALID' : 'INVALID'}`);
       return hasGoodPattern;
