@@ -190,7 +190,7 @@ export class ContentGenerator {
   }
 
   private createPrompt(topic: TrendingTopic, videoType: 'long_form' | 'short'): string {
-    const duration = videoType === 'long_form' ? '8-12 minutes' : '45-60 seconds';
+    const duration = videoType === 'long_form' ? '10-15 minutes' : '45-60 seconds';
     
     return `
 You are a YouTube content creator making a ${duration} video about "${topic.title}".
@@ -208,15 +208,21 @@ CRITICAL REQUIREMENTS:
 7. Ensure complete information coverage so viewers get full understanding
 
 ${videoType === 'long_form' ? `
-Your video should be 600-800 words with this SIMPLE structure:
-- Start with a friendly greeting and simple explanation of what happened
-- Break down the main story into 3-4 easy-to-understand parts
-- Explain WHY this matters using simple examples
-- Tell people HOW this affects their daily life in simple terms
-- Explain what might happen next in easy language
-- End with encouraging words and call to action
+Your video should be 1500-2000 words with this COMPREHENSIVE structure:
+- Start with a warm friendly greeting and hook the audience
+- Provide detailed background and context in simple terms
+- Break down the main story into 6-8 easy-to-understand sections
+- Use lots of examples, analogies, and comparisons to everyday life
+- Explain multiple perspectives and viewpoints in simple language
+- Cover all important details without skipping anything
+- Discuss real-world implications and consequences
+- Talk about what experts are saying (in simple terms)
+- Explain what this means for different groups of people
+- Discuss future possibilities and predictions
+- Address common questions people might have
+- End with comprehensive summary and strong call to action
 
-Use simple sentences. Explain like you're talking to your younger sibling. Use words like "imagine if...", "it's like when...", "think of it this way...".
+Make it conversational like explaining to a curious friend. Use phrases like "imagine if...", "it's like when...", "think of it this way...", "here's another way to look at it...". Include multiple examples for each point to ensure 10+ minute duration.
 ` : `
 Your video should be 150-200 words with this SIMPLE structure:
 - Quick friendly greeting and simple explanation
@@ -437,7 +443,7 @@ Thank you for joining me today, and I'll see you in the next video where we'll c
       metadata: {
         topic: selectedTopic.title,
         category: selectedTopic.category,
-        targetDuration: videoType === 'long_form' ? '8-12 minutes' : '45-60 seconds'
+        targetDuration: videoType === 'long_form' ? '10-15 minutes' : '45-60 seconds'
       }
     });
 

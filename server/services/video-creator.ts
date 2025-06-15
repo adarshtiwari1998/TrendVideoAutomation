@@ -49,7 +49,7 @@ export class ProfessionalVideoCreator {
       console.log(`🎬 Starting PROFESSIONAL video creation for job ${jobData.id}`);
 
       const isShort = jobData.videoType === 'short';
-      const targetDuration = isShort ? 120 : 600; // 2 min for shorts, 10 min for long-form
+      const targetDuration = isShort ? 120 : 640; // 2 min for shorts, 10+ min for long-form
 
       // Step 1: Generate high-quality audio with natural speech
       const audioPath = await this.generateProfessionalAudio(jobData.script, jobId);
@@ -200,23 +200,48 @@ export class ProfessionalVideoCreator {
     const sentences = jobData.script.split(/[.!?]+/).filter(s => s.trim().length > 0);
     const scenes: VideoScene[] = [];
 
-    const sceneDuration = duration / Math.max(sentences.length, 3); // At least 3 scenes
+    // Limit scenes to prevent FFmpeg command line overflow and ensure reasonable scene duration
+    const maxScenes = isShort ? 8 : 20; // Max 20 scenes for long videos, 8 for shorts
+    const minSceneDuration = isShort ? 7 : 15; // Minimum 15 seconds per scene for long videos
+    
+    // Calculate optimal scene count based on duration and limits
+    const optimalSceneCount = Math.min(
+      maxScenes,
+      Math.max(3, Math.floor(duration / minSceneDuration))
+    );
+    
+    const sceneDuration = duration / optimalSceneCount;
+    
+    console.log(`🎬 Creating ${optimalSceneCount} scenes with ${sceneDuration.toFixed(1)}s duration each`);
 
-    sentences.forEach((sentence, index) => {
-      const startTime = index * sceneDuration;
+    // Group sentences into scenes
+    const sentencesPerScene = Math.max(1, Math.floor(sentences.length / optimalSceneCount));
+    
+    for (let i = 0; i < optimalSceneCount; i++) {
+      const startSentenceIndex = i * sentencesPerScene;
+      const endSentenceIndex = i === optimalSceneCount - 1 
+        ? sentences.length 
+        : (i + 1) * sentencesPerScene;
+      
+      const sceneText = sentences
+        .slice(startSentenceIndex, endSentenceIndex)
+        .map(s => s.trim())
+        .join('. ') + '.';
+
+      const startTime = i * sceneDuration;
 
       scenes.push({
         segments: [{
-          text: sentence.trim(),
+          text: sceneText,
           startTime,
           duration: sceneDuration,
           animation: this.getRandomAnimation(),
-          position: index % 2 === 0 ? 'center' : 'bottom'
+          position: i % 2 === 0 ? 'center' : 'bottom'
         }],
         transition: this.getRandomTransition(),
-        effects: this.getSceneEffects(index, isShort)
+        effects: this.getSceneEffects(i, isShort)
       });
-    });
+    }
 
     return scenes;
   }
@@ -464,6 +489,11 @@ export class ProfessionalVideoCreator {
 
     console.log(`🎥 Rendering professional video: ${scenes.length} scenes`);
 
+    // For videos with many scenes, use a simpler but more reliable approach
+    if (scenes.length > 15) {
+      return await this.renderLongVideoSimple(scenes, backgroundAssets, duration, isShort, jobId);
+    }
+
     // Create complex filter for professional video
     let filterComplex = '';
     let inputs = '';
@@ -479,7 +509,7 @@ export class ProfessionalVideoCreator {
     const command = `ffmpeg ${inputs} ` +
       `-filter_complex "${filterComplex}" ` +
       `-map "[final]" ` +
-      `-c:v libx264 -preset slow -crf 18 ` +
+      `-c:v libx264 -preset medium -crf 20 ` +
       `-pix_fmt yuv420p ` +
       `-t ${duration} ` +
       `-r 30 ` +
@@ -491,6 +521,75 @@ export class ProfessionalVideoCreator {
     const stats = await fs.stat(outputPath);
     console.log(`✅ Professional video rendered: ${Math.round(stats.size / 1024)}KB`);
 
+    return outputPath;
+  }
+
+  private async renderLongVideoSimple(
+    scenes: VideoScene[], 
+    backgroundAssets: string[], 
+    duration: number, 
+    isShort: boolean,
+    jobId: number
+  ): Promise<string> {
+    const outputPath = path.join(this.outputDir, `professional_render_${jobId}.mp4`);
+    const dimensions = isShort ? '1080:1920' : '1920:1080';
+    const tempDir = path.join(this.outputDir, `temp_scenes_${jobId}`);
+    
+    console.log(`🎥 Using simple rendering approach for ${scenes.length} scenes`);
+    
+    // Create temp directory for individual scene videos
+    await fs.mkdir(tempDir, { recursive: true });
+    
+    const sceneVideos: string[] = [];
+    const sceneDuration = duration / scenes.length;
+    
+    // Create individual scene videos
+    for (let i = 0; i < scenes.length; i++) {
+      const sceneOutputPath = path.join(tempDir, `scene_${i}.mp4`);
+      const backgroundImage = backgroundAssets[i] || backgroundAssets[0];
+      const segment = scenes[i].segments[0];
+      
+      const fontSize = isShort ? 64 : 48;
+      const textY = isShort ? 'h*0.75' : 'h*0.8';
+      
+      // Create individual scene with text overlay
+      const sceneCommand = `ffmpeg -loop 1 -i "${backgroundImage}" ` +
+        `-vf "scale=${dimensions}:force_original_aspect_ratio=increase,crop=${dimensions},` +
+        `drawtext=text='${segment.text.replace(/'/g, "\\'")}':` +
+        `fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:` +
+        `fontsize=${fontSize}:fontcolor=white:x=(w-text_w)/2:y=${textY}:` +
+        `bordercolor=black:borderw=3:shadowcolor=#000000:shadowx=3:shadowy=3" ` +
+        `-t ${sceneDuration} -r 30 -c:v libx264 -preset fast -crf 22 ` +
+        `-pix_fmt yuv420p "${sceneOutputPath}" -y`;
+      
+      await execAsync(sceneCommand);
+      sceneVideos.push(sceneOutputPath);
+      
+      if (i % 5 === 0) {
+        console.log(`🎬 Rendered scene ${i + 1}/${scenes.length}`);
+      }
+    }
+    
+    // Concatenate all scene videos
+    const fileListPath = path.join(tempDir, 'scenes.txt');
+    const fileList = sceneVideos.map(video => `file '${video}'`).join('\n');
+    await fs.writeFile(fileListPath, fileList);
+    
+    const concatCommand = `ffmpeg -f concat -safe 0 -i "${fileListPath}" ` +
+      `-c copy "${outputPath}" -y`;
+    
+    await execAsync(concatCommand);
+    
+    // Cleanup temp files
+    for (const video of sceneVideos) {
+      await fs.unlink(video).catch(() => {});
+    }
+    await fs.unlink(fileListPath).catch(() => {});
+    await fs.rmdir(tempDir).catch(() => {});
+    
+    const stats = await fs.stat(outputPath);
+    console.log(`✅ Long video rendered: ${Math.round(stats.size / 1024)}KB`);
+    
     return outputPath;
   }
 
