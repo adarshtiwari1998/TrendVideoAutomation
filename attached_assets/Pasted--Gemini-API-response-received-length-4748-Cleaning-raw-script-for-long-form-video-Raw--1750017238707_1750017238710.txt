@@ -1,0 +1,36 @@
+✅ Gemini API response received, length: 4748
+🧹 Cleaning raw script for long_form video...
+📊 Raw script length: 4748 characters
+✅ Gentle cleaned script length: 4704 characters
+📊 Word count: 681, Estimated speech duration: 272s
+⚠️ Long-form script still too short (5 min), extending with fallback
+📄 Using cleaned plain text response
+🔍 Validating script: "(Upbeat intro music with colorful animated graphics) Hi everyone, and welcome back to the channel! T..."
+✅ Minimally cleaned script length: 13180 characters
+📊 Word count: 1759, Estimated speech duration: 704s
+7:52:00 PM [express] GET /api/dashboard/active-pipeline 304 in 460ms :: {"active":[],"scheduled":[],…
+✅ Storing original content: 4630 characters (FULL)
+✅ Generated script: 13180 characters
+7:52:02 PM [express] GET /api/dashboard/active-pipeline 200 in 677ms :: {"active":[{"id":94,"title":…
+7:52:03 PM [express] GET /api/dashboard/scheduled-videos 200 in 1925ms :: {"scheduled":[],"processin…
+7:52:03 PM [express] GET /api/dashboard/active-pipeline 200 in 690ms :: {"active":[{"id":94,"title":…
+📋 Pipeline logging - Original content: Improved H2-He and H2-H2 Collision-Induced Absorption Models and Application to Outer-Planet Atmosph...
+📋 Pipeline logging - Final script: (Upbeat intro music with colorful animated graphics) Hi everyone, and welcome back to the channel! T...
+🎵 Step 2: Starting audio generation...
+7:52:05 PM [express] GET /api/dashboard/active-pipeline 304 in 679ms :: {"active":[{"id":94,"title":…
+7:52:07 PM [express] GET /api/dashboard/active-pipeline 200 in 716ms :: {"active":[{"id":94,"title":…
+7:52:07 PM [express] GET /api/dashboard/scheduled-videos 200 in 679ms :: {"scheduled":[],"processing…
+🎬 Step 3: Starting video creation...
+7:52:09 PM [express] GET /api/dashboard/active-pipeline 304 in 687ms :: {"active":[{"id":94,"title":…
+🚀 Starting PROFESSIONAL video creation for job 94
+🎬 Starting PROFESSIONAL video creation for job 94
+🔧 FFmpeg not found, installing...
+❌ Failed to install FFmpeg: ReferenceError: require is not defined
+    at ProfessionalVideoCreator.ensureFFmpegAvailable (/home/runner/workspace/server/services/video-creator.ts:888:30)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async ProfessionalVideoCreator.createProfessionalVideo (/home/runner/workspace/server/services/video-creator.ts:52:7)
+    at async VideoCreator.createVideo (/home/runner/workspace/server/services/video-creator.ts:984:25)
+    at async AutomationPipeline.processTrendingTopic (/home/runner/workspace/server/automation/pipeline.ts:137:21)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:202:19)
+❌ All FFmpeg installation methods failed
+❌ Professional video creation failed for job 
