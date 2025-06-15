@@ -28,7 +28,7 @@ export class StorageManager {
   }
 
   private getCredentials(): any {
-    const credentialsPath = process.env.GOOGLE_CREDENTIALS || './google-credentials.json';
+    const credentialsPath = process.env.GOOGLE_CREDENTIALS || './credentials.json';
 
     if (!fs.existsSync(credentialsPath)) {
       console.warn('⚠️  Google credentials file not found, Drive storage will be disabled');

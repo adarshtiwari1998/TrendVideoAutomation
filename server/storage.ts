@@ -484,6 +484,36 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getPipelineLogsByJob(jobId: number): Promise<any[]> {
+    try {
+      const result = await db.execute(sql`
+        SELECT * FROM pipeline_logs 
+        WHERE job_id = ${jobId}
+        ORDER BY created_at DESC
+      `);
+      return result.rows || [];
+    } catch (error) {
+      console.error('Failed to get pipeline logs by job:', error);
+      return [];
+    }
+  }
+
+  async getPipelineLogs(limit: number = 50): Promise<any[]> {
+    try {
+      const result = await db.execute(sql`
+        SELECT pl.*, cj.title as job_title, cj.video_type 
+        FROM pipeline_logs pl
+        LEFT JOIN content_jobs cj ON pl.job_id = cj.id
+        ORDER BY pl.created_at DESC
+        LIMIT ${limit}
+      `);
+      return result.rows || [];
+    } catch (error) {
+      console.error('Failed to get pipeline logs:', error);
+      return [];
+    }
+  }
+
   async clearPipelineLogs(): Promise<void> {
     try {
       await db.execute(sql`DELETE FROM pipeline_logs`);

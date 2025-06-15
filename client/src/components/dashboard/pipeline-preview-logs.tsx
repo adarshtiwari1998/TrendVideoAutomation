@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -39,39 +38,36 @@ interface PipelinePreviewLogsProps {
 export function PipelinePreviewLogs({ selectedJobId }: PipelinePreviewLogsProps) {
   const [expandedLogs, setExpandedLogs] = useState<Set<number>>(new Set());
 
-  const { data: logs, isLoading } = useQuery({
-    queryKey: ['pipeline-logs', selectedJobId || 'active-only'],
+  const { data: logs, isLoading, error } = useQuery({
+    queryKey: selectedJobId && selectedJobId > 0 
+      ? ['/api/pipeline/logs', selectedJobId] 
+      : hasActiveJobs 
+        ? ['/api/pipeline/logs/active', activeJobIds] 
+        : ['/api/pipeline/logs/recent'],
     queryFn: async () => {
       if (selectedJobId && selectedJobId > 0) {
-        // Fetch logs for specific job
         const response = await fetch(`/api/pipeline/logs/${selectedJobId}`);
-        if (!response.ok) throw new Error('Failed to fetch logs');
+        if (!response.ok) throw new Error('Failed to fetch job logs');
         return response.json();
+      } else if (hasActiveJobs) {
+        // Fetch logs for all active jobs
+        const allLogs = await Promise.all(
+          activeJobIds.map(async (jobId: number) => {
+            const response = await fetch(`/api/pipeline/logs/${jobId}`);
+            if (!response.ok) return [];
+            return response.json();
+          })
+        );
+        return allLogs.flat().sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
       } else {
-        // Fetch active jobs first, then get logs only for those jobs
-        const activeJobsResponse = await fetch('/api/dashboard/active-pipeline');
-        if (!activeJobsResponse.ok) throw new Error('Failed to fetch active jobs');
-        const pipelineData = await activeJobsResponse.json();
-        
-        const activeJobIds = pipelineData.active?.map((job: any) => job.id) || [];
-        
-        if (activeJobIds.length === 0) {
-          return []; // No active jobs, return empty logs
-        }
-        
-        // Fetch all logs and filter to only active job IDs
-        const logsResponse = await fetch('/api/pipeline/logs');
-        if (!logsResponse.ok) throw new Error('Failed to fetch logs');
-        const allLogs = await logsResponse.json();
-        
-        // Filter logs to only include active job IDs
-        return allLogs.filter((log: any) => activeJobIds.includes(log.jobId));
+        // Show recent logs when no active jobs
+        const response = await fetch('/api/pipeline/logs?limit=20');
+        if (!response.ok) throw new Error('Failed to fetch recent logs');
+        return response.json();
       }
     },
-    refetchInterval: 1000, // Refresh every 1 second for faster real-time updates
+    refetchInterval: 2000,
     enabled: true,
-    staleTime: 0, // Always refetch to ensure real-time updates
-    cacheTime: 0 // Don't cache to ensure fresh data
   });
 
   const getStepIcon = (step: string, status: string) => {
@@ -130,6 +126,45 @@ export function PipelinePreviewLogs({ selectedJobId }: PipelinePreviewLogsProps)
     return new Date(timestamp).toLocaleTimeString();
   };
 
+  if (isLoading) {
+    return (
+      <Card className="h-[600px]">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5" />
+            Pipeline Preview Logs
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin" />
+            <span className="ml-2">Loading logs...</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="h-[600px]">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5" />
+            Pipeline Preview Logs
+            <Badge variant="destructive">Error</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center py-8 text-muted-foreground">
+            <AlertCircle className="h-6 w-6 mr-2" />
+            <span>Failed to load logs</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="h-[600px]">
       <CardHeader>
@@ -175,7 +210,7 @@ export function PipelinePreviewLogs({ selectedJobId }: PipelinePreviewLogsProps)
                         </div>
                       </div>
                       <p className="text-sm text-muted-foreground mt-1">{log.message}</p>
-                      
+
                       {/* Progress bar for in-progress items */}
                       {log.progress && log.status === 'progress' && (
                         <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
