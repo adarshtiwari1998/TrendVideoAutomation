@@ -115,6 +115,9 @@ export class TextToSpeechService {
     // Clean the text to ensure it's actual content
     const cleanText = this.cleanTextForSpeech(text);
 
+    console.log(`🎤 Processing text for TTS - Length: ${cleanText.length} chars`);
+    console.log(`🎤 Text to synthesize: "${cleanText.substring(0, 100)}..."`);
+
     const request = {
       input: { text: cleanText },
       voice: {
@@ -133,6 +136,7 @@ export class TextToSpeechService {
     };
 
     console.log(`🎤 Generating speech with Google Cloud TTS - voice: ${voice} (${voiceGender})`);
+    console.log(`🎤 Expected audio duration: ~${Math.ceil(cleanText.length / 14)} seconds (based on ~14 chars/second)`);
 
     // Perform the text-to-speech request
     const [response] = await this.client.synthesizeSpeech(request);
@@ -148,7 +152,10 @@ export class TextToSpeechService {
     // Write the audio content to file
     await fs.writeFile(outputPath, response.audioContent as Buffer);
 
-    console.log(`✅ Audio saved to: ${outputPath}`);
+    // Verify the audio file was created properly
+    const stats = await fs.stat(outputPath);
+    console.log(`✅ Audio saved to: ${outputPath} (${Math.round(stats.size / 1024)}KB)`);
+    
     return outputPath;
   }
 
@@ -156,20 +163,22 @@ export class TextToSpeechService {
     console.log(`📝 Cleaning text for speech. Original length: ${text.length}`);
     console.log(`📝 First 200 chars: "${text.substring(0, 200)}..."`);
     
-    // Remove any system messages or meta-commentary that might have leaked through
-    const cleaned = text
-      .replace(/^(I'll|I'm|Here's|This is).*?\./i, '') // Remove system introductions
-      .replace(/^(Sure|Certainly|Of course).*?\./i, '') // Remove confirmations
+    // First enhance the script to ensure it has proper intro/outro
+    const enhancedText = this.enhanceScriptForNaturalSpeech(text);
+    
+    // Only remove obvious system artifacts while preserving content
+    const cleaned = enhancedText
       .replace(/\[.*?\]/g, '') // Remove stage directions
-      .replace(/\(.*?\)/g, '') // Remove parenthetical notes
-      .replace(/API|Gemini|model|generate/gi, 'system') // Replace technical terms
+      .replace(/\(.*?\)/g, '') // Remove parenthetical notes  
       .replace(/\n{3,}/g, '\n\n') // Clean up excessive newlines
+      .replace(/\s+/g, ' ') // Normalize whitespace
       .trim();
 
-    console.log(`📝 Cleaned text length: ${cleaned.length}`);
+    console.log(`📝 Final cleaned text length: ${cleaned.length}`);
+    console.log(`📝 Final text preview: "${cleaned.substring(0, 300)}..."`);
     
-    if (cleaned.length < 50) {
-      console.warn('⚠️ Cleaned text is very short, might be a system message');
+    if (cleaned.length < 200) {
+      console.warn('⚠️ Cleaned text is very short, might be insufficient content');
     }
     
     return cleaned;
@@ -503,28 +512,38 @@ export class TextToSpeechService {
       throw new Error('Script content is insufficient for enhancement');
     }
 
-    // Add natural pauses and emphasis for Indian speaking style
+    console.log(`📝 Original script to enhance: "${script.substring(0, 200)}..."`);
+    console.log(`📝 Full script length before enhancement: ${script.length} characters`);
+
+    // Clean and preserve the full script content
     let enhanced = script
-      .replace(/\. /g, '... ') // Add pauses after sentences
+      .trim()
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .replace(/\. /g, '. ') // Ensure proper sentence spacing
       .replace(/\, /g, ', ') // Natural comma pauses
       .replace(/\! /g, '! ') // Excitement emphasis
       .replace(/\? /g, '? ') // Question emphasis
       .replace(/\bvery important\b/g, 'extremely important') // Add emphasis
       .replace(/\bamazing\b/g, 'absolutely amazing'); // Natural expressions
 
-    // Only add intro/outro if script doesn't already have them
+    // Always add a professional intro if not present
     if (!enhanced.toLowerCase().includes('hello') && 
         !enhanced.toLowerCase().includes('welcome') &&
         !enhanced.toLowerCase().includes('namaste')) {
-      enhanced = `Hello friends! ${enhanced}`;
+      enhanced = `Hello friends, welcome back to our channel! ${enhanced}`;
     }
 
-    if (!enhanced.toLowerCase().includes('subscribe') && 
-        !enhanced.toLowerCase().includes('like')) {
-      enhanced += ` Thank you for watching, and don't forget to like and subscribe for more updates!`;
+    // Always add a comprehensive outro with call to action
+    const hasSubscribeCall = enhanced.toLowerCase().includes('subscribe') || 
+                            enhanced.toLowerCase().includes('like and subscribe');
+    
+    if (!hasSubscribeCall) {
+      enhanced += ` Thank you so much for watching this video! If you found this information helpful and educational, please give this video a thumbs up. Don't forget to subscribe to our channel for more amazing content like this, and hit the notification bell so you never miss our latest updates. Share this video with your friends and family to spread awareness. Until next time, take care and see you in the next video!`;
     }
 
     console.log(`✅ Enhanced script length: ${enhanced.length} characters`);
+    console.log(`📝 Enhanced script preview: "${enhanced.substring(0, 300)}..."`);
+    
     return enhanced;
   }
 }

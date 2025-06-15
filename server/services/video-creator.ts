@@ -114,19 +114,37 @@ export class ProfessionalVideoCreator {
   }
 
   private enhanceScriptForNarration(script: string): string {
-    // Add natural pauses and emphasis for professional narration
+    console.log(`🎙️ Enhancing script for narration. Original length: ${script.length}`);
+    console.log(`🎙️ Original script preview: "${script.substring(0, 200)}..."`);
+
+    // Preserve the complete script content and enhance for narration
     let enhanced = script
-      .replace(/\. /g, '... ') // Natural pauses
+      .trim()
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .replace(/\. /g, '. ') // Ensure proper sentence spacing
       .replace(/! /g, '! ') // Excitement emphasis
       .replace(/\? /g, '? ') // Question emphasis
-      .replace(/important/gi, 'very important') // Add emphasis
-      .replace(/breaking/gi, 'breaking news') // News style
-      .replace(/today/gi, 'today\'s update'); // Professional tone
+      .replace(/\bimportant\b/gi, 'very important') // Add emphasis
+      .replace(/\bbreaking\b/gi, 'breaking news') // News style
+      .replace(/\btoday\b/gi, 'today\'s update'); // Professional tone
 
-    // Add professional intro and outro
-    enhanced = `Welcome to today's comprehensive update. ${enhanced}`;
-    enhanced += ` That's all for today's update. For more insights and analysis, make sure to subscribe and hit the notification bell. Thank you for watching.`;
+    // Add professional intro if not present
+    if (!enhanced.toLowerCase().includes('welcome') && 
+        !enhanced.toLowerCase().includes('hello')) {
+      enhanced = `Welcome to today's comprehensive update. ${enhanced}`;
+    }
 
+    // Add professional outro with strong call-to-action
+    const hasOutro = enhanced.toLowerCase().includes('subscribe') || 
+                     enhanced.toLowerCase().includes('thank you for watching');
+    
+    if (!hasOutro) {
+      enhanced += ` That's all for today's comprehensive update. If you found this information valuable and insightful, please give this video a thumbs up and subscribe to our channel for more in-depth analysis and updates. Hit the notification bell to stay informed about our latest content. Share this video with others who might benefit from this information. Thank you so much for watching, and we'll see you in the next video!`;
+    }
+
+    console.log(`✅ Enhanced script length: ${enhanced.length} characters`);
+    console.log(`🎙️ Enhanced script preview: "${enhanced.substring(0, 300)}..."`);
+    
     return enhanced;
   }
 
