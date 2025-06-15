@@ -89,7 +89,7 @@ export class ThumbnailGenerator {
         fs.mkdirSync(outputDir, { recursive: true });
       }
 
-      // Create background if it doesn't exist
+      // Get a reliable background image
       const backgroundPath = await this.getBackgroundImage(job.metadata?.category || 'general');
 
       // Clean title for display (remove excessive length and special chars)
@@ -104,47 +104,74 @@ export class ThumbnailGenerator {
       // Escape title for FFmpeg
       const escapedTitle = thumbnailTitle.replace(/'/g, "\\'").replace(/"/g, '\\"');
 
-      // Use a simpler FFmpeg command to avoid segmentation faults
-      const command = `ffmpeg -i "${backgroundPath}" ` +
-        `-vf "scale=${dimensions}:force_original_aspect_ratio=increase,crop=${dimensions},` +
-        `drawtext=text='${escapedTitle}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:` +
-        `fontsize=${fontSize}:fontcolor=${colors.text}:x=(w-text_w)/2:y=${titleY}:` +
-        `bordercolor=${colors.border}:borderw=4:shadowcolor=black:shadowx=2:shadowy=2,` +
-        `drawbox=x=0:y=${titleY - 20}:w=w:h=${fontSize + 40}:color=${colors.bg}@0.7:t=fill"` +
-        ` -frames:v 1 -q:v 2 "${outputPath}" -y`;
+      // Try professional thumbnail creation
+      try {
+        const command = `ffmpeg -i "${backgroundPath}" ` +
+          `-vf "scale=${dimensions}:force_original_aspect_ratio=increase,crop=${dimensions},` +
+          `drawtext=text='${escapedTitle}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:` +
+          `fontsize=${fontSize}:fontcolor=${colors.text}:x=(w-text_w)/2:y=${titleY}:` +
+          `bordercolor=${colors.border}:borderw=4:shadowcolor=black:shadowx=2:shadowy=2,` +
+          `drawbox=x=0:y=${titleY - 20}:w=w:h=${fontSize + 40}:color=${colors.bg}@0.7:t=fill"` +
+          ` -frames:v 1 -q:v 2 "${outputPath}" -y`;
 
-      // Add timeout and better error handling
-      execSync(command, { 
-        stdio: 'pipe',
-        timeout: 30000, // 30 second timeout
-        encoding: 'utf8'
-      });
+        execSync(command, { 
+          stdio: 'pipe',
+          timeout: 30000,
+          encoding: 'utf8'
+        });
 
-      if (fs.existsSync(outputPath)) {
-        console.log('✅ Professional thumbnail created with FFmpeg');
-        return outputPath;
-      } else {
-        throw new Error('FFmpeg command completed but output file not found');
-      }
-    } catch (error) {
-      console.log('FFmpeg thumbnail creation failed:', error);
-      // If it's a segmentation fault or timeout, try a different approach
-      if (error.message.includes('Segmentation fault') || error.status === 139 || error.code === 'TIMEOUT') {
-        console.log('🔄 Retrying with simpler FFmpeg command...');
-        try {
-          // Ultra-simple fallback command
-          const simpleCommand = `ffmpeg -f lavfi -i "color=black:size=1280x720:duration=0.1" -frames:v 1 "${outputPath}" -y`;
-          execSync(simpleCommand, { stdio: 'pipe', timeout: 10000 });
-
-          if (fs.existsSync(outputPath)) {
-            console.log('✅ Basic thumbnail created with simple FFmpeg');
-            return outputPath;
-          }
-        } catch (retryError) {
-          console.log('Simple FFmpeg also failed:', retryError.message);
+        if (fs.existsSync(outputPath) && fs.statSync(outputPath).size > 1000) {
+          console.log('✅ Professional thumbnail created with background');
+          return outputPath;
         }
+      } catch (bgError) {
+        console.log('Background-based thumbnail failed, trying solid color approach...');
       }
-      throw error;
+
+      // Fallback 1: Create with solid color background
+      try {
+        const solidCommand = `ffmpeg -f lavfi -i "color=${colors.bg}:size=${dimensions}:duration=0.1" ` +
+          `-vf "drawtext=text='${escapedTitle}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:` +
+          `fontsize=${fontSize}:fontcolor=${colors.text}:x=(w-text_w)/2:y=(h-text_h)/2:` +
+          `bordercolor=${colors.border}:borderw=3" ` +
+          `-frames:v 1 -q:v 2 "${outputPath}" -y`;
+
+        execSync(solidCommand, { stdio: 'pipe', timeout: 15000 });
+
+        if (fs.existsSync(outputPath) && fs.statSync(outputPath).size > 1000) {
+          console.log('✅ Solid color thumbnail created');
+          return outputPath;
+        }
+      } catch (solidError) {
+        console.log('Solid color thumbnail failed, using basic fallback...');
+      }
+
+      // Fallback 2: Ultra-simple solid rectangle
+      try {
+        const simpleCommand = `ffmpeg -f lavfi -i "color=${colors.bg}:size=${dimensions}:duration=0.1" -frames:v 1 "${outputPath}" -y`;
+        execSync(simpleCommand, { stdio: 'pipe', timeout: 10000 });
+
+        if (fs.existsSync(outputPath)) {
+          console.log('✅ Basic thumbnail created as final fallback');
+          return outputPath;
+        }
+      } catch (simpleError) {
+        console.log('All FFmpeg methods failed, creating programmatic thumbnail...');
+      }
+
+      // Final fallback: Create programmatically
+      await this.createBasicThumbnail(outputPath, thumbnailTitle, dimensions, colors);
+      return outputPath;
+
+    } catch (error) {
+      console.error('All thumbnail creation methods failed:', error.message);
+      
+      // Create emergency fallback
+      const dimensions = job.videoType === 'short' ? '1080x1920' : '1280x720';
+      const colors = this.getCategoryColors(job.metadata?.category || 'general');
+      await this.createBasicThumbnail(outputPath, job.title, dimensions, colors);
+      
+      return outputPath;
     }
   }
 
@@ -183,25 +210,79 @@ export class ThumbnailGenerator {
 
     const backgroundPath = path.join(backgroundDir, `${category}_bg.jpg`);
 
-    // Check if background already exists
+    // Check if background already exists and is valid
     if (fs.existsSync(backgroundPath)) {
-      return backgroundPath;
+      try {
+        // Verify the existing file is valid
+        const stats = fs.statSync(backgroundPath);
+        if (stats.size > 1000) {
+          // Try to validate it's a proper image
+          execSync(`ffmpeg -i "${backgroundPath}" -frames:v 1 -f null - 2>/dev/null`, { stdio: 'pipe' });
+          return backgroundPath;
+        }
+      } catch (error) {
+        console.log('Existing background is corrupted, removing...');
+        fs.unlinkSync(backgroundPath);
+      }
     }
 
+    // Try multiple approaches to get a valid background
     try {
-      // Get high-quality background from Unsplash
+      // Method 1: Try direct URL with better headers
       const keywords = this.getCategoryKeywords(category);
       const imageUrl = `https://source.unsplash.com/1920x1080/?${encodeURIComponent(keywords)}`;
 
-      const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
-      fs.writeFileSync(backgroundPath, response.data);
+      const response = await axios.get(imageUrl, { 
+        responseType: 'arraybuffer',
+        timeout: 10000,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; ThumbnailGenerator/1.0)'
+        }
+      });
 
-      console.log(`✅ Downloaded background for ${category}`);
-      return backgroundPath;
+      if (response.data && response.data.byteLength > 1000) {
+        fs.writeFileSync(backgroundPath, response.data);
+        
+        // Verify the downloaded file
+        try {
+          execSync(`ffmpeg -i "${backgroundPath}" -frames:v 1 -f null - 2>/dev/null`, { stdio: 'pipe' });
+          console.log(`✅ Downloaded and verified background for ${category}`);
+          return backgroundPath;
+        } catch (verifyError) {
+          console.log('Downloaded image is corrupted, trying fallback...');
+          fs.unlinkSync(backgroundPath);
+        }
+      }
     } catch (error) {
-      console.warn('Failed to download background, creating solid color:', error.message);
-      return await this.createSolidBackground(category, backgroundPath);
+      console.warn('Failed to download background from Unsplash:', error.message);
     }
+
+    // Method 2: Try alternative image source
+    try {
+      const altUrl = `https://picsum.photos/1920/1080?random=${Date.now()}`;
+      const response = await axios.get(altUrl, { 
+        responseType: 'arraybuffer',
+        timeout: 8000
+      });
+
+      if (response.data && response.data.byteLength > 1000) {
+        fs.writeFileSync(backgroundPath, response.data);
+        
+        try {
+          execSync(`ffmpeg -i "${backgroundPath}" -frames:v 1 -f null - 2>/dev/null`, { stdio: 'pipe' });
+          console.log(`✅ Downloaded alternative background for ${category}`);
+          return backgroundPath;
+        } catch (verifyError) {
+          fs.unlinkSync(backgroundPath);
+        }
+      }
+    } catch (error) {
+      console.warn('Alternative image source also failed:', error.message);
+    }
+
+    // Method 3: Create solid color background
+    console.log('Creating solid color background as fallback...');
+    return await this.createSolidBackground(category, backgroundPath);
   }
 
   private async createSolidBackground(category: string, outputPath: string): Promise<string> {
