@@ -704,7 +704,7 @@ export class ProfessionalVideoCreator {
       `fontsize=${fontSize}:fontcolor=${textColor}:` +
       `x=${x}:y=${y}:` +
       `bordercolor=${borderColor}:borderw=3:` +
-      `enable=between\\(t\\,${startTime}\\,${startTime + duration}\\)`;
+      `enable='between(t,${startTime},${startTime + duration})'`;
   }
 
   private createSceneTransition(transition: VideoScene['transition'], sceneIndex: number, duration: number): string {
