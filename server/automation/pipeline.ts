@@ -128,12 +128,14 @@ export class AutomationPipeline {
       let videoMetadata = {};
       
       try {
-        // Add timeout for video creation to prevent hanging
+        // Add timeout for video creation to prevent hanging - increased to 15 minutes for long videos
+        const timeoutDuration = job.videoType === 'long_form' ? 900000 : 600000; // 15min for long, 10min for short
         const videoCreationPromise = videoCreator.createVideo(job.id);
         const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Video creation timeout after 5 minutes')), 300000);
+          setTimeout(() => reject(new Error(`Video creation timeout after ${timeoutDuration/60000} minutes`)), timeoutDuration);
         });
         
+        console.log(`⏱️ Starting video creation with ${timeoutDuration/60000} minute timeout...`);
         videoPath = await Promise.race([videoCreationPromise, timeoutPromise]);
         
         console.log(`✅ Video creation completed: ${videoPath}`);

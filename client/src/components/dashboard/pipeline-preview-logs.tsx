@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { AlertCircle, CheckCircle, Clock, XCircle, Info, FileText, ExternalLink, Eye } from 'lucide-react';
+import { AlertCircle, CheckCircle, Clock, XCircle, Info, FileText, ExternalLink, Eye, Sparkles } from 'lucide-react';
 
 interface PipelineLog {
   id: number;
@@ -49,11 +49,11 @@ function ScriptPreviewDialog({
           View Script Comparison
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-6xl max-h-[85vh]">
+      <DialogContent className="max-w-6xl max-h-[85vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle>Script Generation Results - {title}</DialogTitle>
           <DialogDescription>
-            Compare the original content with the final validated script used for video generation
+            Compare the original content with the final script used for video and audio generation
           </DialogDescription>
         </DialogHeader>
 
@@ -79,34 +79,33 @@ function ScriptPreviewDialog({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 h-[65vh]">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <h4 className="font-medium text-sm">Original Content</h4>
-              <span className="text-xs text-muted-foreground">
-                {originalContent?.length || 0} characters
-              </span>
-            </div>
-            <ScrollArea className="h-full border rounded-md p-4 bg-blue-50/30">
-              <div className="text-sm whitespace-pre-wrap leading-relaxed">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 h-[60vh] overflow-hidden">
+            <div className="flex flex-col h-full">
+              <h4 className="font-medium mb-2 flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Original Content
+                <Badge variant="outline" className="text-xs">
+                  {wordCountOriginal} words
+                </Badge>
+              </h4>
+              <div className="bg-muted p-3 rounded-lg text-sm whitespace-pre-wrap flex-1 overflow-y-auto">
                 {originalContent || 'No original content available'}
               </div>
-            </ScrollArea>
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <h4 className="font-medium text-sm">Final Validated Script</h4>
-              <span className="text-xs text-muted-foreground">
-                {finalScript?.length || 0} characters
-              </span>
             </div>
-            <ScrollArea className="h-full border rounded-md p-4 bg-green-50/30">
-              <div className="text-sm whitespace-pre-wrap leading-relaxed">
-                {finalScript || 'No validated script available'}
+
+            <div className="flex flex-col h-full">
+              <h4 className="font-medium mb-2 flex items-center gap-2">
+                <Sparkles className="h-4 w-4" />
+                Final Script (Used for Video/Audio)
+                <Badge variant="outline" className="text-xs">
+                  {wordCountFinal} words • ~{estimatedDuration} min
+                </Badge>
+              </h4>
+              <div className="bg-muted p-3 rounded-lg text-sm whitespace-pre-wrap flex-1 overflow-y-auto">
+                {finalScript || 'No final script available'}
               </div>
-            </ScrollArea>
+            </div>
           </div>
-        </div>
 
         {/* Processing Info */}
         <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded">
