@@ -105,16 +105,22 @@ export class ThumbnailGenerator {
 
       // Method 1: Professional gradient background with text
       try {
+        // Escape the title and calculate positions properly
+        const maxTitleLength = isVertical ? 35 : 50;
+        const shortTitle = thumbnailTitle.length > maxTitleLength 
+          ? thumbnailTitle.substring(0, maxTitleLength - 3) + '...'
+          : thumbnailTitle;
+        const safeTitle = shortTitle.replace(/['"\\]/g, '');
+        
         const gradientCommand = `ffmpeg -f lavfi ` +
           `-i "color=c=#FF6B35:size=${dimensions}:duration=0.1" ` +
           `-f lavfi -i "color=c=#F7931E:size=${dimensions}:duration=0.1" ` +
           `-filter_complex "` +
           `[0][1]blend=all_mode=screen:all_opacity=0.6,` +
           `geq=r='255*0.9':g='128*0.9+64*sin(2*PI*X/W)':b='64*0.9+32*cos(2*PI*Y/H)',` +
-          `drawtext=text='${escapedTitle}':fontsize=${titleFontSize}:fontcolor=white:` +
+          `drawtext=text='${safeTitle}':fontsize=${titleFontSize}:fontcolor=white:` +
           `x=(w-text_w)/2:y=${titleY}:bordercolor=black:borderw=4:` +
-          `shadowcolor=black:shadowx=3:shadowy=3,` +
-          `drawbox=x=20:y=${titleY}-20:w=w-40:h=${titleFontSize + 40}:color=black@0.3:t=fill" ` +
+          `shadowcolor=black:shadowx=3:shadowy=3" ` +
           `-frames:v 1 -q:v 2 "${outputPath}" -y`;
 
         execSync(gradientCommand, { 
@@ -132,12 +138,18 @@ export class ThumbnailGenerator {
 
       // Method 2: Solid color with professional styling
       try {
+        const maxTitleLength = isVertical ? 35 : 50;
+        const shortTitle = thumbnailTitle.length > maxTitleLength 
+          ? thumbnailTitle.substring(0, maxTitleLength - 3) + '...'
+          : thumbnailTitle;
+        const safeTitle = shortTitle.replace(/['"\\]/g, '');
+        
         const solidCommand = `ffmpeg -f lavfi -i "color=#1a365d:size=${dimensions}:duration=0.1" ` +
-          `-vf "drawtext=text='${escapedTitle}':fontsize=${titleFontSize}:fontcolor=#FFD700:` +
+          `-vf "drawtext=text='${safeTitle}':fontsize=${titleFontSize}:fontcolor=#FFD700:` +
           `x=(w-text_w)/2:y=${titleY}:bordercolor=black:borderw=3:` +
           `shadowcolor=black:shadowx=2:shadowy=2,` +
           `drawtext=text='TRENDING NOW':fontsize=${Math.floor(titleFontSize * 0.4)}:fontcolor=#FF4444:` +
-          `x=(w-text_w)/2:y=${titleY}+${titleFontSize + 20}:bordercolor=white:borderw=2" ` +
+          `x=(w-text_w)/2:y=${isVertical ? 'h*0.8' : 'h*0.7'}:bordercolor=white:borderw=2" ` +
           `-frames:v 1 -q:v 2 "${outputPath}" -y`;
 
         execSync(solidCommand, { stdio: 'pipe', timeout: 15000 });
