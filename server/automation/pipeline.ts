@@ -52,8 +52,15 @@ export class AutomationPipeline {
         status: 'completed',
         message: 'AI script generation completed successfully',
         details: `Generated engaging ${videoType} script with ${job.script?.length || 0} characters`,
-        progress: 25,
-        metadata: { title: job.title, wordCount: job.script?.length || 0 },
+        progress: 100,
+        metadata: { 
+          title: job.title, 
+          wordCount: job.script?.split(' ').length || 0,
+          scriptLength: job.script?.length || 0,
+          finalScript: job.script,
+          originalContent: job.metadata?.originalContent,
+          estimatedDuration: job.metadata?.estimatedDuration || 0
+        },
         createdAt: new Date()
       });
       
@@ -61,7 +68,7 @@ export class AutomationPipeline {
       console.log('🎵 Step 2: Starting audio generation...');
       await storage.updateContentJob(job.id, {
         status: 'audio_generation',
-        progress: 25
+        progress: 30
       });
       
       await storage.createPipelineLog({
@@ -70,7 +77,7 @@ export class AutomationPipeline {
         status: 'starting',
         message: 'Starting professional TTS audio generation',
         details: 'Converting script to high-quality speech with Indian accent',
-        progress: 25,
+        progress: 30,
         createdAt: new Date()
       });
 
@@ -83,8 +90,12 @@ export class AutomationPipeline {
         status: 'completed',
         message: 'TTS audio generation completed',
         details: 'Generated professional Indian English narration with natural speech patterns',
-        progress: 40,
-        metadata: { voice: 'en-IN-Neural2-D', duration: videoType === 'short' ? '60s' : '10m' },
+        progress: 100,
+        metadata: { 
+          voice: 'en-IN-Neural2-D', 
+          duration: videoType === 'short' ? '60s' : '10+min',
+          finalScript: job.script
+        },
         createdAt: new Date()
       });
       
@@ -272,9 +283,15 @@ export class AutomationPipeline {
         step: 'file_organization',
         status: 'completed',
         message: 'Files successfully uploaded to Google Drive',
-        details: 'Video and thumbnail securely stored in organized folder structure',
-        progress: 95,
-        metadata: { videoUrl, thumbnailUrl }
+        details: 'Video and thumbnail securely stored in organized folder structure. Click links to view files.',
+        progress: 100,
+        metadata: { 
+          videoUrl, 
+          thumbnailUrl,
+          videoLink: videoUrl,
+          thumbnailLink: thumbnailUrl,
+          driveFolder: 'YouTube Automation Videos'
+        }
       });
       
       // Step 7: YouTube Upload Scheduling

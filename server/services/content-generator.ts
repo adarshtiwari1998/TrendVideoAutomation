@@ -36,7 +36,7 @@ export class ContentGenerator {
       console.log('✅ Gemini API response received, length:', text.length);
 
       // Clean and filter the content to remove Gemini's own commentary
-      const cleanedScript = this.cleanAndFilterScript(text);
+      const cleanedScript = this.cleanAndFilterScript(text, topic, videoType);
 
       // Try to parse JSON response first
       try {
@@ -55,76 +55,53 @@ export class ContentGenerator {
     }
   }
 
-  private cleanAndFilterScript(rawText: string): string {
-    // Remove Gemini's meta-commentary and system responses
-    let cleaned = rawText
-      // Remove JSON wrapper if it exists but keep the content
-      .replace(/^```json\s*\n?/i, '')
-      .replace(/\n?```\s*$/i, '')
-      // Remove Gemini's explanatory text at the beginning
-      .replace(/^Here's a.*?script.*?[:.][\s\n]*/i, '')
-      .replace(/^I'll create.*?for you.*?[:.][\s\n]*/i, '')
-      .replace(/^This script.*?includes.*?[:.][\s\n]*/i, '')
-      .replace(/^I'll.*?script.*?[:.][\s\n]*/i, '')
-      .replace(/^Sure.*?here.*?[:.][\s\n]*/i, '')
-      .replace(/^Certainly.*?[:.][\s\n]*/i, '')
-      // Remove system notes
-      .replace(/Note:.*?\n/gi, '')
-      .replace(/Remember:.*?\n/gi, '')
-      .replace(/Important:.*?\n/gi, '')
-      // Remove system instructions that leaked through
-      .replace(/Return JSON format:.*$/i, '')
-      .replace(/\{"script":\s*"/i, '')
-      .replace(/",\s*"visual_cues":.*$/i, '')
-      // Remove meta instructions
-      .replace(/Write ONLY.*?\./gi, '')
-      .replace(/Structure.*?:/gi, '')
-      .replace(/STRICT REQUIREMENTS.*?\./gi, '')
-      .trim();
+  private cleanAndFilterScript(rawScript: string, topic: TrendingTopic, videoType: 'long_form' | 'short'): string {
+    console.log(`🧹 Cleaning raw script for ${videoType} video...`);
+    console.log(`📊 Raw script length: ${rawScript.length} characters`);
 
-    // If it looks like JSON, try to extract just the script content
-    if (cleaned.includes('"script"')) {
-      try {
-        const jsonMatch = cleaned.match(/\{"script":\s*"(.*?)"/s);
-        if (jsonMatch) {
-          cleaned = jsonMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
-        }
-      } catch (e) {
-        // Continue with text cleaning
-      }
-    }
-
-    // CRITICAL: Clean up text formatting issues that break FFmpeg
-    cleaned = cleaned
-      // Fix sentence structure issues
-      .replace(/\.\s*([a-z])/g, '. $1') // Ensure space after periods
-      .replace(/([a-z])\s+([A-Z])/g, '$1. $2') // Add periods between sentences
-      .replace(/\s+/g, ' ') // Normalize all whitespace
-      .replace(/\n{3,}/g, '\n\n') // Clean up excessive newlines
-      // Remove or escape characters that can break FFmpeg commands
-      .replace(/['"]/g, '') // Remove quotes that can break shell commands
-      .replace(/[()]/g, '') // Remove parentheses that can break shell commands
-      .replace(/[&|<>]/g, '') // Remove shell metacharacters
-      .replace(/\$/g, '') // Remove dollar signs
-      .replace(/`/g, '') // Remove backticks
-      // Ensure proper sentence endings
-      .replace(/([a-zA-Z])\s*$/g, '$1.') // Add period at end if missing
-      .trim();
-
-    // Validate content quality
-    if (cleaned.length < 100 || 
-        /^(I'll|I'm|Here's|This is|Sure|Certainly)/i.test(cleaned) ||
-        cleaned.includes('API') || 
-        cleaned.includes('Gemini') ||
-        cleaned.includes('model')) {
-      console.warn('⚠️ Detected system text in cleaned script, returning empty for fallback');
+    if (!rawScript || rawScript.trim().length < 50) {
+      console.warn('⚠️ Script too short or empty, using fallback');
       return '';
     }
 
-    // Final validation - ensure we have coherent sentences
-    const sentences = cleaned.split(/[.!?]+/).filter(s => s.trim().length > 10);
-    if (sentences.length < 3) {
-      console.warn('⚠️ Script appears to have too few coherent sentences, using fallback');
+    // Clean the script content with proper formatting
+    let cleaned = rawScript
+      // Remove problematic formatting elements but preserve content
+      .replace(/\[.*?\]/g, '') // Remove stage directions
+      .replace(/\(.*?\)/g, '') // Remove parenthetical notes
+      .replace(/^\s*[-*]\s*/gm, '') // Remove bullet points
+      .replace(/^Step \d+:.*$/gm, '') // Remove step indicators
+      .replace(/^\d+\.\s*/gm, '') // Remove numbered lists
+      // Clean up text structure while preserving content
+      .split('\n')
+      .filter(line => line.trim().length > 5) // Keep meaningful lines
+      .filter(line => !line.match(/^(Note:|Remember:|Important:)/i))
+      .join(' ') // Join with spaces for natural flow
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .trim();
+
+    // Ensure proper sentence structure for TTS
+    cleaned = cleaned
+      .replace(/([.!?])\s*([a-z])/g, '$1 $2') // Space after punctuation
+      .replace(/([a-zA-Z])([A-Z])/g, '$1. $2') // Add periods between sentences
+      .replace(/\s+/g, ' ') // Final whitespace cleanup
+      .replace(/([a-zA-Z])\s*$/g, '$1.'); // Add period at end
+
+    console.log(`✅ Cleaned script length: ${cleaned.length} characters`);
+
+    // Check for coherent content
+    const words = cleaned.split(' ').filter(w => w.length > 2);
+    if (words.length < 50) {
+      console.warn('⚠️ Script lacks sufficient content, using fallback');
+      return '';
+    }
+
+    // Ensure minimum duration for long-form videos (10+ minutes)
+    const estimatedDuration = words.length / 2.5; // ~2.5 words per second
+    console.log(`📊 Estimated speech duration: ${Math.round(estimatedDuration)}s`);
+
+    if (videoType === 'long_form' && estimatedDuration < 600) { // 10 minutes minimum
+      console.warn(`⚠️ Long-form video too short (${Math.round(estimatedDuration)}s), using extended fallback`);
       return '';
     }
 
@@ -133,7 +110,7 @@ export class ContentGenerator {
 
   private validateAndCleanScript(script: string): string {
     console.log(`🔍 Validating script: "${script.substring(0, 100)}..."`);
-    
+
     // Ensure the script is actual content, not system messages
     const invalidPatterns = [
       /^(I'll|I'm|Here's|This is)/i,

@@ -2,7 +2,9 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { AlertCircle, CheckCircle, Clock, XCircle, Info } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertCircle, CheckCircle, Clock, XCircle, Info, FileText, ExternalLink, Eye } from 'lucide-react';
 
 interface PipelineLog {
   id: number;
@@ -12,8 +14,114 @@ interface PipelineLog {
   message: string;
   details: string;
   progress: number;
-  metadata?: any;
+  metadata?: {
+    finalScript?: string;
+    originalContent?: string;
+    videoUrl?: string;
+    thumbnailUrl?: string;
+    videoLink?: string;
+    thumbnailLink?: string;
+    [key: string]: any;
+  };
   created_at: string;
+}
+
+function ScriptPreviewDialog({ 
+  finalScript, 
+  originalContent, 
+  title 
+}: { 
+  finalScript?: string; 
+  originalContent?: string; 
+  title?: string; 
+}) {
+  if (!finalScript && !originalContent) return null;
+
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm" className="ml-2">
+          <FileText className="h-3 w-3 mr-1" />
+          View Script
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-4xl max-h-[80vh]">
+        <DialogHeader>
+          <DialogTitle>Script Comparison - {title}</DialogTitle>
+          <DialogDescription>
+            Compare the original content with the final cleaned script used for video generation
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid grid-cols-2 gap-4 h-[60vh]">
+          <div className="space-y-2">
+            <h4 className="font-medium text-sm">Original Content</h4>
+            <ScrollArea className="h-full border rounded-md p-3 bg-muted/30">
+              <div className="text-sm whitespace-pre-wrap">
+                {originalContent || 'No original content available'}
+              </div>
+            </ScrollArea>
+          </div>
+          <div className="space-y-2">
+            <h4 className="font-medium text-sm">Final Clean Script</h4>
+            <ScrollArea className="h-full border rounded-md p-3 bg-green-50/50">
+              <div className="text-sm whitespace-pre-wrap">
+                {finalScript || 'No script available'}
+              </div>
+            </ScrollArea>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function DriveLinksDisplay({ metadata }: { metadata?: any }) {
+  if (!metadata?.videoUrl && !metadata?.thumbnailUrl && !metadata?.videoLink && !metadata?.thumbnailLink) {
+    return null;
+  }
+
+  return (
+    <div className="flex flex-wrap gap-2 mt-2">
+      {(metadata.videoUrl || metadata.videoLink) && (
+        <Button 
+          variant="outline" 
+          size="sm" 
+          asChild
+          className="text-xs"
+        >
+          <a 
+            href={metadata.videoUrl || metadata.videoLink} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center gap-1"
+          >
+            <Eye className="h-3 w-3" />
+            View Video
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        </Button>
+      )}
+      {(metadata.thumbnailUrl || metadata.thumbnailLink) && (
+        <Button 
+          variant="outline" 
+          size="sm" 
+          asChild
+          className="text-xs"
+        >
+          <a 
+            href={metadata.thumbnailUrl || metadata.thumbnailLink} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center gap-1"
+          >
+            <Eye className="h-3 w-3" />
+            View Thumbnail
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        </Button>
+      )}
+    </div>
+  );
 }
 
 interface ActiveJob {
@@ -206,6 +314,29 @@ export function PipelinePreviewLogs() {
                             {log.details}
                           </p>
                         )}
+                        
+                        {/* Script Preview for completed script generation */}
+                        {log.step === 'script_generation' && log.status === 'completed' && (
+                          <div className="mt-2">
+                            <ScriptPreviewDialog 
+                              finalScript={log.metadata?.finalScript}
+                              originalContent={log.metadata?.originalContent}
+                              title={`Job #${log.job_id}`}
+                            />
+                            {log.metadata?.wordCount && (
+                              <div className="text-xs text-muted-foreground mt-1">
+                                Word count: {log.metadata.wordCount} | 
+                                Estimated duration: {Math.round((log.metadata.estimatedDuration || 0) / 60)} minutes
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Drive Links for file organization */}
+                        {log.step === 'file_organization' && log.status === 'completed' && (
+                          <DriveLinksDisplay metadata={log.metadata} />
+                        )}
+
                         <div className="flex items-center justify-between mt-2">
                           <span className="text-xs text-muted-foreground">
                             {formatTime(log.created_at)}

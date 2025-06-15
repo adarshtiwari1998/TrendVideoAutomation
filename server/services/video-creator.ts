@@ -203,13 +203,15 @@ export class ProfessionalVideoCreator {
       
       try {
         const stats = await fs.stat(audioPath);
-        // More accurate estimation: ~1KB per second for compressed audio
-        const estimatedDuration = Math.max(30, Math.min(600, stats.size / 16000));
+        // More accurate estimation for different video types
+        const estimatedDuration = Math.max(30, Math.min(900, stats.size / 16000)); // Max 15 minutes
         console.log(`📊 Estimated duration from file size: ${estimatedDuration}s`);
         return estimatedDuration;
       } catch (fsError) {
         console.error('Cannot access audio file:', fsError);
-        return 60; // Default fallback
+        // Return appropriate default based on video type
+        const jobData = await storage.getContentJobById(parseInt(audioPath.split('_')[2]));
+        return jobData?.videoType === 'short' ? 60 : 600; // 1 min for shorts, 10 min for long-form
       }
     }
   }
@@ -972,10 +974,14 @@ export class VideoCreator {
       // Check video duration is appropriate
       const duration = parseFloat(videoInfo.format?.duration || '0');
       const jobData = await storage.getContentJobById(jobId);
-      const expectedDuration = jobData?.videoType === 'short' ? 120 : 600;
+      const expectedDuration = jobData?.videoType === 'short' ? 120 : 600; // 2 min for shorts, 10 min for long-form
 
       if (duration < expectedDuration * 0.8) {
         console.warn(`⚠️ Video duration ${duration}s shorter than expected ${expectedDuration}s`);
+        if (jobData?.videoType === 'long_form' && duration < 600) {
+          console.error(`❌ Long-form video must be at least 10 minutes, got ${Math.round(duration/60)} minutes`);
+          throw new Error(`Long-form video duration (${Math.round(duration/60)} min) below 10-minute minimum requirement`);
+        }
       }
 
       console.log(`✅ PRODUCTION-READY video created: ${videoPath}`);
