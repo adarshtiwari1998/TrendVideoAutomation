@@ -2,10 +2,19 @@ import path from 'path';
 import fs from 'fs/promises';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { createCanvas } from 'canvas';
 import { storage } from '../storage';
 import { textToSpeechService } from './text-to-speech';
 import { FFmpegInstaller } from './ffmpeg-installer';
+
+// Graceful canvas import with fallback
+let createCanvas: any = null;
+try {
+  const canvasModule = require('canvas');
+  createCanvas = canvasModule.createCanvas;
+  console.log('✅ Canvas library loaded successfully');
+} catch (error) {
+  console.warn('⚠️ Canvas library not available, using fallback methods');
+}
 
 const execAsync = promisify(exec);
 
@@ -108,6 +117,11 @@ export class VideoCreator {
     const height = isShort ? 1920 : 1080;
     const fps = 30;
     const totalFrames = Math.floor(duration * fps);
+    
+    if (!createCanvas) {
+      console.warn('Canvas not available, using FFmpeg-only background creation');
+      return await this.createFFmpegBackground(jobId, duration, isShort, title);
+    }
     
     try {
       const canvas = createCanvas(width, height);
@@ -290,6 +304,11 @@ export class VideoCreator {
     const width = isShort ? 1080 : 1920;
     const height = isShort ? 1920 : 1080;
     
+    if (!createCanvas) {
+      console.warn('Canvas not available, using FFmpeg-only video creation');
+      return await this.createFFmpegOnlyVideo(jobData, duration, isShort, jobId);
+    }
+    
     // Create professional video using Canvas
     const canvas = createCanvas(width, height);
     const ctx = canvas.getContext('2d');
@@ -359,6 +378,75 @@ export class VideoCreator {
       console.error('Image to video conversion failed:', error);
       // Fallback: just copy image as "video"
       await fs.copyFile(imagePath, outputPath.replace('.mp4', '_fallback.jpg'));
+    }
+  }
+
+  private async createFFmpegBackground(jobId: number, duration: number, isShort: boolean, title: string): Promise<string> {
+    const outputPath = path.join(this.outputDir, `ffmpeg_bg_${jobId}.mp4`);
+    const dimensions = isShort ? '1080x1920' : '1920x1080';
+    
+    try {
+      // Create animated background using FFmpeg only
+      const command = `ffmpeg -f lavfi -i "color=c=#1a1a2e:size=${dimensions}:duration=${duration}:rate=30" ` +
+        `-f lavfi -i "color=c=#16213e:size=${dimensions}:duration=${duration}:rate=30" ` +
+        `-filter_complex "` +
+        `[0][1]blend=all_mode=overlay:all_opacity=0.8,` +
+        `geq=r='128+64*sin(2*PI*t/8+x/120)':g='64+32*sin(2*PI*t/10+y/100)':b='192+64*sin(2*PI*t/6)',` +
+        `drawgrid=width=iw/30:height=ih/30:thickness=1:color=white@0.03` +
+        `" -c:v libx264 -preset medium -crf 20 -t ${duration} ` +
+        `"${outputPath}" -y`;
+
+      await execAsync(command);
+      return outputPath;
+    } catch (error) {
+      console.error('FFmpeg background creation failed:', error);
+      // Create simple color background as final fallback
+      return await this.createSimpleColorBackground(jobId, duration, isShort);
+    }
+  }
+
+  private async createFFmpegOnlyVideo(jobData: any, duration: number, isShort: boolean, jobId: number): Promise<string> {
+    const outputPath = path.join(this.outputDir, `ffmpeg_only_${jobId}.mp4`);
+    const dimensions = isShort ? '1080x1920' : '1920x1080';
+    
+    try {
+      // Create professional video using FFmpeg only
+      const escapedTitle = jobData.title.replace(/'/g, "\\'").replace(/"/g, '\\"');
+      
+      const command = `ffmpeg -f lavfi -i "color=c=#1a1a2e:size=${dimensions}:duration=${duration}:rate=30" ` +
+        `-vf "` +
+        `geq=r='128+64*sin(2*PI*t/10+x/50)':g='64+32*sin(2*PI*t/8+y/40)':b='192+64*sin(2*PI*t/12)',` +
+        `drawtext=text='${escapedTitle}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:` +
+        `fontsize=${isShort ? 72 : 84}:fontcolor=#FFD700:` +
+        `x=(w-text_w)/2:y=${isShort ? 'h*0.2' : 'h*0.15'}:` +
+        `bordercolor=#000000:borderw=4:shadowcolor=#000000:shadowx=3:shadowy=3,` +
+        `drawtext=text='BREAKING NEWS':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:` +
+        `fontsize=${isShort ? 32 : 42}:fontcolor=#FF4444:` +
+        `x=(w-text_w)/2:y=${isShort ? 'h*0.3' : 'h*0.25'}:` +
+        `bordercolor=#000000:borderw=2` +
+        `" -c:v libx264 -preset medium -crf 20 "${outputPath}" -y`;
+
+      await execAsync(command);
+      return outputPath;
+    } catch (error) {
+      console.error('FFmpeg-only video creation failed:', error);
+      throw error;
+    }
+  }
+
+  private async createSimpleColorBackground(jobId: number, duration: number, isShort: boolean): Promise<string> {
+    const outputPath = path.join(this.outputDir, `simple_bg_${jobId}.mp4`);
+    const dimensions = isShort ? '1080x1920' : '1920x1080';
+    
+    try {
+      const command = `ffmpeg -f lavfi -i "color=c=#1a1a2e:size=${dimensions}:duration=${duration}:rate=30" ` +
+        `-c:v libx264 -preset ultrafast -crf 30 "${outputPath}" -y`;
+      
+      await execAsync(command);
+      return outputPath;
+    } catch (error) {
+      console.error('Simple background creation failed:', error);
+      throw error;
     }
   }
 
