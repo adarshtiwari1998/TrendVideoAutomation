@@ -19,7 +19,7 @@ export class FFmpegInstaller {
     try {
       // First try to use the ffmpeg-static package
       try {
-        const ffmpegStatic = require('ffmpeg-static');
+        const ffmpegStatic = await import('ffmpeg-static').then(m => m.default).catch(() => null);
         if (ffmpegStatic) {
           // Create symlink to make ffmpeg available globally
           const ffmpegPath = '/tmp/ffmpeg';
@@ -46,26 +46,36 @@ export class FFmpegInstaller {
         console.log('📦 ffmpeg-static not available, trying system install...');
       }
 
-      // Try installing ffmpeg via nix
+      // For Replit, try to use the nix-installed version directly
       try {
-        console.log('🔧 Installing FFmpeg via nix...');
-        execSync('nix-env -iA nixpkgs.ffmpeg', { stdio: 'inherit', timeout: 60000 });
+        console.log('🔧 Checking for existing FFmpeg installation...');
+        // Try to find ffmpeg in common Nix paths
+        const possiblePaths = [
+          '/nix/store/*/bin/ffmpeg',
+          '/home/runner/.nix-profile/bin/ffmpeg',
+          '/run/current-system/sw/bin/ffmpeg'
+        ];
+        
+        for (const pattern of possiblePaths) {
+          try {
+            execSync(`ls ${pattern}`, { stdio: 'pipe' });
+            execSync(`${pattern} -version`, { stdio: 'pipe' });
+            console.log('✅ Found existing FFmpeg installation');
+            return;
+          } catch (e) {
+            // Continue to next path
+          }
+        }
+        
+        // Force reinstall with proper cleanup
+        console.log('🔧 Reinstalling FFmpeg via nix...');
+        execSync('nix-env -e ffmpeg || true', { stdio: 'pipe' });
+        execSync('nix-env -iA nixpkgs.ffmpeg-full', { stdio: 'inherit', timeout: 120000 });
         execSync('ffmpeg -version', { stdio: 'pipe' });
         console.log('✅ FFmpeg installed via nix');
         return;
       } catch (nixError) {
-        console.log('⚠️  Nix install failed, trying apt...');
-      }
-
-      // Try apt-get as fallback
-      try {
-        console.log('🔧 Installing FFmpeg via apt...');
-        execSync('apt-get update && apt-get install -y ffmpeg', { stdio: 'inherit', timeout: 60000 });
-        execSync('ffmpeg -version', { stdio: 'pipe' });
-        console.log('✅ FFmpeg installed via apt');
-        return;
-      } catch (aptError) {
-        console.log('⚠️  Apt install failed');
+        console.log('⚠️  Nix install failed:', nixError.message);
       }
 
       throw new Error('All FFmpeg installation methods failed');

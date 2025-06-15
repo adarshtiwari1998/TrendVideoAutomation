@@ -77,36 +77,74 @@ export class ThumbnailGenerator {
     return thumbnailPath;
   }
 
-  private async createProfessionalThumbnail(job: ContentJob, outputPath: string, category: string): Promise<void> {
-    console.log('🎨 Creating professional thumbnail with FFmpeg...');
-
-    // Get background image for category
-    const backgroundPath = await this.getBackgroundImage(category);
-
-    // Determine dimensions based on video type
-    const dimensions = job.videoType === 'short' ? '1080x1920' : '1280x720';
-    const isVertical = job.videoType === 'short';
-
-    // Create thumbnail title - limit to 60 characters for readability
-    const thumbnailTitle = this.createThumbnailTitle(job.title);
-
-    // Build FFmpeg command for professional thumbnail
-    const ffmpegCommand = this.buildThumbnailCommand(
-      backgroundPath,
-      thumbnailTitle,
-      outputPath,
-      dimensions,
-      category,
-      isVertical
-    );
+  private async createProfessionalThumbnail(job: ContentJob): Promise<string> {
+    const outputPath = path.join(process.cwd(), 'generated', 'thumbnails', `${job.id}_youtube_thumbnail.jpg`);
 
     try {
-      execSync(ffmpegCommand, { stdio: 'pipe' });
-      console.log('✅ Professional thumbnail created with FFmpeg');
+      console.log('🎨 Creating professional thumbnail with FFmpeg...');
+
+      // Ensure output directory exists
+      const outputDir = path.dirname(outputPath);
+      if (!fs.existsSync(outputDir)) {
+        fs.mkdirSync(outputDir, { recursive: true });
+      }
+
+      // Create background if it doesn't exist
+      const backgroundPath = await this.getBackgroundImage(job.metadata?.category || 'general');
+
+      // Clean title for display (remove excessive length and special chars)
+      const thumbnailTitle = this.createThumbnailTitle(job.title);
+      const dimensions = job.videoType === 'short' ? '1080x1920' : '1280x720';
+      const isVertical = job.videoType === 'short';
+      const category = job.metadata?.category || 'general';
+      const colors = this.getCategoryColors(category);
+      const fontSize = isVertical ? Math.min(80, 1080 / 12) : Math.min(60, 1280 / 20);
+      const titleY = isVertical ? 1920 * 0.15 : 720 * 0.2;
+
+      // Escape title for FFmpeg
+      const escapedTitle = thumbnailTitle.replace(/'/g, "\\'").replace(/"/g, '\\"');
+
+      // Use a simpler FFmpeg command to avoid segmentation faults
+      const command = `ffmpeg -i "${backgroundPath}" ` +
+        `-vf "scale=${dimensions}:force_original_aspect_ratio=increase,crop=${dimensions},` +
+        `drawtext=text='${escapedTitle}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:` +
+        `fontsize=${fontSize}:fontcolor=${colors.text}:x=(w-text_w)/2:y=${titleY}:` +
+        `bordercolor=${colors.border}:borderw=4:shadowcolor=black:shadowx=2:shadowy=2,` +
+        `drawbox=x=0:y=${titleY - 20}:w=w:h=${fontSize + 40}:color=${colors.bg}@0.7:t=fill"` +
+        ` -frames:v 1 -q:v 2 "${outputPath}" -y`;
+
+      // Add timeout and better error handling
+      execSync(command, { 
+        stdio: 'pipe',
+        timeout: 30000, // 30 second timeout
+        encoding: 'utf8'
+      });
+
+      if (fs.existsSync(outputPath)) {
+        console.log('✅ Professional thumbnail created with FFmpeg');
+        return outputPath;
+      } else {
+        throw new Error('FFmpeg command completed but output file not found');
+      }
     } catch (error) {
-      console.error('FFmpeg thumbnail creation failed:', error);
-      // Fallback to simple thumbnail
-      await this.createFallbackThumbnail(outputPath, thumbnailTitle, dimensions, category);
+      console.log('FFmpeg thumbnail creation failed:', error);
+      // If it's a segmentation fault or timeout, try a different approach
+      if (error.message.includes('Segmentation fault') || error.status === 139 || error.code === 'TIMEOUT') {
+        console.log('🔄 Retrying with simpler FFmpeg command...');
+        try {
+          // Ultra-simple fallback command
+          const simpleCommand = `ffmpeg -f lavfi -i "color=black:size=1280x720:duration=0.1" -frames:v 1 "${outputPath}" -y`;
+          execSync(simpleCommand, { stdio: 'pipe', timeout: 10000 });
+
+          if (fs.existsSync(outputPath)) {
+            console.log('✅ Basic thumbnail created with simple FFmpeg');
+            return outputPath;
+          }
+        } catch (retryError) {
+          console.log('Simple FFmpeg also failed:', retryError.message);
+        }
+      }
+      throw error;
     }
   }
 
@@ -219,7 +257,7 @@ export class ThumbnailGenerator {
       const magickCommand = `convert -size ${dimensions} xc:"${colors.bg}" ` +
         `-font DejaVu-Sans-Bold -pointsize 48 -fill "${colors.text}" ` +
         `-gravity center -annotate +0+0 "${escapedTitle}" "${outputPath}"`;
-      
+
       execSync(magickCommand, { stdio: 'pipe' });
       console.log('✅ Thumbnail created with ImageMagick');
     } catch (magickError) {
@@ -231,10 +269,10 @@ export class ThumbnailGenerator {
   private async createBasicThumbnail(outputPath: string, title: string, dimensions: string, colors: any): Promise<void> {
     // Create a simple colored rectangle as fallback
     const [width, height] = dimensions.split('x').map(Number);
-    
+
     // Create minimal JPEG data structure
     const canvas = this.createCanvasLikeBuffer(width, height, colors.bg);
-    
+
     // Write the basic image data
     await fs.writeFileSync(outputPath, canvas);
     console.log('✅ Basic thumbnail created as fallback');
@@ -262,7 +300,7 @@ export class ThumbnailGenerator {
     // Create simple colored data
     const dataSize = Math.min(1000, Math.floor(width * height / 100));
     const colorData = Buffer.alloc(dataSize, r);
-    
+
     // JPEG end marker
     const jpegEnd = Buffer.from([0xFF, 0xD9]);
 
