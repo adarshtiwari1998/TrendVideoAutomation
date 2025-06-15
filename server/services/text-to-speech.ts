@@ -166,20 +166,22 @@ export class TextToSpeechService {
     // First enhance the script to ensure it has proper intro/outro
     const enhancedText = this.enhanceScriptForNaturalSpeech(text);
     
-    // Only remove obvious system artifacts while preserving content
+    // MINIMAL cleaning - preserve ALL content, only fix formatting
     const cleaned = enhancedText
-      .replace(/\[.*?\]/g, '') // Remove stage directions
-      .replace(/\(.*?\)/g, '') // Remove parenthetical notes  
-      .replace(/\n{3,}/g, '\n\n') // Clean up excessive newlines
-      .replace(/\s+/g, ' ') // Normalize whitespace
+      .replace(/\n{3,}/g, '\n\n') // Clean up excessive newlines only
+      .replace(/\s+/g, ' ') // Normalize whitespace only
       .trim();
 
-    console.log(`📝 Final cleaned text length: ${cleaned.length}`);
+    console.log(`📝 Cleaned text length: ${cleaned.length}`);
     console.log(`📝 Final text preview: "${cleaned.substring(0, 300)}..."`);
     
-    if (cleaned.length < 200) {
-      console.warn('⚠️ Cleaned text is very short, might be insufficient content');
+    // Verify we haven't lost significant content
+    const contentLossPercentage = ((text.length - cleaned.length) / text.length) * 100;
+    if (contentLossPercentage > 20) {
+      console.warn(`⚠️ WARNING: Lost ${contentLossPercentage.toFixed(1)}% of original content during cleaning!`);
     }
+    
+    console.log(`✅ Content preserved: ${((cleaned.length / enhancedText.length) * 100).toFixed(1)}% of enhanced text`);
     
     return cleaned;
   }
@@ -515,33 +517,32 @@ export class TextToSpeechService {
     console.log(`📝 Original script to enhance: "${script.substring(0, 200)}..."`);
     console.log(`📝 Full script length before enhancement: ${script.length} characters`);
 
-    // Clean and preserve the full script content
-    let enhanced = script
-      .trim()
-      .replace(/\s+/g, ' ') // Normalize whitespace
-      .replace(/\. /g, '. ') // Ensure proper sentence spacing
-      .replace(/\, /g, ', ') // Natural comma pauses
-      .replace(/\! /g, '! ') // Excitement emphasis
-      .replace(/\? /g, '? ') // Question emphasis
-      .replace(/\bvery important\b/g, 'extremely important') // Add emphasis
-      .replace(/\bamazing\b/g, 'absolutely amazing'); // Natural expressions
+    // PRESERVE ALL ORIGINAL CONTENT - minimal modifications only
+    let enhanced = script.trim();
 
-    // Always add a professional intro if not present
-    if (!enhanced.toLowerCase().includes('hello') && 
-        !enhanced.toLowerCase().includes('welcome') &&
-        !enhanced.toLowerCase().includes('namaste')) {
+    // Only add intro if clearly missing (very conservative check)
+    const hasIntro = enhanced.toLowerCase().includes('hello') || 
+                     enhanced.toLowerCase().includes('welcome') ||
+                     enhanced.toLowerCase().includes('namaste') ||
+                     enhanced.toLowerCase().includes('hi ') ||
+                     enhanced.toLowerCase().includes('greetings');
+    
+    if (!hasIntro && enhanced.length < 2000) { // Only add intro for shorter content
       enhanced = `Hello friends, welcome back to our channel! ${enhanced}`;
     }
 
-    // Always add a comprehensive outro with call to action
-    const hasSubscribeCall = enhanced.toLowerCase().includes('subscribe') || 
-                            enhanced.toLowerCase().includes('like and subscribe');
+    // Only add outro if clearly missing and content is reasonable length
+    const hasOutro = enhanced.toLowerCase().includes('subscribe') || 
+                     enhanced.toLowerCase().includes('like and subscribe') ||
+                     enhanced.toLowerCase().includes('thank you for watching') ||
+                     enhanced.toLowerCase().includes('see you next time');
     
-    if (!hasSubscribeCall) {
-      enhanced += ` Thank you so much for watching this video! If you found this information helpful and educational, please give this video a thumbs up. Don't forget to subscribe to our channel for more amazing content like this, and hit the notification bell so you never miss our latest updates. Share this video with your friends and family to spread awareness. Until next time, take care and see you in the next video!`;
+    if (!hasOutro && enhanced.length < 3000) { // Only add outro for shorter content
+      enhanced += ` Thank you so much for watching this video! If you found this information helpful, please give this video a thumbs up and subscribe to our channel for more amazing content. Hit the notification bell so you never miss our latest updates. Until next time, take care and see you in the next video!`;
     }
 
     console.log(`✅ Enhanced script length: ${enhanced.length} characters`);
+    console.log(`📝 Content growth: +${enhanced.length - script.length} characters`);
     console.log(`📝 Enhanced script preview: "${enhanced.substring(0, 300)}..."`);
     
     return enhanced;
