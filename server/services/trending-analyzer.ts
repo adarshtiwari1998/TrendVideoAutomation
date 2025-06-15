@@ -1,3 +1,4 @@
+
 import { google } from 'googleapis';
 import { storage } from '../storage';
 import type { InsertTrendingTopic } from '@shared/schema';
@@ -35,45 +36,48 @@ export class TrendingAnalyzer {
       console.log('✅ Google Custom Search API initialized');
     }
 
-    console.log('🚀 Advanced TrendingAnalyzer initialized - Targeting reliable news sources for YouTube content');
+    console.log('🚀 SPACE & SCIENCE TrendingAnalyzer initialized - Targeting space, astronomy, and science content only');
   }
 
   async analyzeTrendingTopics(): Promise<void> {
     try {
       const currentDate = new Date();
-      console.log(`🔥 ADVANCED TRENDING ANALYSIS: Scanning reliable news sources for YouTube-ready content`);
+      console.log(`🔥 SPACE & SCIENCE TRENDING ANALYSIS: Scanning for space, astronomy, and science content`);
 
       // Step 1: Clean up old topics
       await this.cleanupOldTopics();
 
-      // Step 2: Get trending content from RELIABLE NEWS SOURCES
+      // Step 2: Get trending content from SPACE & SCIENCE SOURCES ONLY
       const [
         spaceNews,
-        geographyNews,
-        scienceBreakthroughs,
-        natureDiscoveries,
-        worldFacts
+        spaceFacts,
+        spaceAstronomy,
+        earthSpaceScience,
+        generalScienceFacts,
+        natureEnvironmentCosmic
       ] = await Promise.all([
-        this.getReliableNewsContent('space astronomy NASA discovery breakthrough mars moon', 'space_news'),
-        this.getReliableNewsContent('geography world countries facts discovery amazing', 'geography_facts'),
-        this.getReliableNewsContent('science breakthrough discovery research innovation', 'science_facts'),
-        this.getReliableNewsContent('nature wildlife environment discovery species', 'nature_facts'),
-        this.getReliableNewsContent('world facts amazing discovery geography countries', 'geography_news')
+        this.getSpaceAndScienceContent('space news NASA discovery Mars moon breakthrough recent', 'space_news'),
+        this.getSpaceAndScienceContent('space facts astronomy solar system planets galaxies stars', 'space_facts'),
+        this.getSpaceAndScienceContent('space astronomy telescope discovery exoplanets cosmic phenomena', 'space_astronomy'),
+        this.getSpaceAndScienceContent('earth space science geology atmosphere climate cosmic impact', 'earth_space_science'),
+        this.getSpaceAndScienceContent('science facts physics chemistry biology breakthrough discovery', 'general_science_facts'),
+        this.getSpaceAndScienceContent('nature environment cosmic connection universe ecology space impact', 'nature_environment_cosmic')
       ]);
 
       const allTopics = [
         ...spaceNews,
-        ...geographyNews,
-        ...scienceBreakthroughs,
-        ...natureDiscoveries,
-        ...worldFacts
+        ...spaceFacts,
+        ...spaceAstronomy,
+        ...earthSpaceScience,
+        ...generalScienceFacts,
+        ...natureEnvironmentCosmic
       ];
 
-      console.log(`📊 ANALYSIS RESULTS: Found ${allTopics.length} potential YouTube topics from reliable sources`);
+      console.log(`📊 SPACE & SCIENCE RESULTS: Found ${allTopics.length} space and science topics`);
 
-      // Step 3: Enhanced filtering for YouTube content
-      const youtubeReadyTopics = await this.filterForYouTubeContent(allTopics);
-      const finalTopics = this.prioritizeByEngagement(youtubeReadyTopics);
+      // Step 3: Enhanced filtering for YouTube space/science content
+      const spaceReadyTopics = await this.filterForSpaceAndScienceContent(allTopics);
+      const finalTopics = this.prioritizeByEngagement(spaceReadyTopics);
 
       // Step 4: Store trending topics
       for (const topic of finalTopics) {
@@ -82,23 +86,23 @@ export class TrendingAnalyzer {
 
       await storage.createActivityLog({
         type: 'trending',
-        title: 'Advanced Trending Analysis - YouTube Ready Content',
-        description: `Found ${finalTopics.length} high-quality topics from reliable news sources`,
+        title: 'Space & Science Trending Analysis Complete',
+        description: `Found ${finalTopics.length} high-quality space and science topics`,
         status: 'success',
         metadata: { 
           count: finalTopics.length,
           date: currentDate.toISOString().split('T')[0],
-          sources: 'reliable_news_sites',
-          contentQuality: 'youtube_optimized'
+          sources: 'space_science_only',
+          contentQuality: 'space_optimized'
         }
       });
 
-      console.log(`✅ ANALYSIS COMPLETE: ${finalTopics.length} YouTube-ready trending topics stored`);
+      console.log(`✅ SPACE & SCIENCE ANALYSIS COMPLETE: ${finalTopics.length} space and science topics stored`);
     } catch (error) {
-      console.error('❌ Advanced trending analysis failed:', error);
+      console.error('❌ Space & science trending analysis failed:', error);
       await storage.createActivityLog({
         type: 'error',
-        title: 'Advanced Trending Analysis Failed',
+        title: 'Space & Science Trending Analysis Failed',
         description: `Error: ${error.message}`,
         status: 'error',
         metadata: { error: error.message }
@@ -106,172 +110,199 @@ export class TrendingAnalyzer {
     }
   }
 
-  private async getReliableNewsContent(query: string, category: string): Promise<InsertTrendingTopic[]> {
+  private async getSpaceAndScienceContent(query: string, category: string): Promise<InsertTrendingTopic[]> {
     try {
-      console.log(`🔍 SCANNING RELIABLE SOURCES for: ${query}`);
+      console.log(`🔍 SCANNING SPACE & SCIENCE SOURCES for: ${query}`);
       console.log(`📰 Target category: ${category}`);
 
       // Get today's date for recent content
       const today = new Date();
-      const yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-      const twoDaysAgo = new Date(today);
-      twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
 
-      // Enhanced search with reliable news sources prioritized
-      const enhancedQuery = `${query} site:space.com OR site:nasa.gov OR site:bbc.com/science OR site:nationalgeographic.com OR site:sciencenews.org OR site:newscientist.com OR site:smithsonianmag.com OR site:scientificamerican.com`;
+      // SPACE & SCIENCE SPECIFIC SEARCH - Only target scientific and space sources
+      const spaceAndScienceQuery = `${query} site:nasa.gov OR site:space.com OR site:spacenews.com OR site:spaceflightnow.com OR site:esa.int OR site:sciencenews.org OR site:newscientist.com OR site:scientificamerican.com OR site:smithsonianmag.com OR site:nationalgeographic.com/science OR site:phys.org OR site:science.org OR site:nature.com OR site:sciencedaily.com OR site:astronomy.com OR site:universetoday.com OR site:spacex.com OR site:jpl.nasa.gov`;
 
-      console.log(`🎯 ENHANCED SEARCH QUERY: ${enhancedQuery}`);
+      console.log(`🎯 SPACE & SCIENCE SEARCH QUERY: ${spaceAndScienceQuery}`);
 
       const response = await this.customSearch.cse.list({
         cx: process.env.GOOGLE_CUSTOM_SEARCH_ENGINE_ID,
-        q: enhancedQuery,
-        num: 8,
+        q: spaceAndScienceQuery,
+        num: 10,
         sort: 'date',
-        dateRestrict: 'd2' // Last 2 days for fresh content
+        dateRestrict: 'd3' // Last 3 days for fresh content
       });
 
       const topics: InsertTrendingTopic[] = [];
 
       if (response.data.items && response.data.items.length > 0) {
-        console.log(`📊 Found ${response.data.items.length} results from reliable sources`);
+        console.log(`📊 Found ${response.data.items.length} results from space & science sources`);
 
         for (const item of response.data.items) {
-          console.log(`\n🔍 PROCESSING: ${item.title}`);
+          console.log(`\n🔍 PROCESSING SPACE/SCIENCE CONTENT: ${item.title}`);
           console.log(`🌐 SOURCE: ${item.link}`);
           console.log(`📝 SNIPPET: ${item.snippet?.substring(0, 100)}...`);
 
-          // Enhanced content extraction with better error handling
-          const contentData = await this.extractHighQualityContent(item.link, item.snippet || '', item.title);
+          // Verify this is actually space/science content
+          if (!this.isValidSpaceOrScienceContent(item.title, item.snippet || '', item.link)) {
+            console.log(`❌ NOT SPACE/SCIENCE CONTENT - Skipping`);
+            continue;
+          }
 
-          if (contentData.isGoodContent) {
-            console.log(`✅ HIGH-QUALITY CONTENT EXTRACTED`);
+          // Enhanced content extraction for space/science content
+          const contentData = await this.extractSpaceAndScienceContent(item.link, item.snippet || '', item.title);
+
+          if (contentData.isGoodContent && contentData.isSpaceOrScience) {
+            console.log(`✅ HIGH-QUALITY SPACE/SCIENCE CONTENT EXTRACTED`);
             console.log(`  📏 Length: ${contentData.fullText.length} characters`);
-            console.log(`  🎯 YouTube Ready: ${contentData.youtubeReady ? 'YES' : 'NO'}`);
+            console.log(`  🎯 Space/Science Ready: ${contentData.spaceReadyContent ? 'YES' : 'NO'}`);
             console.log(`  ⭐ Engagement Score: ${contentData.engagementScore}/10`);
 
             topics.push({
-              title: this.optimizeForYouTube(item.title, category),
+              title: this.optimizeForSpace(item.title, category),
               description: contentData.description,
-              searchVolume: this.estimateSearchVolume(contentData.engagementScore, category),
+              searchVolume: this.estimateSpaceSearchVolume(contentData.engagementScore, category),
               priority: contentData.engagementScore >= 7 ? 'high' : 'medium',
               category: category,
-              source: 'reliable_news',
+              source: 'space_science',
               trending_data: {
                 date: today.toISOString().split('T')[0],
                 timestamp: today.toISOString(),
-                timeframe: 'last_48_hours',
+                timeframe: 'last_72_hours',
                 sourceUrl: item.link,
                 realTime: true,
                 dataFreshness: 'current',
                 fullContent: contentData.fullText,
-                youtubeOptimized: true,
+                spaceOptimized: true,
                 engagementScore: contentData.engagementScore,
                 contentQuality: contentData.isGoodContent ? 'high' : 'medium',
                 extractedAt: today.toISOString(),
                 sourceDomain: this.extractDomain(item.link),
-                wordCount: contentData.wordCount
+                wordCount: contentData.wordCount,
+                isSpaceScience: true
               },
               status: 'pending'
             });
           } else {
-            console.log(`❌ POOR QUALITY CONTENT - Skipping`);
+            console.log(`❌ POOR QUALITY OR NON-SPACE CONTENT - Skipping`);
           }
         }
       } else {
         console.log(`⚠️ No results found for: ${query}`);
       }
 
-      console.log(`📈 CATEGORY RESULTS: ${topics.length} high-quality topics for ${category}`);
+      console.log(`📈 SPACE CATEGORY RESULTS: ${topics.length} high-quality space/science topics for ${category}`);
       return topics;
 
     } catch (error) {
-      console.error(`❌ Error getting reliable news for ${category}:`, error.message);
+      console.error(`❌ Error getting space/science content for ${category}:`, error.message);
       return [];
     }
   }
 
-  private async extractHighQualityContent(url: string, fallbackSnippet: string, title: string): Promise<{
+  private isValidSpaceOrScienceContent(title: string, snippet: string, url: string): boolean {
+    const spaceKeywords = [
+      'space', 'nasa', 'astronomy', 'planet', 'mars', 'moon', 'solar', 'galaxy', 'star', 'universe',
+      'cosmic', 'telescope', 'satellite', 'spacex', 'rocket', 'spacecraft', 'astronaut', 'orbit',
+      'science', 'discovery', 'research', 'breakthrough', 'physics', 'chemistry', 'biology',
+      'climate', 'earth', 'environment', 'nature', 'species', 'evolution', 'quantum', 'technology'
+    ];
+
+    const excludeKeywords = [
+      'facebook', 'tripadvisor', 'travel', 'vacation', 'hotel', 'restaurant', 'shopping',
+      'business', 'finance', 'stock', 'crypto', 'politics', 'sports', 'entertainment',
+      'celebrity', 'fashion', 'food', 'recipe', 'dating', 'social media'
+    ];
+
+    const content = `${title} ${snippet}`.toLowerCase();
+    
+    // Check if content contains space/science keywords
+    const hasSpaceContent = spaceKeywords.some(keyword => content.includes(keyword));
+    
+    // Check if content contains excluded keywords
+    const hasExcludedContent = excludeKeywords.some(keyword => content.includes(keyword));
+
+    // Check if URL is from a reliable space/science source
+    const validDomains = [
+      'nasa.gov', 'space.com', 'spacenews.com', 'spaceflightnow.com', 'esa.int',
+      'sciencenews.org', 'newscientist.com', 'scientificamerican.com', 'smithsonianmag.com',
+      'nationalgeographic.com', 'phys.org', 'science.org', 'nature.com', 'sciencedaily.com',
+      'astronomy.com', 'universetoday.com', 'spacex.com', 'jpl.nasa.gov'
+    ];
+
+    const isValidDomain = validDomains.some(domain => url.includes(domain));
+
+    return hasSpaceContent && !hasExcludedContent && isValidDomain;
+  }
+
+  private async extractSpaceAndScienceContent(url: string, fallbackSnippet: string, title: string): Promise<{
     description: string;
     fullText: string;
     isGoodContent: boolean;
-    youtubeReady: boolean;
+    spaceReadyContent: boolean;
+    isSpaceOrScience: boolean;
     engagementScore: number;
     wordCount: number;
   }> {
     try {
-      console.log(`🔧 ADVANCED CONTENT EXTRACTION from: ${url}`);
+      console.log(`🔧 SPACE/SCIENCE CONTENT EXTRACTION from: ${url}`);
 
       const response = await fetch(url, {
-        timeout: 20000,
+        timeout: 25000,
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+          'User-Agent': 'Mozilla/5.0 (compatible; SpaceBot/1.0; +http://example.com/bot)',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
           'Accept-Language': 'en-US,en;q=0.9',
-          'Accept-Encoding': 'gzip, deflate, br',
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
+          'Cache-Control': 'no-cache'
         }
       });
 
       if (!response.ok) {
         console.warn(`⚠️ HTTP ${response.status} for ${url}`);
-        return this.createFallbackContent(fallbackSnippet, title);
+        return this.createSpaceFallbackContent(fallbackSnippet, title);
       }
 
       const html = await response.text();
       const $ = cheerio.load(html);
 
-      // Remove unwanted elements more thoroughly
+      // Remove unwanted elements
       const unwantedSelectors = [
         'script', 'style', 'nav', 'header', 'footer', 'aside',
         '.advertisement', '.ads', '.ad', '.social-share', '.share',
         '.comments', '.comment', '.related-articles', '.related',
         '.sidebar', '.menu', '.navigation', '.breadcrumb',
-        '.cookie', '.newsletter', '.popup', '.modal',
-        '[data-ad]', '[class*="ad-"]', '[id*="ad-"]',
-        '.social-media', '.social-links', '.author-bio'
+        '.cookie', '.newsletter', '.popup', '.modal'
       ];
 
       unwantedSelectors.forEach(selector => $(selector).remove());
 
-      // Advanced content selectors for reliable news sites
-      const reliableContentSelectors = [
+      // Space and science specific content selectors
+      const spaceContentSelectors = [
         // NASA specific
-        '#maincontent', '.hds-content-item',
-        // BBC specific
-        '[data-component="text-block"]', '.story-body__inner',
-        // National Geographic
-        '.article__content', '.parsys_column',
-        // Science News
-        '.post-content', '.entry-content',
-        // New Scientist
-        '.article-content', '.content-body',
-        // Scientific American
-        '.article-content', '.article-body',
-        // Smithsonian
-        '.article-body', '.field-item',
-        // General reliable selectors
-        'article', '[role="main"]', '.main-content',
-        '.article-content', '.story-content', '.post-body',
-        '.content', '.text-content', 'main'
+        '#maincontent', '.hds-content-item', '.uds-article-content',
+        // Space.com
+        '.content-wrapper', '.article-content', '.vanilla-body',
+        // Science journals
+        '.article-content', '.article-body', '.content-body',
+        '.main-content', '.post-content', '.entry-content',
+        // General scientific content
+        'article', '[role="main"]', '.text-content',
+        '.story-content', '.article-text', 'main'
       ];
 
       let extractedText = '';
       let usedSelector = '';
 
       // Try each selector and get the best content
-      for (const selector of reliableContentSelectors) {
+      for (const selector of spaceContentSelectors) {
         const elements = $(selector);
         if (elements.length > 0) {
           const paragraphs = elements.find('p, div').map((_, el) => {
             const text = $(el).text().trim();
-            return text.length > 30 ? text : null; // Filter out short/empty paragraphs
+            return text.length > 50 ? text : null;
           }).get().filter(Boolean);
 
-          if (paragraphs.length >= 3) { // Need at least 3 substantial paragraphs
+          if (paragraphs.length >= 2) {
             const combinedText = paragraphs.join(' ').trim();
-            if (combinedText.length > 500) { // Substantial content
+            if (combinedText.length > 300) {
               extractedText = combinedText;
               usedSelector = selector;
               break;
@@ -281,49 +312,51 @@ export class TrendingAnalyzer {
       }
 
       // If no good content found, try alternative extraction
-      if (extractedText.length < 500) {
+      if (extractedText.length < 300) {
         const allParagraphs = $('p').map((_, el) => $(el).text().trim()).get();
-        const goodParagraphs = allParagraphs.filter(p => p.length > 50 && p.length < 1000);
+        const goodParagraphs = allParagraphs.filter(p => p.length > 30 && p.length < 2000);
         if (goodParagraphs.length >= 2) {
-          extractedText = goodParagraphs.slice(0, 8).join(' ').trim();
+          extractedText = goodParagraphs.slice(0, 6).join(' ').trim();
           usedSelector = 'filtered-paragraphs';
         }
       }
 
       // Clean and analyze the content
       extractedText = this.cleanExtractedText(extractedText);
-      const analysis = this.analyzeContentQuality(extractedText, title, url);
+      const analysis = this.analyzeSpaceContentQuality(extractedText, title, url);
 
-      console.log(`📊 CONTENT ANALYSIS RESULTS:`);
+      console.log(`📊 SPACE CONTENT ANALYSIS RESULTS:`);
       console.log(`  📏 Length: ${extractedText.length} chars`);
       console.log(`  📝 Words: ${analysis.wordCount}`);
       console.log(`  ⭐ Engagement Score: ${analysis.engagementScore}/10`);
-      console.log(`  🎯 YouTube Ready: ${analysis.youtubeReady}`);
-      console.log(`  ✅ Good Content: ${analysis.isGoodContent}`);
+      console.log(`  🚀 Space Ready: ${analysis.spaceReadyContent}`);
+      console.log(`  🔬 Is Space/Science: ${analysis.isSpaceOrScience}`);
       console.log(`  🔧 Extracted via: ${usedSelector}`);
 
-      if (analysis.isGoodContent) {
+      if (analysis.isGoodContent && analysis.isSpaceOrScience) {
         return {
           description: extractedText.substring(0, 800) + (extractedText.length > 800 ? '...' : ''),
           fullText: extractedText,
           isGoodContent: true,
-          youtubeReady: analysis.youtubeReady,
+          spaceReadyContent: analysis.spaceReadyContent,
+          isSpaceOrScience: true,
           engagementScore: analysis.engagementScore,
           wordCount: analysis.wordCount
         };
       }
 
-      return this.createFallbackContent(fallbackSnippet, title);
+      return this.createSpaceFallbackContent(fallbackSnippet, title);
 
     } catch (error) {
-      console.error(`💥 EXTRACTION ERROR for ${url}: ${error.message}`);
-      return this.createFallbackContent(fallbackSnippet, title);
+      console.error(`💥 SPACE EXTRACTION ERROR for ${url}: ${error.message}`);
+      return this.createSpaceFallbackContent(fallbackSnippet, title);
     }
   }
 
-  private analyzeContentQuality(text: string, title: string, url: string): {
+  private analyzeSpaceContentQuality(text: string, title: string, url: string): {
     isGoodContent: boolean;
-    youtubeReady: boolean;
+    spaceReadyContent: boolean;
+    isSpaceOrScience: boolean;
     engagementScore: number;
     wordCount: number;
   } {
@@ -331,67 +364,78 @@ export class TrendingAnalyzer {
     let score = 0;
 
     // Length scoring
-    if (wordCount >= 200) score += 2;
-    if (wordCount >= 400) score += 1;
-    if (wordCount >= 600) score += 1;
+    if (wordCount >= 150) score += 2;
+    if (wordCount >= 300) score += 1;
+    if (wordCount >= 500) score += 1;
 
-    // Content quality indicators
-    const qualityKeywords = [
-      'discovery', 'breakthrough', 'research', 'study', 'scientists', 'researchers',
-      'new', 'first time', 'amazing', 'incredible', 'surprising', 'reveals',
-      'found', 'discovered', 'according to', 'experts', 'findings'
+    // Space and science specific keywords
+    const spaceKeywords = [
+      'space', 'nasa', 'astronomy', 'planet', 'mars', 'moon', 'solar system', 'galaxy', 'star',
+      'universe', 'cosmic', 'telescope', 'satellite', 'spacecraft', 'astronaut', 'orbit',
+      'discovery', 'breakthrough', 'research', 'scientists', 'study', 'mission', 'exploration',
+      'physics', 'chemistry', 'biology', 'earth science', 'climate', 'environment', 'species'
     ];
 
-    const foundKeywords = qualityKeywords.filter(keyword => 
-      text.toLowerCase().includes(keyword.toLowerCase())
+    const foundSpaceKeywords = spaceKeywords.filter(keyword => 
+      text.toLowerCase().includes(keyword.toLowerCase()) || title.toLowerCase().includes(keyword.toLowerCase())
     ).length;
 
-    score += Math.min(foundKeywords, 3); // Max 3 points for keywords
+    score += Math.min(foundSpaceKeywords * 0.5, 3); // Max 3 points for space keywords
 
-    // Engagement factors
-    const engagementWords = [
-      'amazing', 'incredible', 'shocking', 'surprising', 'unbelievable',
-      'mind-blowing', 'fascinating', 'extraordinary', 'remarkable'
+    // Engagement factors for space content
+    const spaceEngagementWords = [
+      'amazing', 'incredible', 'breakthrough', 'first time', 'never before', 'stunning',
+      'mysterious', 'fascinating', 'extraordinary', 'remarkable', 'groundbreaking', 'revolutionary'
     ];
 
-    const engagementCount = engagementWords.filter(word => 
+    const engagementCount = spaceEngagementWords.filter(word => 
       text.toLowerCase().includes(word) || title.toLowerCase().includes(word)
     ).length;
 
     score += Math.min(engagementCount, 2); // Max 2 points for engagement
 
-    // Reliable source bonus
-    const reliableDomains = ['nasa.gov', 'bbc.com', 'nationalgeographic.com', 'sciencenews.org'];
-    if (reliableDomains.some(domain => url.includes(domain))) {
+    // Space source bonus
+    const spaceDomains = ['nasa.gov', 'space.com', 'spacenews.com', 'astronomy.com', 'universetoday.com'];
+    if (spaceDomains.some(domain => url.includes(domain))) {
       score += 2;
     }
 
-    const isGoodContent = wordCount >= 200 && score >= 5;
-    const youtubeReady = wordCount >= 300 && score >= 6;
+    // Science source bonus
+    const scienceDomains = ['sciencenews.org', 'newscientist.com', 'scientificamerican.com', 'nature.com'];
+    if (scienceDomains.some(domain => url.includes(domain))) {
+      score += 1.5;
+    }
+
+    const isSpaceOrScience = foundSpaceKeywords >= 2; // Must have at least 2 space/science keywords
+    const isGoodContent = wordCount >= 150 && score >= 4 && isSpaceOrScience;
+    const spaceReadyContent = wordCount >= 250 && score >= 6 && isSpaceOrScience;
 
     return {
       isGoodContent,
-      youtubeReady,
+      spaceReadyContent,
+      isSpaceOrScience,
       engagementScore: Math.min(score, 10),
       wordCount
     };
   }
 
-  private createFallbackContent(snippet: string, title: string): {
+  private createSpaceFallbackContent(snippet: string, title: string): {
     description: string;
     fullText: string;
     isGoodContent: boolean;
-    youtubeReady: boolean;
+    spaceReadyContent: boolean;
+    isSpaceOrScience: boolean;
     engagementScore: number;
     wordCount: number;
   } {
-    const fallbackText = snippet || `${title} - This is an interesting topic that could make great YouTube content.`;
+    const fallbackText = snippet || `${title} - This space and science topic could make engaging YouTube content.`;
     return {
       description: fallbackText,
       fullText: fallbackText,
       isGoodContent: false,
-      youtubeReady: false,
-      engagementScore: 3,
+      spaceReadyContent: false,
+      isSpaceOrScience: false,
+      engagementScore: 2,
       wordCount: fallbackText.split(' ').length
     };
   }
@@ -405,33 +449,35 @@ export class TrendingAnalyzer {
       .trim();
   }
 
-  private optimizeForYouTube(title: string, category: string): string {
-    // Add engaging prefixes based on category
+  private optimizeForSpace(title: string, category: string): string {
+    // Add engaging prefixes based on space/science category
     const prefixes = {
-      space_news: ['🚀 BREAKING:', '🌟 AMAZING SPACE:', '🛸 INCREDIBLE:'],
-      science_facts: ['🧬 SCIENCE BREAKTHROUGH:', '⚗️ AMAZING DISCOVERY:', '🔬 INCREDIBLE SCIENCE:'],
-      geography_facts: ['🌍 AMAZING WORLD FACT:', '🗺️ INCREDIBLE GEOGRAPHY:', '🌎 MIND-BLOWING:'],
-      nature_facts: ['🌿 AMAZING NATURE:', '🦋 INCREDIBLE WILDLIFE:', '🌺 NATURE\'S SECRET:'],
-      geography_news: ['🌍 WORLD NEWS:', '🗺️ GEOGRAPHY UPDATE:', '🌎 GLOBAL DISCOVERY:']
+      space_news: ['🚀 BREAKING SPACE:', '🌟 SPACE DISCOVERY:', '🛸 NASA BREAKTHROUGH:'],
+      space_facts: ['🌌 AMAZING SPACE FACT:', '⭐ COSMIC DISCOVERY:', '🚀 SPACE SCIENCE:'],
+      space_astronomy: ['🔭 ASTRONOMICAL DISCOVERY:', '🌟 TELESCOPE BREAKTHROUGH:', '🌌 COSMIC PHENOMENON:'],
+      earth_space_science: ['🌍 EARTH FROM SPACE:', '🌎 PLANETARY SCIENCE:', '🌍 SPACE EARTH CONNECTION:'],
+      general_science_facts: ['🧬 SCIENCE BREAKTHROUGH:', '⚗️ SCIENTIFIC DISCOVERY:', '🔬 RESEARCH BREAKTHROUGH:'],
+      nature_environment_cosmic: ['🌿 COSMIC NATURE:', '🌱 SPACE ENVIRONMENT:', '🌺 UNIVERSAL CONNECTION:']
     };
 
-    const categoryPrefixes = prefixes[category] || ['🔥 TRENDING:'];
+    const categoryPrefixes = prefixes[category] || ['🔥 SPACE TRENDING:'];
     const randomPrefix = categoryPrefixes[Math.floor(Math.random() * categoryPrefixes.length)];
 
     return `${randomPrefix} ${title}`.substring(0, 100);
   }
 
-  private estimateSearchVolume(engagementScore: number, category: string): number {
+  private estimateSpaceSearchVolume(engagementScore: number, category: string): number {
     const baseVolumes = {
-      space_news: 2000000,
-      science_facts: 1500000,
-      geography_facts: 1000000,
-      nature_facts: 1200000,
-      geography_news: 800000
+      space_news: 3000000,
+      space_facts: 2500000,
+      space_astronomy: 2000000,
+      earth_space_science: 1500000,
+      general_science_facts: 1800000,
+      nature_environment_cosmic: 1200000
     };
 
-    const base = baseVolumes[category] || 1000000;
-    const multiplier = 0.5 + (engagementScore / 20); // 0.5 to 1.0 multiplier
+    const base = baseVolumes[category] || 1500000;
+    const multiplier = 0.6 + (engagementScore / 16); // 0.6 to 1.2 multiplier
 
     return Math.floor(base * multiplier);
   }
@@ -444,16 +490,17 @@ export class TrendingAnalyzer {
     }
   }
 
-  private async filterForYouTubeContent(topics: InsertTrendingTopic[]): Promise<InsertTrendingTopic[]> {
-    // Filter for YouTube-ready content
+  private async filterForSpaceAndScienceContent(topics: InsertTrendingTopic[]): Promise<InsertTrendingTopic[]> {
+    // Filter for space and science content only
     const filtered = topics.filter(topic => {
       const trendingData = topic.trending_data as any;
-      return trendingData.youtubeOptimized && 
-             trendingData.engagementScore >= 5 &&
-             trendingData.wordCount >= 200;
+      return trendingData.spaceOptimized && 
+             trendingData.isSpaceScience &&
+             trendingData.engagementScore >= 4 &&
+             trendingData.wordCount >= 150;
     });
 
-    console.log(`🎬 YOUTUBE FILTER: ${filtered.length}/${topics.length} topics are YouTube-ready`);
+    console.log(`🚀 SPACE FILTER: ${filtered.length}/${topics.length} topics are space/science ready`);
     return filtered;
   }
 
@@ -464,7 +511,7 @@ export class TrendingAnalyzer {
         const bData = b.trending_data as any;
         return (bData.engagementScore || 0) - (aData.engagementScore || 0);
       })
-      .slice(0, 15); // Top 15 most engaging topics
+      .slice(0, 20); // Top 20 most engaging space/science topics
   }
 
   private async cleanupOldTopics(): Promise<void> {
