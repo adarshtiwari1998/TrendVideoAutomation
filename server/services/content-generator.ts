@@ -1,8 +1,5 @@
-The code is modified to ensure that both the original content and the final script are saved in the pipeline logs for preview.
-```
 
-```replit_final_file
-import { GoogleGenerativeAI } from '@googleGenerativeAI';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { storage } from '../storage';
 import type { TrendingTopic, ContentJob } from '@shared/schema';
 
@@ -532,7 +529,7 @@ Thank you for joining me today, and I'll see you in the next video where we'll c
     return options[Math.floor(Math.random() * options.length)];
   }
 
-    private enhanceScriptForNaturalSpeech(script: string): string {
+  private enhanceScriptForNaturalSpeech(script: string): string {
     // Minimal enhancement to preserve content and prevent TTS issues
     if (!script || script.length < 50) {
       console.warn('⚠️ Script too short or empty');
@@ -565,5 +562,3 @@ Thank you for joining me today, and I'll see you in the next video where we'll c
 }
 
 export const contentGenerator = new ContentGenerator();
-```The code is modified to include both original and final script in the pipeline logs.
-`
