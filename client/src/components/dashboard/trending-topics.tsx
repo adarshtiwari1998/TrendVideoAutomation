@@ -244,6 +244,16 @@ export function TrendingTopics({ onRefresh }: TrendingTopicsProps) {
                       <Button
                         size="sm"
                         variant="outline"
+                        className="h-7 px-2 text-xs bg-purple-50 hover:bg-purple-100 border-purple-200"
+                        onClick={() => setLocation(`/trending-topics?view=${topic.id}`)}
+                        title="View full content"
+                      >
+                        <Eye className="w-3 h-3 mr-1" />
+                        Full
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
                         className="h-7 px-2 text-xs bg-green-50 hover:bg-green-100 border-green-200"
                         onClick={() => handleGenerateContent(topic.id, 'long_form')}
                         disabled={generateContentMutation.isPending}

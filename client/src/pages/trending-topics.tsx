@@ -1,11 +1,12 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, RefreshCw, Play, TrendingUp, Trash2, ExternalLink } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Loader2, RefreshCw, Play, TrendingUp, Trash2, ExternalLink, Eye, X } from 'lucide-react';
 
 interface TrendingTopic {
   id: number;
@@ -27,6 +28,19 @@ interface TrendingTopic {
 export default function TrendingTopicsPage() {
   const queryClient = useQueryClient();
   const [selectedTopics, setSelectedTopics] = useState<number[]>([]);
+  const [viewingTopic, setViewingTopic] = useState<TrendingTopic | null>(null);
+
+  // Check URL for view parameter
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const viewId = urlParams.get('view');
+    if (viewId && topics.length > 0) {
+      const topicToView = topics.find((t: TrendingTopic) => t.id === parseInt(viewId));
+      if (topicToView) {
+        setViewingTopic(topicToView);
+      }
+    }
+  }, [topics]);
 
   const { data: topics = [], isLoading } = useQuery({
     queryKey: ['trending-topics'],
@@ -100,6 +114,33 @@ export default function TrendingTopicsPage() {
     if (selectedTopics.length > 0) {
       bulkDeleteMutation.mutate(selectedTopics);
     }
+  };
+
+  const handleViewFullContent = (topic: TrendingTopic) => {
+    setViewingTopic(topic);
+    // Update URL
+    const url = new URL(window.location.href);
+    url.searchParams.set('view', topic.id.toString());
+    window.history.pushState({}, '', url);
+  };
+
+  const handleCloseFullContent = () => {
+    setViewingTopic(null);
+    // Remove view parameter from URL
+    const url = new URL(window.location.href);
+    url.searchParams.delete('view');
+    window.history.pushState({}, '', url);
+  };
+
+  const getFullContent = (topic: TrendingTopic) => {
+    // Try to get full content from trending_data
+    if (topic.trending_data && typeof topic.trending_data === 'object') {
+      const trendingData = topic.trending_data as any;
+      if (trendingData.fullContent && trendingData.fullContent.length > topic.description.length) {
+        return trendingData.fullContent;
+      }
+    }
+    return topic.description;
   };
 
   const getPriorityColor = (priority: string) => {
@@ -226,6 +267,15 @@ export default function TrendingTopicsPage() {
                   <div className="flex flex-col gap-2">
                     <Button
                       size="sm"
+                      variant="outline"
+                      onClick={() => handleViewFullContent(topic)}
+                      className="flex items-center gap-1 bg-purple-50 hover:bg-purple-100 border-purple-200"
+                    >
+                      <Eye className="h-3 w-3" />
+                      View Full
+                    </Button>
+                    <Button
+                      size="sm"
                       onClick={() => handleGenerateContent(topic.id, 'long_form')}
                       disabled={generateContentMutation.isPending}
                       className="flex items-center gap-1"
@@ -250,6 +300,89 @@ export default function TrendingTopicsPage() {
           ))}
         </div>
       )}
+
+      {/* Full Content Dialog */}
+      <Dialog open={!!viewingTopic} onOpenChange={handleCloseFullContent}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-start justify-between">
+              <DialogTitle className="text-xl font-bold pr-8">
+                {viewingTopic?.title}
+              </DialogTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleCloseFullContent}
+                className="h-6 w-6 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </DialogHeader>
+          
+          {viewingTopic && (
+            <div className="space-y-4">
+              {/* Topic metadata */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge className={getPriorityColor(viewingTopic.priority)}>
+                  {viewingTopic.priority}
+                </Badge>
+                <Badge variant="outline">{viewingTopic.category}</Badge>
+                <Badge variant="secondary">{viewingTopic.source}</Badge>
+                <span className="text-sm text-muted-foreground">
+                  {viewingTopic.searchVolume.toLocaleString()} searches
+                </span>
+              </div>
+
+              {/* Source URL if available */}
+              {viewingTopic.trending_data?.sourceUrl && (
+                <div className="flex items-center gap-2">
+                  <a 
+                    href={viewingTopic.trending_data.sourceUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-800 flex items-center gap-1 text-sm"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    View Original Source
+                  </a>
+                </div>
+              )}
+
+              {/* Full content */}
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold">Full Content</h3>
+                <div className="bg-muted/30 p-4 rounded-lg">
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                    {getFullContent(viewingTopic)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex gap-2 pt-4 border-t">
+                <Button
+                  onClick={() => handleGenerateContent(viewingTopic.id, 'long_form')}
+                  disabled={generateContentMutation.isPending}
+                  className="flex items-center gap-2"
+                >
+                  <Play className="h-4 w-4" />
+                  Generate Long Video
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => handleGenerateContent(viewingTopic.id, 'short')}
+                  disabled={generateContentMutation.isPending}
+                  className="flex items-center gap-2"
+                >
+                  <Play className="h-4 w-4" />
+                  Generate Short Video
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
