@@ -37,38 +37,81 @@ function ScriptPreviewDialog({
 }) {
   if (!finalScript && !originalContent) return null;
 
+  const wordCountOriginal = originalContent ? originalContent.split(' ').length : 0;
+  const wordCountFinal = finalScript ? finalScript.split(' ').length : 0;
+  const estimatedDuration = finalScript ? Math.round((finalScript.length / 15) / 60 * 100) / 100 : 0;
+
   return (
     <Dialog>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="ml-2">
           <FileText className="h-3 w-3 mr-1" />
-          View Script
+          View Script Comparison
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-4xl max-h-[80vh]">
+      <DialogContent className="max-w-6xl max-h-[85vh]">
         <DialogHeader>
-          <DialogTitle>Script Comparison - {title}</DialogTitle>
+          <DialogTitle>Script Generation Results - {title}</DialogTitle>
           <DialogDescription>
-            Compare the original content with the final cleaned script used for video generation
+            Compare the original content with the final validated script used for video generation
           </DialogDescription>
         </DialogHeader>
-        <div className="grid grid-cols-2 gap-4 h-[60vh]">
+        
+        {/* Stats Row */}
+        <div className="flex gap-4 p-3 bg-muted/50 rounded-lg text-sm">
+          <div className="flex items-center gap-2">
+            <span className="font-medium">Original:</span>
+            <span>{wordCountOriginal} words</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-medium">Final:</span>
+            <span>{wordCountFinal} words</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-medium">Est. Duration:</span>
+            <span>{estimatedDuration} minutes</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-medium">Reduction:</span>
+            <span className={wordCountFinal < wordCountOriginal ? "text-orange-600" : "text-green-600"}>
+              {wordCountOriginal > 0 ? Math.round(((wordCountOriginal - wordCountFinal) / wordCountOriginal) * 100) : 0}%
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 h-[65vh]">
           <div className="space-y-2">
-            <h4 className="font-medium text-sm">Original Content</h4>
-            <ScrollArea className="h-full border rounded-md p-3 bg-muted/30">
-              <div className="text-sm whitespace-pre-wrap">
+            <div className="flex items-center justify-between">
+              <h4 className="font-medium text-sm">Original Content</h4>
+              <span className="text-xs text-muted-foreground">
+                {originalContent?.length || 0} characters
+              </span>
+            </div>
+            <ScrollArea className="h-full border rounded-md p-4 bg-blue-50/30">
+              <div className="text-sm whitespace-pre-wrap leading-relaxed">
                 {originalContent || 'No original content available'}
               </div>
             </ScrollArea>
           </div>
           <div className="space-y-2">
-            <h4 className="font-medium text-sm">Final Clean Script</h4>
-            <ScrollArea className="h-full border rounded-md p-3 bg-green-50/50">
-              <div className="text-sm whitespace-pre-wrap">
-                {finalScript || 'No script available'}
+            <div className="flex items-center justify-between">
+              <h4 className="font-medium text-sm">Final Validated Script</h4>
+              <span className="text-xs text-muted-foreground">
+                {finalScript?.length || 0} characters
+              </span>
+            </div>
+            <ScrollArea className="h-full border rounded-md p-4 bg-green-50/30">
+              <div className="text-sm whitespace-pre-wrap leading-relaxed">
+                {finalScript || 'No validated script available'}
               </div>
             </ScrollArea>
           </div>
+        </div>
+
+        {/* Processing Info */}
+        <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded">
+          <strong>Processing:</strong> The original content was cleaned, validated, and optimized for text-to-speech generation. 
+          This includes removing formatting, stage directions, and ensuring proper sentence structure.
         </div>
       </DialogContent>
     </Dialog>
@@ -317,16 +360,34 @@ export function PipelinePreviewLogs() {
                         
                         {/* Script Preview for completed script generation */}
                         {log.step === 'script_generation' && log.status === 'completed' && (
-                          <div className="mt-2">
-                            <ScriptPreviewDialog 
-                              finalScript={log.metadata?.finalScript}
-                              originalContent={log.metadata?.originalContent}
-                              title={`Job #${log.job_id}`}
-                            />
-                            {log.metadata?.wordCount && (
-                              <div className="text-xs text-muted-foreground mt-1">
-                                Word count: {log.metadata.wordCount} | 
-                                Estimated duration: {Math.round((log.metadata.estimatedDuration || 0) / 60)} minutes
+                          <div className="mt-3 p-3 bg-green-50/50 rounded-lg border border-green-200">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm font-medium text-green-800">Script Generated Successfully</span>
+                              <ScriptPreviewDialog 
+                                finalScript={log.metadata?.finalScript}
+                                originalContent={log.metadata?.originalContent}
+                                title={`Job #${log.job_id}`}
+                              />
+                            </div>
+                            
+                            {/* Quick Stats */}
+                            <div className="flex gap-4 text-xs text-green-700">
+                              {log.metadata?.wordCount && (
+                                <span>Words: {log.metadata.wordCount}</span>
+                              )}
+                              {log.metadata?.estimatedDuration && (
+                                <span>Duration: ~{Math.round((log.metadata.estimatedDuration || 0) / 60)} min</span>
+                              )}
+                              {log.metadata?.finalScript && (
+                                <span>Characters: {log.metadata.finalScript.length}</span>
+                              )}
+                            </div>
+                            
+                            {/* Script Preview */}
+                            {log.metadata?.finalScript && (
+                              <div className="mt-2 p-2 bg-white/50 rounded text-xs text-gray-600 border-l-2 border-green-400">
+                                <strong>Preview:</strong> {log.metadata.finalScript.substring(0, 150)}
+                                {log.metadata.finalScript.length > 150 && '...'}
                               </div>
                             )}
                           </div>
