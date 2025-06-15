@@ -1,0 +1,58 @@
+🔧 Creating fallback video with minimal settings...
+❌ Even fallback video creation failed: Command failed: ffmpeg -f lavfi -i "color=c=#1a365d:size=1920:1080" -t 30 -r 15 -c:v libx264 -preset ultrafast -crf 30 -pix_fmt yuv420p "/home/runner/workspace/temp/videos/fallback_video_89.mp4" -y
+ffmpeg version 6.0-static https://johnvansickle.com/ffmpeg/  Copyright (c) 2000-2023 the FFmpeg developers
+  built with gcc 8 (Debian 8.3.0-6)
+  configuration: --enable-gpl --enable-version3 --enable-static --disable-debug --disable-ffplay --disable-indev=sndio --disable-outdev=sndio --cc=gcc --enable-fontconfig --enable-frei0r --enable-gnutls --enable-gmp --enable-libgme --enable-gray --enable-libaom --enable-libfribidi --enable-libass --enable-libvmaf --enable-libfreetype --enable-libmp3lame --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libopenjpeg --enable-librubberband --enable-libsoxr --enable-libspeex --enable-libsrt --enable-libvorbis --enable-libopus --enable-libtheora --enable-libvidstab --enable-libvo-amrwbenc --enable-libvpx --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxml2 --enable-libdav1d --enable-libxvid --enable-libzvbi --enable-libzimg
+  libavutil      58.  2.100 / 58.  2.100
+  libavcodec     60.  3.100 / 60.  3.100
+  libavformat    60.  3.100 / 60.  3.100
+  libavdevice    60.  1.100 / 60.  1.100
+  libavfilter     9.  3.100 /  9.  3.100
+  libswscale      7.  1.100 /  7.  1.100
+  libswresample   4. 10.100 /  4. 10.100
+  libpostproc    57.  1.100 / 57.  1.100
+[Parsed_color_0 @ 0x5e996c0] Unable to parse option value "1920" as image size
+[Parsed_color_0 @ 0x5e996c0] Error setting option size to value 1920.
+color=c=#1a365d:size=1920:1080: Invalid argument
+
+❌ Professional video creation failed for job 89: Error: All video creation methods failed
+    at ProfessionalVideoCreator.createFallbackVideo (/home/runner/workspace/server/services/video-creator.ts:604:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async ProfessionalVideoCreator.renderVideoUltraSimple (/home/runner/workspace/server/services/video-creator.ts:577:14)
+    at async ProfessionalVideoCreator.renderProfessionalVideo (/home/runner/workspace/server/services/video-creator.ts:516:12)
+    at async ProfessionalVideoCreator.createProfessionalVideo (/home/runner/workspace/server/services/video-creator.ts:68:25)
+    at async VideoCreator.createVideo (/home/runner/workspace/server/services/video-creator.ts:902:25)
+    at async AutomationPipeline.processTrendingTopic (/home/runner/workspace/server/automation/pipeline.ts:118:21)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:202:19)
+❌ Professional video creation failed for job 89: Error: All video creation methods failed
+    at ProfessionalVideoCreator.createFallbackVideo (/home/runner/workspace/server/services/video-creator.ts:604:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async ProfessionalVideoCreator.renderVideoUltraSimple (/home/runner/workspace/server/services/video-creator.ts:577:14)
+    at async ProfessionalVideoCreator.renderProfessionalVideo (/home/runner/workspace/server/services/video-creator.ts:516:12)
+    at async ProfessionalVideoCreator.createProfessionalVideo (/home/runner/workspace/server/services/video-creator.ts:68:25)
+    at async VideoCreator.createVideo (/home/runner/workspace/server/services/video-creator.ts:902:25)
+    at async AutomationPipeline.processTrendingTopic (/home/runner/workspace/server/automation/pipeline.ts:118:21)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:202:19)
+❌ Video creation failed: Error: All video creation methods failed
+    at ProfessionalVideoCreator.createFallbackVideo (/home/runner/workspace/server/services/video-creator.ts:604:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async ProfessionalVideoCreator.renderVideoUltraSimple (/home/runner/workspace/server/services/video-creator.ts:577:14)
+    at async ProfessionalVideoCreator.renderProfessionalVideo (/home/runner/workspace/server/services/video-creator.ts:516:12)
+    at async ProfessionalVideoCreator.createProfessionalVideo (/home/runner/workspace/server/services/video-creator.ts:68:25)
+    at async VideoCreator.createVideo (/home/runner/workspace/server/services/video-creator.ts:902:25)
+    at async AutomationPipeline.processTrendingTopic (/home/runner/workspace/server/automation/pipeline.ts:118:21)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:202:19)
+2:52:36 PM [express] GET /api/pipeline/logs 304 in 329ms :: [{"id":352,"job_id":89,"step":"video_cre…
+❌ Pipeline error: Error: All video creation methods failed
+    at ProfessionalVideoCreator.createFallbackVideo (/home/runner/workspace/server/services/video-creator.ts:604:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async ProfessionalVideoCreator.renderVideoUltraSimple (/home/runner/workspace/server/services/video-creator.ts:577:14)
+    at async ProfessionalVideoCreator.renderProfessionalVideo (/home/runner/workspace/server/services/video-creator.ts:516:12)
+    at async ProfessionalVideoCreator.createProfessionalVideo (/home/runner/workspace/server/services/video-creator.ts:68:25)
+    at async VideoCreator.createVideo (/home/runner/workspace/server/services/video-creator.ts:902:25)
+    at async AutomationPipeline.processTrendingTopic (/home/runner/workspace/server/automation/pipeline.ts:118:21)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:202:19)
+2:52:36 PM [express] GET /api/dashboard/active-pipeline 200 in 472ms :: {"active":[],"scheduled":[],…
+2:52:37 PM [express] POST /api/content/generate 500 in 129412ms :: {"error":"All video creation meth…
+2:52:38 PM [express] GET /api/dashboard/scheduled-videos 200 in 477ms :: {"scheduled":[],"processing…
+2:52:38 PM [express] GET /api/dashboard/act

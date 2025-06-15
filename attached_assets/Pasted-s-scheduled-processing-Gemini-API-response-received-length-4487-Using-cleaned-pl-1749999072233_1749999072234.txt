@@ -1,0 +1,58 @@
+s :: {"scheduled":[],"processing…
+✅ Gemini API response received, length: 4487
+📄 Using cleaned plain text response
+🔍 Validating script: "Upbeat intro music with colorful animation Hi everyone! Welcome back to my channel! Today were going..."
+✅ Cleaned script length: 3705 characters
+📊 Estimated speech duration: 226s
+2:50:51 PM [express] GET /api/dashboard/active-pipeline 200 in 478ms :: {"active":[{"id":89,"title":…
+2:50:53 PM [express] GET /api/dashboard/active-pipeline 200 in 461ms :: {"active":[{"id":89,"title":…
+2:50:54 PM [express] GET /api/dashboard/scheduled-videos 200 in 461ms :: {"scheduled":[],"processing…
+🎵 Step 2: Starting audio generation...
+2:50:55 PM [express] GET /api/dashboard/active-pipeline 304 in 471ms :: {"active":[{"id":89,"title":…
+2:50:56 PM [express] GET /api/dashboard/active-pipeline 200 in 468ms :: {"active":[{"id":89,"title":…
+2:50:58 PM [express] GET /api/dashboard/scheduled-videos 200 in 463ms :: {"scheduled":[],"processing…
+2:50:58 PM [express] GET /api/dashboard/active-pipeline 304 in 467ms :: {"active":[{"id":89,"title":…
+🎬 Step 3: Starting video creation...
+🚀 Starting PROFESSIONAL video creation for job 89
+🎬 Starting PROFESSIONAL video creation for job 89
+🎙️ Generating professional audio for job 89...
+🎙️ Enhancing script for narration. Original length: 3705
+🎙️ Original script preview: "Upbeat intro music with colorful animation Hi everyone! Welcome back to my channel! Today were going to talk about something important happening far away, but it affects everyone a little bit, like wh..."
+✅ Enhanced script length: 3724 characters
+🎙️ Enhanced script preview: "Upbeat intro music with colorful animation Hi everyone! Welcome back to my channel! today's update were going to talk about something very important happening far away, but it affects everyone a little bit, like when your big brothers messy room eventually makes the whole house smell a little funny...."
+🎤 Starting Google Cloud TTS generation for text: "Upbeat intro music with colorful animation Hi everyone! Welcome back to my channel! today's update w..."
+🎤 Text length: 3724 characters
+🔧 Testing Google Cloud TTS connection...
+✅ Google Cloud TTS connection successful
+📝 Splitting text into chunks. Total length: 3724, Max chunk: 3500
+📝 Created chunk 1: 2985 chars
+📝 Created final chunk 2: 682 chars
+📝 Split into 2 chunks for TTS processing
+📝 Split into 2 chunks for processing
+📝 Cleaning text for speech. Original length: 2986
+📝 First 200 chars: "Upbeat intro music with colorful animation Hi everyone. Welcome back to my channel. today's update were going to talk about something very important happening far away, but it affects everyone a littl..."
+📝 Cleaned text length: 2972
+📝 Final text for TTS: "Upbeat intro music with colorful animation Hi everyone. Welcome back to my channel. today's update were going to talk about something very important happening far away, but it affects everyone a littl..."
+🎤 Expected TTS duration: ~199 seconds (4 minutes)
+🎤 Processing text for TTS - Length: 2972 chars
+🎤 Text to synthesize: "Upbeat intro music with colorful animation Hi everyone. Welcome back to my channel. today's update w..."
+🎤 Generating speech with Google Cloud TTS - voice: en-IN-Neural2-B (MALE)
+🎤 Expected audio duration: ~213 seconds (based on ~14 chars/second)
+2:50:59 PM [express] GET /api/dashboard/active-pipeline 200 in 469ms :: {"active":[{"id":89,"title":…
+2:51:01 PM [express] GET /api/dashboard/active-pipeline 304 in 493ms :: {"active":[{"id":89,"title":…
+2:51:01 PM [express] GET /api/dashboard/scheduled-videos 200 in 468ms :: {"scheduled":[],"processing…
+2:51:02 PM [express] GET /api/dashboard/active-pipeline 304 in 482ms :: {"active":[{"id":89,"title":…
+2:51:04 PM [express] GET /api/dashboard/active-pipeline 304 in 469ms :: {"active":[{"id":89,"title":…
+2:51:05 PM [express] GET /api/dashboard/scheduled-videos 304 in 479ms :: {"scheduled":[],"processing…
+2:51:06 PM [express] GET /api/dashboard/active-pipeline 304 in 475ms :: {"active":[{"id":89,"title":…
+✅ Audio saved to: /home/runner/workspace/temp/videos/chunk_0_1749999059590.mp3 (1402KB)
+📝 Cleaning text for speech. Original length: 683
+📝 First 200 chars: "And it’s always good to be kind to everyone, even if they’re different from us, because everyone wants to play nicely in the sandbox. Show images of kids playing together Summary So, remember, Iran an..."
+📝 Cleaned text length: 683
+📝 Final text for TTS: "And it s always good to be kind to everyone, even if they re different from us, because everyone wants to play nicely in the sandbox. Show images of kids playing together Summary So, remember, Iran an..."
+🎤 Expected TTS duration: ~46 seconds (1 minutes)
+🎤 Processing text for TTS - Length: 683 chars
+🎤 Text to synthesize: "And it s always good to be kind to everyone, even if they re different from us, because everyone wan..."
+🎤 Generating speech with Google Cloud TTS - voice: en-IN-Neural2-B (MALE)
+🎤 Expected audio duration: ~49 seconds (based on ~14 chars/second)
+2:51:07 PM [express] GET /api/dashboard/active-pipeline 304 in 474ms
