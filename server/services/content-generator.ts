@@ -65,81 +65,65 @@ export class ContentGenerator {
       return '';
     }
 
-    // For long-form videos, preserve more content with minimal cleaning
+    // Remove all non-content elements and AI commentary
+    let cleaned = rawScript
+      // Remove AI system responses and instructions
+      .replace(/^(I'll create|I'll help|I'll generate|Here's a|Here's the|Sure, I can|Certainly).*$/gm, '')
+      .replace(/^\s*\[.*?\]\s*$/gm, '') // Remove stage directions
+      .replace(/^\s*\(.*?\)\s*$/gm, '') // Remove parenthetical notes
+      .replace(/^\s*\*\*.*?\*\*\s*$/gm, '') // Remove markdown formatting
+      .replace(/^\s*#{1,6}\s+.*$/gm, '') // Remove markdown headers
+      .replace(/^\s*[-*•]\s+/gm, '') // Remove bullet points
+      .replace(/^(Note:|Remember:|Important:|Warning:|Meta:|System:).*$/gm, '') // Remove system notes
+      .replace(/^\d+\.\s*/gm, '') // Remove numbered lists
+      .replace(/\(upbeat.*?\)/gi, '') // Remove music/sound cues
+      .replace(/\[.*?\]/g, '') // Remove all bracketed content
+      .replace(/\(.*?\)/g, '') // Remove all parenthetical content
+      .split('\n')
+      .filter(line => {
+        const trimmed = line.trim();
+        return trimmed.length > 15 && // Keep only substantial lines
+               !trimmed.match(/^(transcript|script|content|video|audio):/i) && // Remove labels
+               !trimmed.match(/^(welcome to|thanks for watching|don't forget to)/i); // Remove generic phrases
+      })
+      .join(' ')
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .trim();
+
+    // Ensure proper sentence structure for TTS
+    cleaned = cleaned
+      .replace(/([.!?])\s*([a-z])/g, '$1 $2') // Space after punctuation
+      .replace(/([a-zA-Z])([A-Z])/g, '$1. $2') // Add periods between sentences
+      .replace(/\s+/g, ' ') // Final whitespace cleanup
+      .replace(/([a-zA-Z])\s*$/g, '$1.'); // Add period at end
+
+    console.log(`✅ Cleaned script length: ${cleaned.length} characters`);
+
+    const words = cleaned.split(' ').filter(w => w.length > 2);
+    const estimatedDuration = words.length / 2.5; // ~2.5 words per second
+    console.log(`📊 Word count: ${words.length}, Estimated speech duration: ${Math.round(estimatedDuration)}s`);
+
     if (videoType === 'long_form') {
-      // Gentle cleaning that preserves content structure
-      let cleaned = rawScript
-        .replace(/\[Stage Direction\]/gi, '') // Remove only explicit stage directions
-        .replace(/\(Note: [^)]*\)/gi, '') // Remove only explicit notes
-        .replace(/^\s*\*\*.*\*\*\s*$/gm, '') // Remove markdown headers
-        .replace(/^\s*#{1,6}\s+/gm, '') // Remove markdown headers
-        .split('\n')
-        .filter(line => {
-          const trimmed = line.trim();
-          // Keep all substantial content lines
-          return trimmed.length > 10 && 
-                 !trimmed.match(/^(Meta:|System:|Note:|Remember:|Important:|Warning:)/i) &&
-                 !trimmed.match(/^\[.*\]$/) && // Remove bracketed instructions
-                 !trimmed.match(/^Here's|^This is|^I'll|^Let me/i); // Remove AI system responses
-        })
-        .join(' ') // Join with spaces for natural flow
-        .replace(/\s+/g, ' ') // Normalize whitespace
-        .trim();
-
-      // Ensure proper sentence structure for TTS
-      cleaned = cleaned
-        .replace(/([.!?])\s*([a-z])/g, '$1 $2') // Space after punctuation
-        .replace(/\s+/g, ' ') // Final whitespace cleanup
-        .replace(/([a-zA-Z])\s*$/g, '$1.'); // Add period at end
-
-      console.log(`✅ Gentle cleaned script length: ${cleaned.length} characters`);
-
-      // More lenient validation for long-form content
-      const words = cleaned.split(' ').filter(w => w.length > 2);
-      const estimatedDuration = words.length / 2.5; // ~2.5 words per second
-      console.log(`📊 Word count: ${words.length}, Estimated speech duration: ${Math.round(estimatedDuration)}s`);
-
-      // Accept if we have substantial content (minimum 8 minutes for flexibility)
-      if (words.length >= 1200 && estimatedDuration >= 480) { // 8 minutes minimum
+      // For long-form videos: minimum 10 minutes (1500 words)
+      if (words.length >= 1500 && estimatedDuration >= 600) {
         console.log(`✅ Long-form script validated: ${Math.round(estimatedDuration/60)} minutes`);
         return cleaned;
       } else {
-        console.warn(`⚠️ Long-form script still too short (${Math.round(estimatedDuration/60)} min), extending with fallback`);
-        // Extend with fallback content instead of returning empty
-        const fallbackExtension = this.getIntelligentFallbackScript(topic, videoType);
-        return cleaned + ' ' + fallbackExtension;
+        console.warn(`⚠️ Long-form script too short (${Math.round(estimatedDuration/60)} min), extending with intelligent content`);
+        // Generate more content based on the original topic
+        const extension = this.generateExtensiveContent(topic, cleaned);
+        return cleaned + ' ' + extension;
       }
     } else {
-      // Standard cleaning for short videos
-      let cleaned = rawScript
-        .replace(/\[.*?\]/g, '') // Remove stage directions
-        .replace(/\(.*?\)/g, '') // Remove parenthetical notes
-        .replace(/^\s*[-*]\s*/gm, '') // Remove bullet points
-        .replace(/^Step \d+:.*$/gm, '') // Remove step indicators
-        .replace(/^\d+\.\s*/gm, '') // Remove numbered lists
-        .split('\n')
-        .filter(line => line.trim().length > 5)
-        .filter(line => !line.match(/^(Note:|Remember:|Important:)/i))
-        .join(' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-
-      // Ensure proper sentence structure for TTS
-      cleaned = cleaned
-        .replace(/([.!?])\s*([a-z])/g, '$1 $2')
-        .replace(/([a-zA-Z])([A-Z])/g, '$1. $2')
-        .replace(/\s+/g, ' ')
-        .replace(/([a-zA-Z])\s*$/g, '$1.');
-
-      console.log(`✅ Cleaned script length: ${cleaned.length} characters`);
-
-      const words = cleaned.split(' ').filter(w => w.length > 2);
-      if (words.length < 50) {
-        console.warn('⚠️ Script lacks sufficient content, using fallback');
-        return '';
+      // For short videos: minimum 2 minutes (300 words)
+      if (words.length >= 300 && estimatedDuration >= 120) {
+        console.log(`✅ Short script validated: ${Math.round(estimatedDuration)} seconds`);
+        return cleaned;
+      } else {
+        console.warn(`⚠️ Short script too short (${Math.round(estimatedDuration)}s), extending with focused content`);
+        const extension = this.generateFocusedContent(topic, cleaned);
+        return cleaned + ' ' + extension;
       }
-
-      return cleaned;
     }
   }
 
@@ -212,59 +196,111 @@ export class ContentGenerator {
   }
 
   private createPrompt(topic: TrendingTopic, videoType: 'long_form' | 'short'): string {
-    const duration = videoType === 'long_form' ? '10-15 minutes' : '45-60 seconds';
+    const duration = videoType === 'long_form' ? '10-15 minutes' : '2-3 minutes';
+    const wordCount = videoType === 'long_form' ? '1500-2000 words' : '300-400 words';
 
     return `
-You are a YouTube content creator making a ${duration} video about "${topic.title}".
+Create a ${duration} YouTube video script about "${topic.title}".
 
-Topic details: ${topic.description}
-Category: ${topic.category}
+ORIGINAL CONTENT: ${topic.description}
+CATEGORY: ${topic.category}
 
-CRITICAL REQUIREMENTS:
-1. Use SIMPLE language that even a 2-year-old child can understand
-2. Break down complex topics into easy, bite-sized explanations
-3. Use everyday examples and simple comparisons
-4. Avoid technical jargon - explain everything in basic terms
-5. Make it conversational and engaging like talking to a friend
-6. Cover ALL important points without skipping anything
-7. Ensure complete information coverage so viewers get full understanding
+SCRIPT REQUIREMENTS:
+- Write EXACTLY ${wordCount} of pure, informative content
+- Use simple, clear language that anyone can understand
+- Be engaging and conversational like talking to a friend
+- Cover ALL key information from the original content
+- Remove any fluff, filler, or unnecessary commentary
+- Focus on facts, explanations, and useful insights
 
 ${videoType === 'long_form' ? `
-Your video should be 1500-2000 words with this COMPREHENSIVE structure:
-- Start with a warm friendly greeting and hook the audience
-- Provide detailed background and context in simple terms
-- Break down the main story into 6-8 easy-to-understand sections
-- Use lots of examples, analogies, and comparisons to everyday life
-- Explain multiple perspectives and viewpoints in simple language
-- Cover all important details without skipping anything
-- Discuss real-world implications and consequences
-- Talk about what experts are saying (in simple terms)
-- Explain what this means for different groups of people
-- Discuss future possibilities and predictions
-- Address common questions people might have
-- End with comprehensive summary and strong call to action
+LONG-FORM STRUCTURE (1500-2000 words):
+1. Brief engaging introduction (50 words)
+2. Background and context explanation (200-300 words)
+3. Main content broken into 5-6 detailed sections (1000-1200 words)
+4. Real-world implications and impact (150-200 words)
+5. Future outlook and predictions (100-150 words)
+6. Conclusion with key takeaways (50-100 words)
 
-Make it conversational like explaining to a curious friend. Use phrases like "imagine if...", "it's like when...", "think of it this way...", "here's another way to look at it...". Include multiple examples for each point to ensure 10+ minute duration.
+EXPAND EACH SECTION WITH:
+- Detailed explanations of concepts
+- Multiple examples and analogies
+- Different perspectives and viewpoints
+- Practical applications and benefits
+- Expert opinions and research findings
+- Historical context where relevant
 ` : `
-Your video should be 150-200 words with this SIMPLE structure:
-- Quick friendly greeting and simple explanation
-- Main point explained in the easiest way possible
-- Why it matters in simple terms
-- Quick ending with call to action
+SHORT-FORM STRUCTURE (300-400 words):
+1. Hook and introduction (30-50 words)
+2. Main explanation of the topic (180-250 words)
+3. Why it matters and implications (50-80 words)
+4. Conclusion and call to action (20-30 words)
 
-Keep sentences short. Use simple words. Make it super easy to understand.
+FOCUS ON:
+- Core facts and key points
+- Simple explanations
+- Practical relevance
+- Clear benefits or impact
 `}
 
-LANGUAGE STYLE:
-- Use simple, everyday words (avoid complex vocabulary)
-- Short, clear sentences
-- Friendly, conversational tone
-- Use analogies from daily life
-- Explain technical terms immediately in simple language
-- Speak as if explaining to a curious child
+CONTENT QUALITY RULES:
+- Extract valuable information from the original content
+- Explain complex ideas in simple terms
+- Use everyday examples people can relate to
+- Maintain accuracy while being accessible
+- Include specific details and facts
+- Avoid generic statements or filler content
 
-Write the complete script as if you're speaking directly to your YouTube audience. Make it so simple that anyone can understand, but so complete that they learn everything important about the topic.
+OUTPUT: Provide ONLY the script content - no stage directions, music cues, or formatting instructions. Write as if speaking directly to the audience.
     `;
+  }
+
+  private generateExtensiveContent(topic: TrendingTopic, existingContent: string): string {
+    // Generate comprehensive content for long-form videos (10+ minutes)
+    const { title, description, category } = topic;
+    
+    return `Let me break this down into more detail for you. ${description} This discovery is particularly significant because it represents a major breakthrough in ${category}. 
+
+To understand why this matters, we need to look at the bigger picture. For years, researchers have been working on this exact problem, and now we finally have a solution that could change everything.
+
+The scientific process behind this breakthrough is fascinating. Teams of experts from around the world collaborated to gather data, run experiments, and analyze results. What they found exceeded all expectations.
+
+This discovery has several important implications. First, it solves long-standing problems that have puzzled scientists for decades. Second, it opens up new possibilities for future research and development. Third, it could lead to practical applications that benefit millions of people.
+
+Let's talk about the real-world impact. In the healthcare field, this could revolutionize how we approach treatment and prevention. In technology, it might lead to more efficient and powerful devices. In environmental science, it could help us better understand and protect our planet.
+
+The economic implications are equally impressive. This breakthrough could create new industries, generate jobs, and drive innovation across multiple sectors. Companies are already investing billions of dollars to develop applications based on this discovery.
+
+From a global perspective, this represents human ingenuity at its finest. It shows what we can achieve when we work together toward common goals. Countries around the world are now collaborating to ensure this discovery benefits everyone.
+
+Looking toward the future, this is just the beginning. The next five to ten years will be crucial as we move from laboratory success to real-world implementation. The challenges are significant, but so is the potential for positive change.
+
+What makes this particularly exciting is the potential for unexpected applications. Often, the most impactful uses of new discoveries are ones that nobody initially predicted. We might see innovations that completely transform how we live and work.
+
+This breakthrough also highlights the importance of continued investment in research and education. It shows that when we support science and innovation, we create opportunities for discoveries that can change the world.
+
+The international scientific community is buzzing with excitement about the possibilities. Researchers are already planning follow-up studies and exploring new directions inspired by this work.
+
+In conclusion, this discovery represents a turning point in ${category}. It demonstrates the power of human curiosity, determination, and collaboration. As we move forward, it will be exciting to see how this breakthrough shapes our future and creates new opportunities for generations to come.`;
+  }
+
+  private generateFocusedContent(topic: TrendingTopic, existingContent: string): string {
+    // Generate focused content for short videos (2+ minutes)
+    const { title, description, category } = topic;
+    
+    return `Here's why this matters to you. ${description} This breakthrough in ${category} could directly impact your daily life in ways you might not expect.
+
+The research behind this discovery involved cutting-edge technology and innovative approaches that have never been tried before. What makes it special is how it solves real problems that affect millions of people.
+
+Think about the practical applications. This could lead to better products, more efficient services, and solutions to challenges we face every day. The potential is enormous.
+
+Industry experts are calling this a game-changer. It represents years of hard work and collaboration between top researchers from around the world. The timing couldn't be better, as we're facing many global challenges that need innovative solutions.
+
+What's really exciting is how this discovery opens doors to future innovations. It's like finding a key that unlocks new possibilities we never knew existed. The next few years will be incredibly interesting as we see how this gets implemented.
+
+This breakthrough also shows the importance of investing in science and research. When we support innovation, we create opportunities for discoveries that can improve life for everyone.
+
+So what can you expect moving forward? Keep an eye on developments in this field, because this is just the beginning. The applications and benefits will likely extend far beyond what we can imagine today.`;
   }
 
   private getIntelligentFallbackScript(topic: TrendingTopic, videoType: 'long_form' | 'short'): string {

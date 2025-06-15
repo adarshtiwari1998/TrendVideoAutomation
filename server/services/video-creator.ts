@@ -884,8 +884,8 @@ export class ProfessionalVideoCreator {
       console.log('🔧 FFmpeg not found, installing...');
       
       try {
-        // Try to install ffmpeg via nix
-        const { execSync } = require('child_process');
+        // Try to install ffmpeg via nix using child_process import
+        const { execSync } = await import('child_process');
         execSync('nix-env -iA nixpkgs.ffmpeg-full', { stdio: 'inherit', timeout: 180000 });
         
         // Verify installation
@@ -897,7 +897,7 @@ export class ProfessionalVideoCreator {
         
         // Try alternative installation method
         try {
-          const { execSync } = require('child_process');
+          const { execSync } = await import('child_process');
           execSync('nix-shell -p ffmpeg-full --run "echo FFmpeg available"', { stdio: 'inherit', timeout: 60000 });
           console.log('✅ FFmpeg available via nix-shell');
         } catch (shellError) {
