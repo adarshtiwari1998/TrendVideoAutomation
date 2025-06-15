@@ -1,0 +1,245 @@
+📝 Created prompt, calling Gemini API...
+8:14:51 AM [express] GET /api/dashboard/active-pipeline 304 in 489ms :: {"active":[],"scheduled":[],…
+✅ Gemini API response received, length: 3891
+📄 Using plain text response
+📦 Setting up FFmpeg...
+📦 ffmpeg-static not available, trying system install...
+🔧 Installing FFmpeg via nix...
+replacing old 'ffmpeg-4.4'
+installing 'ffmpeg-4.4'
+⚠️  Nix install failed, trying apt...
+🔧 Installing FFmpeg via apt...
+Tools like apt, brew, and yum which modify system
+dependencies are not directly callable inside Replit. We offer the
+System Dependencies pane for easy dependency management.
+
+For more information, please check
+https://docs.replit.com/replit-workspace/dependency-management , and
+don't forget to indicate whether you found the documentation helpful at
+the bottom of the page!
+
+⚠️  Apt install failed
+❌ FFmpeg setup failed: All FFmpeg installation methods failed
+⚠️  FFmpeg not available, will use fallback methods
+🎬 Starting video creation for job 58
+🔄 Using fallback video creation method
+🎤 Generating speech with Google Cloud TTS - voice: en-IN-Wavenet-A
+⚠️ Google Cloud TTS failed, using fallback method: 16 UNAUTHENTICATED: Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential. See https://developers.google.com/identity/sign-in/web/devconsole-project.
+🔄 Generating fallback audio content...
+System TTS commands failed: require is not defined
+❌ Fallback audio generation failed: ReferenceError: require is not defined
+    at TextToSpeechService.generateFallbackAudio (/home/runner/workspace/server/services/text-to-speech.ts:164:43)
+    at async TextToSpeechService.generateSpeech (/home/runner/workspace/server/services/text-to-speech.ts:96:16)
+    at async VideoCreator.generateAudio (/home/runner/workspace/server/services/video-creator.ts:104:25)
+    at async VideoCreator.createFallbackVideo (/home/runner/workspace/server/services/video-creator.ts:69:21)
+    at async VideoCreator.createVideo (/home/runner/workspace/server/services/video-creator.ts:56:16)
+    at async AutomationPipeline.processTrendingTopic (/home/runner/workspace/server/automation/pipeline.ts:58:21)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:199:19)
+❌ Text-to-speech generation failed: Error: Fallback TTS generation failed: require is not defined
+    at TextToSpeechService.generateFallbackAudio (/home/runner/workspace/server/services/text-to-speech.ts:183:13)
+    at async TextToSpeechService.generateSpeech (/home/runner/workspace/server/services/text-to-speech.ts:96:16)
+    at async VideoCreator.generateAudio (/home/runner/workspace/server/services/video-creator.ts:104:25)
+    at async VideoCreator.createFallbackVideo (/home/runner/workspace/server/services/video-creator.ts:69:21)
+    at async VideoCreator.createVideo (/home/runner/workspace/server/services/video-creator.ts:56:16)
+    at async AutomationPipeline.processTrendingTopic (/home/runner/workspace/server/automation/pipeline.ts:58:21)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:199:19)
+Audio generation failed: Error: TTS generation failed: Fallback TTS generation failed: require is not defined
+    at TextToSpeechService.generateSpeech (/home/runner/workspace/server/services/text-to-speech.ts:101:13)
+    at async VideoCreator.generateAudio (/home/runner/workspace/server/services/video-creator.ts:104:25)
+    at async VideoCreator.createFallbackVideo (/home/runner/workspace/server/services/video-creator.ts:69:21)
+    at async VideoCreator.createVideo (/home/runner/workspace/server/services/video-creator.ts:56:16)
+    at async AutomationPipeline.processTrendingTopic (/home/runner/workspace/server/automation/pipeline.ts:58:21)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:199:19)
+⚠️ Audio generation failed, creating text-only video: TTS generation failed: Fallback TTS generation failed: require is not defined
+📝 Created text-only content as final fallback
+8:15:06 AM [express] GET /api/dashboard/active-pipeline 200 in 4400ms :: {"active":[{"id":58,"title"…
+🖼️ Creating professional YouTube thumbnail for: Everything You Need to Know About NASA Image Of The Day | Scott's Astronomy Page
+🎨 Creating professional thumbnail with FFmpeg...
+FFmpeg thumbnail creation failed: Error: Command failed: ffmpeg -i "/home/runner/workspace/generated/backgrounds/global_news_bg.jpg" -vf "scale=1280x720:force_original_aspect_ratio=increase,crop=1280x720,drawtext=text='EVERYTHING YOU NEED TO KNOW ABOUT NASA IMAGE OF THE DAY  ...!':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=60:fontcolor=#ffffff:x=(w-text_w)/2:y=144:bordercolor=#000000:borderw=4:shadowcolor=black:shadowx=2:shadowy=2,drawbox=x=0:y=124:w=w:h=100:color=#1f2937@0.7:t=fill" -frames:v 1 -q:v 2 "/home/runner/workspace/generated/thumbnails/58_youtube_thumbnail.jpg" -y
+Segmentation fault (core dumped)
+
+    at genericNodeError (node:internal/errors:984:15)
+    at wrappedFn (node:internal/errors:538:14)
+    at checkExecSyncError (node:child_process:891:11)
+    at execSync (node:child_process:963:15)
+    at ThumbnailGenerator.createProfessionalThumbnail (/home/runner/workspace/server/services/thumbnail-generator.ts:104:7)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async ThumbnailGenerator.createYouTubeThumbnail (/home/runner/workspace/server/services/thumbnail-generator.ts:72:5)
+    at async ThumbnailGenerator.generateThumbnail (/home/runner/workspace/server/services/thumbnail-generator.ts:30:29)
+    at async AutomationPipeline.processTrendingTopic (/home/runner/workspace/server/automation/pipeline.ts:91:29)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:199:19) {
+  status: 139,
+  signal: null,
+  output: [
+    null,
+    <Buffer >,
+    <Buffer 53 65 67 6d 65 6e 74 61 74 69 6f 6e 20 66 61 75 6c 74 20 28 63 6f 72 65 20 64 75 6d 70 65 64 29 0a>
+  ],
+  pid: 881,
+  stdout: <Buffer >,
+  stderr: <Buffer 53 65 67 6d 65 6e 74 61 74 69 6f 6e 20 66 61 75 6c 74 20 28 63 6f 72 65 20 64 75 6d 70 65 64 29 0a>
+}
+⚠️  FFmpeg not available, creating simple thumbnail...
+⚠️  ImageMagick not available, creating basic image...
+✅ Basic thumbnail created as fallback
+✅ Thumbnail validated for YouTube compatibility
+✅ YouTube-compatible thumbnail created: /home/runner/workspace/generated/thumbnails/58_youtube_thumbnail.jpg
+Error finding folder: GaxiosError: invalid_grant: Invalid JWT Signature.
+    at Gaxios._request (/home/runner/workspace/node_modules/gaxios/src/gaxios.ts:146:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async GoogleToken._GoogleToken_requestToken (/home/runner/workspace/node_modules/gtoken/build/src/index.js:241:19)
+    at async GoogleToken._GoogleToken_getTokenAsync (/home/runner/workspace/node_modules/gtoken/build/src/index.js:160:16)
+    at async JWT.refreshTokenNoCache (/home/runner/workspace/node_modules/google-auth-library/build/src/auth/jwtclient.js:173:23)
+    at async JWT.getRequestMetadataAsync (/home/runner/workspace/node_modules/google-auth-library/build/src/auth/oauth2client.js:333:17)
+    at async JWT.requestAsync (/home/runner/workspace/node_modules/google-auth-library/build/src/auth/oauth2client.js:418:23)
+    at async StorageManager.findFolder (/home/runner/workspace/server/services/storage-manager.ts:179:24)
+    at async StorageManager.ensureFolderStructure (/home/runner/workspace/server/services/storage-manager.ts:164:30)
+    at async StorageManager.organizeFiles (/home/runner/workspace/server/services/storage-manager.ts:57:24)
+    at async AutomationPipeline.processTrendingTopic (/home/runner/workspace/server/automation/pipeline.ts:113:42)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:199:19) {
+  config: {
+    method: 'POST',
+    url: 'https://www.googleapis.com/oauth2/v4/token',
+    data: {
+      grant_type: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      assertion: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.'
+    },
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'User-Agent': 'google-api-nodejs-client/9.15.1',
+      'x-goog-api-client': 'gl-node/20.18.1',
+      Accept: 'application/json'
+    },
+    responseType: 'json',
+    retryConfig: {
+      httpMethodsToRetry: [Array],
+      currentRetryAttempt: 0,
+      retry: 3,
+      noResponseRetries: 2,
+      retryDelayMultiplier: 2,
+      timeOfFirstRequest: 1749975309160,
+      totalTimeout: 9007199254740991,
+      maxRetryDelay: 9007199254740991,
+      statusCodesToRetry: [Array]
+    },
+    paramsSerializer: [Function: paramsSerializer],
+    body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+    validateStatus: [Function: validateStatus],
+    errorRedactor: [Function: defaultErrorRedactor]
+  },
+  response: {
+    config: {
+      method: 'POST',
+      url: 'https://www.googleapis.com/oauth2/v4/token',
+      data: [Object],
+      headers: [Object],
+      responseType: 'json',
+      retryConfig: [Object],
+      paramsSerializer: [Function: paramsSerializer],
+      body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      validateStatus: [Function: validateStatus],
+      errorRedactor: [Function: defaultErrorRedactor]
+    },
+    data: {
+      error: 'invalid_grant',
+      error_description: 'Invalid JWT Signature.'
+    },
+    headers: {
+      'content-encoding': 'gzip',
+      'content-type': 'application/json; charset=UTF-8',
+      date: 'Sun, 15 Jun 2025 08:15:09 GMT',
+      server: 'scaffolding on HTTPServer2',
+      'transfer-encoding': 'chunked',
+      vary: 'Origin, X-Origin, Referer',
+      'x-content-type-options': 'nosniff',
+      'x-frame-options': 'SAMEORIGIN',
+      'x-xss-protection': '0'
+    },
+    status: 400,
+    statusText: 'Bad Request',
+    request: { responseURL: 'https://www.googleapis.com/oauth2/v4/token' }
+  },
+  error: undefined,
+  status: 400,
+  [Symbol(gaxios-gaxios-error)]: '6.7.1'
+}
+Storage organization error: GaxiosError: invalid_grant: Invalid JWT Signature.
+    at Gaxios._request (/home/runner/workspace/node_modules/gaxios/src/gaxios.ts:146:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async GoogleToken._GoogleToken_requestToken (/home/runner/workspace/node_modules/gtoken/build/src/index.js:241:19)
+    at async GoogleToken._GoogleToken_getTokenAsync (/home/runner/workspace/node_modules/gtoken/build/src/index.js:160:16)
+    at async JWT.refreshTokenNoCache (/home/runner/workspace/node_modules/google-auth-library/build/src/auth/jwtclient.js:173:23)
+    at async JWT.getRequestMetadataAsync (/home/runner/workspace/node_modules/google-auth-library/build/src/auth/oauth2client.js:333:17)
+    at async JWT.requestAsync (/home/runner/workspace/node_modules/google-auth-library/build/src/auth/oauth2client.js:418:23)
+    at async StorageManager.createFolder (/home/runner/workspace/server/services/storage-manager.ts:192:22)
+    at async StorageManager.ensureFolderStructure (/home/runner/workspace/server/services/storage-manager.ts:169:27)
+    at async StorageManager.organizeFiles (/home/runner/workspace/server/services/storage-manager.ts:57:24)
+    at async AutomationPipeline.processTrendingTopic (/home/runner/workspace/server/automation/pipeline.ts:113:42)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:199:19) {
+  config: {
+    method: 'POST',
+    url: 'https://www.googleapis.com/oauth2/v4/token',
+    data: {
+      grant_type: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      assertion: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.'
+    },
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'User-Agent': 'google-api-nodejs-client/9.15.1',
+      'x-goog-api-client': 'gl-node/20.18.1',
+      Accept: 'application/json'
+    },
+    responseType: 'json',
+    retryConfig: {
+      httpMethodsToRetry: [Array],
+      currentRetryAttempt: 0,
+      retry: 3,
+      noResponseRetries: 2,
+      retryDelayMultiplier: 2,
+      timeOfFirstRequest: 1749975309245,
+      totalTimeout: 9007199254740991,
+      maxRetryDelay: 9007199254740991,
+      statusCodesToRetry: [Array]
+    },
+    paramsSerializer: [Function: paramsSerializer],
+    body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+    validateStatus: [Function: validateStatus],
+    errorRedactor: [Function: defaultErrorRedactor]
+  },
+  response: {
+    config: {
+      method: 'POST',
+      url: 'https://www.googleapis.com/oauth2/v4/token',
+      data: [Object],
+      headers: [Object],
+      responseType: 'json',
+      retryConfig: [Object],
+      paramsSerializer: [Function: paramsSerializer],
+      body: '<<REDACTED> - See `errorRedactor` option in `gaxios` for configuration>.',
+      validateStatus: [Function: validateStatus],
+      errorRedactor: [Function: defaultErrorRedactor]
+    },
+    data: {
+      error: 'invalid_grant',
+      error_description: 'Invalid JWT Signature.'
+    },
+    headers: {
+      'content-encoding': 'gzip',
+      'content-type': 'application/json; charset=UTF-8',
+      date: 'Sun, 15 Jun 2025 08:15:09 GMT',
+      server: 'scaffolding on HTTPServer2',
+      'transfer-encoding': 'chunked',
+      vary: 'Origin, X-Origin, Referer',
+      'x-content-type-options': 'nosniff',
+      'x-frame-options': 'SAMEORIGIN',
+      'x-xss-protection': '0'
+    },
+    status: 400,
+    statusText: 'Bad Request',
+    request: { responseURL: 'https://www.googleapis.com/oauth2/v4/token' }
+  },
+  error: undefined,
+  status: 400,
+  [Symbol(gaxios-gaxios-error)]: '6.7.1'
+}
+Using mock storage for job 58: Storage error: invalid_grant: Invalid JWT Signature.
