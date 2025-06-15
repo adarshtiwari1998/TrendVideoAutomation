@@ -89,9 +89,6 @@ export class ThumbnailGenerator {
         fs.mkdirSync(outputDir, { recursive: true });
       }
 
-      // Get professional background
-      const backgroundPath = await this.getProfessionalBackground(job.metadata?.category || 'general');
-
       // Create engaging title
       const thumbnailTitle = this.createEngagingTitle(job.title);
       const dimensions = job.videoType === 'short' ? '1080x1920' : '1280x720';
@@ -100,65 +97,74 @@ export class ThumbnailGenerator {
       
       // Professional YouTube color scheme
       const colors = this.getYouTubeColors(category);
-      const titleFontSize = isVertical ? 85 : 65;
-      const subtitleFontSize = isVertical ? 45 : 35;
+      const titleFontSize = isVertical ? 72 : 56;
+      const titleY = isVertical ? 'h*0.2' : 'h*0.3';
 
       // Escape title for FFmpeg
       const escapedTitle = thumbnailTitle.replace(/'/g, "\\'").replace(/"/g, '\\"');
 
-      // Try professional thumbnail creation
+      // Method 1: Professional gradient background with text
       try {
-        const command = `ffmpeg -i "${backgroundPath}" ` +
-          `-vf "scale=${dimensions}:force_original_aspect_ratio=increase,crop=${dimensions},` +
-          `drawtext=text='${escapedTitle}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:` +
-          `fontsize=${fontSize}:fontcolor=${colors.text}:x=(w-text_w)/2:y=${titleY}:` +
-          `bordercolor=${colors.border}:borderw=4:shadowcolor=black:shadowx=2:shadowy=2,` +
-          `drawbox=x=0:y=${titleY - 20}:w=w:h=${fontSize + 40}:color=${colors.bg}@0.7:t=fill"` +
-          ` -frames:v 1 -q:v 2 "${outputPath}" -y`;
+        const gradientCommand = `ffmpeg -f lavfi ` +
+          `-i "color=c=#FF6B35:size=${dimensions}:duration=0.1" ` +
+          `-f lavfi -i "color=c=#F7931E:size=${dimensions}:duration=0.1" ` +
+          `-filter_complex "` +
+          `[0][1]blend=all_mode=screen:all_opacity=0.6,` +
+          `geq=r='255*0.9':g='128*0.9+64*sin(2*PI*X/W)':b='64*0.9+32*cos(2*PI*Y/H)',` +
+          `drawtext=text='${escapedTitle}':fontsize=${titleFontSize}:fontcolor=white:` +
+          `x=(w-text_w)/2:y=${titleY}:bordercolor=black:borderw=4:` +
+          `shadowcolor=black:shadowx=3:shadowy=3,` +
+          `drawbox=x=20:y=${titleY}-20:w=w-40:h=${titleFontSize + 40}:color=black@0.3:t=fill" ` +
+          `-frames:v 1 -q:v 2 "${outputPath}" -y`;
 
-        execSync(command, { 
+        execSync(gradientCommand, { 
           stdio: 'pipe',
-          timeout: 30000,
-          encoding: 'utf8'
+          timeout: 20000
         });
 
         if (fs.existsSync(outputPath) && fs.statSync(outputPath).size > 1000) {
-          console.log('✅ Professional thumbnail created with background');
+          console.log('✅ Professional gradient thumbnail created');
           return outputPath;
         }
-      } catch (bgError) {
-        console.log('Background-based thumbnail failed, trying solid color approach...');
+      } catch (gradientError) {
+        console.log('Gradient thumbnail failed, trying solid color approach:', gradientError.message);
       }
 
-      // Fallback 1: Create with solid color background
+      // Method 2: Solid color with professional styling
       try {
-        const solidCommand = `ffmpeg -f lavfi -i "color=${colors.bg}:size=${dimensions}:duration=0.1" ` +
-          `-vf "drawtext=text='${escapedTitle}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:` +
-          `fontsize=${fontSize}:fontcolor=${colors.text}:x=(w-text_w)/2:y=(h-text_h)/2:` +
-          `bordercolor=${colors.border}:borderw=3" ` +
+        const solidCommand = `ffmpeg -f lavfi -i "color=#1a365d:size=${dimensions}:duration=0.1" ` +
+          `-vf "drawtext=text='${escapedTitle}':fontsize=${titleFontSize}:fontcolor=#FFD700:` +
+          `x=(w-text_w)/2:y=${titleY}:bordercolor=black:borderw=3:` +
+          `shadowcolor=black:shadowx=2:shadowy=2,` +
+          `drawtext=text='TRENDING NOW':fontsize=${Math.floor(titleFontSize * 0.4)}:fontcolor=#FF4444:` +
+          `x=(w-text_w)/2:y=${titleY}+${titleFontSize + 20}:bordercolor=white:borderw=2" ` +
           `-frames:v 1 -q:v 2 "${outputPath}" -y`;
 
         execSync(solidCommand, { stdio: 'pipe', timeout: 15000 });
 
         if (fs.existsSync(outputPath) && fs.statSync(outputPath).size > 1000) {
-          console.log('✅ Solid color thumbnail created');
+          console.log('✅ Professional solid color thumbnail created');
           return outputPath;
         }
       } catch (solidError) {
-        console.log('Solid color thumbnail failed, using basic fallback...');
+        console.log('Solid color thumbnail failed, using ultra-simple approach:', solidError.message);
       }
 
-      // Fallback 2: Ultra-simple solid rectangle
+      // Method 3: Ultra-simple but functional
       try {
-        const simpleCommand = `ffmpeg -f lavfi -i "color=${colors.bg}:size=${dimensions}:duration=0.1" -frames:v 1 "${outputPath}" -y`;
+        const simpleCommand = `ffmpeg -f lavfi -i "color=#2563eb:size=${dimensions}:duration=0.1" ` +
+          `-vf "drawtext=text='${job.title.substring(0, 30)}':fontsize=48:fontcolor=white:` +
+          `x=(w-text_w)/2:y=(h-text_h)/2:bordercolor=black:borderw=2" ` +
+          `-frames:v 1 "${outputPath}" -y`;
+
         execSync(simpleCommand, { stdio: 'pipe', timeout: 10000 });
 
         if (fs.existsSync(outputPath)) {
-          console.log('✅ Basic thumbnail created as final fallback');
+          console.log('✅ Simple thumbnail created');
           return outputPath;
         }
       } catch (simpleError) {
-        console.log('All FFmpeg methods failed, creating programmatic thumbnail...');
+        console.log('All FFmpeg methods failed, creating programmatic thumbnail:', simpleError.message);
       }
 
       // Final fallback: Create programmatically
@@ -288,30 +294,43 @@ export class ThumbnailGenerator {
   }
 
   private async createSolidBackground(category: string, outputPath: string): Promise<string> {
-    const color = this.getCategoryColors(category).bg;
+    const colors = this.getCategoryColors(category);
+    const color = colors.bg || '#1a365d';
 
     try {
-      // Try FFmpeg first
-      const ffmpegCommand = `ffmpeg -f lavfi -i "color=${color}:size=1920x1080:duration=1" "${outputPath}" -y`;
-      execSync(ffmpegCommand, { stdio: 'pipe' });
-      return outputPath;
-    } catch (ffmpegError) {
-      console.warn('FFmpeg not available for background creation, using ImageMagick fallback...');
-
-      try {
-        // Try ImageMagick as fallback
-        execSync(`convert -size 1920x1080 xc:"${color}" "${outputPath}"`, { stdio: 'pipe' });
-        return outputPath;
-      } catch (magickError) {
-        console.warn('ImageMagick not available, creating minimal image file...');
-
-        // Final fallback: create a minimal JPEG file programmatically
-        const canvas = this.createCanvasLikeBuffer(1920, 1080, color);
-        await fs.writeFileSync(outputPath, canvas);
-        console.log(`📱 Created minimal background: ${outputPath}`);
+      // Ensure color is in correct format for FFmpeg
+      const hexColor = color.startsWith('#') ? color : `#${color}`;
+      
+      // Try FFmpeg with proper color format
+      const ffmpegCommand = `ffmpeg -f lavfi -i "color=c=${hexColor}:size=1920x1080:duration=1" "${outputPath}" -y`;
+      execSync(ffmpegCommand, { stdio: 'pipe', timeout: 10000 });
+      
+      // Verify file was created
+      if (fs.existsSync(outputPath) && fs.statSync(outputPath).size > 1000) {
+        console.log(`✅ Created solid background: ${outputPath}`);
         return outputPath;
       }
+    } catch (ffmpegError) {
+      console.warn('FFmpeg background creation failed:', ffmpegError.message);
     }
+
+    try {
+      // Try ImageMagick as fallback
+      execSync(`convert -size 1920x1080 xc:"${color}" "${outputPath}"`, { stdio: 'pipe', timeout: 8000 });
+      
+      if (fs.existsSync(outputPath)) {
+        console.log(`✅ Created background with ImageMagick: ${outputPath}`);
+        return outputPath;
+      }
+    } catch (magickError) {
+      console.warn('ImageMagick not available, creating programmatic image...');
+    }
+
+    // Final fallback: create a minimal JPEG file programmatically
+    const canvas = this.createCanvasLikeBuffer(1920, 1080, color);
+    await fs.writeFileSync(outputPath, canvas);
+    console.log(`📱 Created programmatic background: ${outputPath}`);
+    return outputPath;
   }
 
   private async createFallbackThumbnail(outputPath: string, title: string, dimensions: string, category: string): Promise<void> {

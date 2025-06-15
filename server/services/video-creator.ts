@@ -83,67 +83,90 @@ export class VideoCreator {
       const outputPath = path.join(this.outputDir, `minimal_video_${jobId}.mp4`);
       const dimensions = isShort ? '1080x1920' : '1920x1080';
       
-      // Clean and truncate script text for safe FFmpeg usage
-      let cleanScript = script;
+      // First generate audio
+      console.log(`🎵 Generating audio for job ${jobId}...`);
+      const audioPath = await this.generateAudio(script, jobId);
       
-      // Remove JSON formatting if present
-      if (cleanScript.includes('```json')) {
-        const jsonMatch = cleanScript.match(/```json\s*\{[\s\S]*?"script":\s*"([^"]*)"[\s\S]*?\}/);
-        if (jsonMatch && jsonMatch[1]) {
-          cleanScript = jsonMatch[1];
-        }
-      }
+      // Get actual audio duration
+      const { stdout: audioDuration } = await execAsync(`ffprobe -v quiet -show_entries format=duration -of csv=p=0 "${audioPath}"`);
+      const actualDuration = parseFloat(audioDuration.trim());
       
-      // Clean and escape text for FFmpeg
-      cleanScript = cleanScript
-        .substring(0, 150) // Limit length
-        .replace(/[`'"\\]/g, '') // Remove problematic characters
-        .replace(/\n|\r/g, ' ') // Replace newlines with spaces
-        .replace(/\s+/g, ' ') // Normalize whitespace
-        .trim();
+      console.log(`📹 Creating professional video with audio: ${actualDuration}s duration, ${dimensions} resolution`);
       
-      if (!cleanScript) {
-        cleanScript = 'Video Content Loading...';
-      }
-      
-      // Limit duration to prevent hanging (max 2 minutes for shorts, 5 minutes for long-form)
-      const maxDuration = isShort ? 120 : 300;
-      const safeDuration = Math.min(duration, maxDuration);
-      
-      console.log(`📹 Creating minimal video: ${safeDuration}s duration, ${dimensions} resolution`);
-      
-      // Create a minimal video with text overlay and proper duration
-      const command = `timeout 60 ffmpeg -f lavfi -i "color=c=#1a1a2e:size=${dimensions}:duration=${safeDuration}:rate=30" ` +
-        `-vf "drawtext=text='${cleanScript}...':` +
-        `fontsize=48:fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/2:` +
-        `bordercolor=black:borderw=2" ` +
-        `-c:v libx264 -preset ultrafast -crf 28 ` +
-        `-t ${safeDuration} "${outputPath}" -y`;
+      // Create professional animated background
+      const backgroundCommand = `ffmpeg -f lavfi -i "color=c=#0f172a:size=${dimensions}:duration=${actualDuration}:rate=30" ` +
+        `-f lavfi -i "color=c=#1e293b:size=${dimensions}:duration=${actualDuration}:rate=30" ` +
+        `-filter_complex "` +
+        `[0][1]blend=all_mode=overlay:all_opacity=0.8,` +
+        `geq=r='128+64*sin(2*PI*t/8+x/120)':g='64+32*sin(2*PI*t/10+y/100)':b='192+64*sin(2*PI*t/6)',` +
+        `drawgrid=width=iw/30:height=ih/30:thickness=1:color=white@0.03,` +
+        `drawtext=text='Breaking News Update':fontsize=${isShort ? 72 : 56}:fontcolor=#FFD700:` +
+        `x=(w-text_w)/2:y=${isShort ? 'h*0.1' : 'h*0.08'}:bordercolor=black:borderw=3,` +
+        `drawtext=text='Stay Updated with Latest Information':fontsize=${isShort ? 42 : 32}:fontcolor=white:` +
+        `x=(w-text_w)/2:y=${isShort ? 'h*0.85' : 'h*0.9'}:bordercolor=black:borderw=2" ` +
+        `-c:v libx264 -preset medium -crf 20 -t ${actualDuration} ` +
+        `"${this.outputDir}/background_${jobId}.mp4" -y`;
 
-      console.log(`🎬 Executing FFmpeg command for job ${jobId}`);
+      await execAsync(backgroundCommand);
       
-      // Add timeout to prevent hanging
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Video creation timeout')), 90000); // 90 second timeout
-      });
+      // Combine with audio
+      const finalCommand = `ffmpeg -i "${this.outputDir}/background_${jobId}.mp4" -i "${audioPath}" ` +
+        `-c:v libx264 -c:a aac -b:a 192k -ar 48000 ` +
+        `-shortest -movflags +faststart "${outputPath}" -y`;
+
+      await execAsync(finalCommand);
       
-      await Promise.race([
-        execAsync(command),
-        timeoutPromise
-      ]);
+      // Verify audio is embedded
+      const { stdout: videoInfo } = await execAsync(`ffprobe -v quiet -print_format json -show_streams "${outputPath}"`);
+      const streams = JSON.parse(videoInfo).streams;
+      const hasAudio = streams.some(stream => stream.codec_type === 'audio');
       
-      // Verify file was created and has proper size
-      const stats = await fs.stat(outputPath);
-      console.log(`✅ Created minimal video: ${outputPath} (${Math.round(stats.size / 1024)}KB)`);
-      
-      if (stats.size < 1000) {
-        throw new Error('Generated video file is too small');
+      if (!hasAudio) {
+        throw new Error('Audio embedding verification failed');
       }
+      
+      // Cleanup temporary files
+      await fs.unlink(`${this.outputDir}/background_${jobId}.mp4`).catch(() => {});
+      
+      const stats = await fs.stat(outputPath);
+      console.log(`✅ Created professional video with audio: ${outputPath} (${Math.round(stats.size / 1024)}KB)`);
       
       return outputPath;
+      
     } catch (error) {
-      console.error('Minimal video creation failed:', error);
-      // Final fallback - create text file
+      console.error('Professional video creation failed:', error);
+      // Fallback to basic video with audio
+      return await this.createBasicVideoWithAudio(script, jobId, duration, isShort);
+    }
+  }
+
+  private async createBasicVideoWithAudio(script: string, jobId: number, duration: number, isShort: boolean): Promise<string> {
+    try {
+      const outputPath = path.join(this.outputDir, `basic_video_${jobId}.mp4`);
+      const dimensions = isShort ? '1080x1920' : '1920x1080';
+      
+      // Generate audio first
+      const audioPath = await this.generateAudio(script, jobId);
+      
+      // Get audio duration
+      const { stdout: audioDuration } = await execAsync(`ffprobe -v quiet -show_entries format=duration -of csv=p=0 "${audioPath}"`);
+      const actualDuration = parseFloat(audioDuration.trim());
+      
+      // Create simple video with audio
+      const command = `ffmpeg -f lavfi -i "color=c=#1a1a2e:size=${dimensions}:duration=${actualDuration}:rate=30" ` +
+        `-i "${audioPath}" ` +
+        `-vf "drawtext=text='Professional Content':fontsize=48:fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/2" ` +
+        `-c:v libx264 -c:a aac -shortest "${outputPath}" -y`;
+
+      await execAsync(command);
+      
+      const stats = await fs.stat(outputPath);
+      console.log(`✅ Created basic video with audio: ${outputPath} (${Math.round(stats.size / 1024)}KB)`);
+      
+      return outputPath;
+      
+    } catch (error) {
+      console.error('Basic video with audio creation failed:', error);
       return await this.createTextOnlyVideo(script, jobId);
     }
   }
@@ -446,36 +469,53 @@ export class VideoCreator {
     const outputPath = path.join(this.outputDir, `edited_${job.id}.mp4`);
     const isShort = job.videoType === 'short';
 
-    // Professional color grading and audio mixing
-    const videoFilters = [
-      // Professional color grading (cinematic look)
-      'colorbalance=rs=0.1:gs=-0.1:bs=-0.2:rm=0.2:gm=0.0:bm=-0.1:rh=0.1:gh=0.0:bh=-0.1',
+    try {
+      // First, get audio duration to match video length
+      const { stdout: audioDuration } = await execAsync(`ffprobe -v quiet -show_entries format=duration -of csv=p=0 "${audioPath}"`);
+      const duration = parseFloat(audioDuration.trim());
+      
+      console.log(`🎵 Audio duration: ${duration}s, creating ${isShort ? 'short' : 'long-form'} video`);
 
-      // Lens correction and vignette
-      'lenscorrection=cx=0.5:cy=0.5:k1=-0.227:k2=-0.022',
-      'vignette=PI/4',
+      // Professional video with proper audio sync
+      const command = `ffmpeg -i "${visualPath}" -i "${audioPath}" ` +
+        `-filter_complex "` +
+        `[0:v]scale=${isShort ? '1080:1920' : '1920:1080'}:force_original_aspect_ratio=increase,` +
+        `crop=${isShort ? '1080:1920' : '1920:1080'},` +
+        `colorbalance=rs=0.1:gs=-0.1:bs=-0.2:rm=0.2:gm=0.0:bm=-0.1,` +
+        `eq=contrast=1.2:brightness=0.05:saturation=1.3:gamma=0.95,` +
+        `unsharp=5:5:1.0:5:5:0.0[v];` +
+        `[1:a]volume=1.2,highpass=f=80,lowpass=f=12000,dynaudnorm=f=500:g=31[a]" ` +
+        `-map "[v]" -map "[a]" ` +
+        `-c:v libx264 -preset medium -crf 18 ` +
+        `-c:a aac -b:a 192k -ar 48000 ` +
+        `-t ${duration} ` +
+        `-movflags +faststart ` +
+        `"${outputPath}" -y`;
 
-      // Final sharpening
-      'unsharp=5:5:1.0:5:5:0.0'
-    ].join(',');
-
-    const audioFilters = [
-      // Audio enhancement
-      'highpass=f=80',
-      'lowpass=f=10000',
-      'dynaudnorm=f=500:g=31',
-      'volume=0.9'
-    ].join(',');
-
-    const command = `ffmpeg -i "${visualPath}" -i "${audioPath}" ` +
-      `-vf "${videoFilters}" ` +
-      `-af "${audioFilters}" ` +
-      `-c:v libx264 -preset slow -crf 20 ` +
-      `-c:a aac -b:a 128k ` +
-      `-shortest "${outputPath}" -y`;
-
-    await execAsync(command);
-    return outputPath;
+      await execAsync(command);
+      
+      // Verify audio is properly embedded
+      const { stdout: videoInfo } = await execAsync(`ffprobe -v quiet -print_format json -show_streams "${outputPath}"`);
+      const streams = JSON.parse(videoInfo).streams;
+      const hasAudio = streams.some(stream => stream.codec_type === 'audio');
+      
+      if (!hasAudio) {
+        throw new Error('Audio embedding failed - no audio track found in output');
+      }
+      
+      console.log('✅ Professional video created with embedded audio');
+      return outputPath;
+      
+    } catch (error) {
+      console.error('Professional editing failed, trying simpler approach:', error.message);
+      
+      // Fallback: Simple audio-video combination
+      const fallbackCommand = `ffmpeg -i "${visualPath}" -i "${audioPath}" ` +
+        `-c:v libx264 -c:a aac -shortest "${outputPath}" -y`;
+      
+      await execAsync(fallbackCommand);
+      return outputPath;
+    }
   }
 
   private async finalizeVideo(inputPath: string, job: any): Promise<string> {
