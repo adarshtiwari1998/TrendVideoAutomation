@@ -316,7 +316,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/jobs/:id/kill", async (req, res) => {
     try {
       const jobId = parseInt(req.params.id);
-      
+
       // Update job status to failed
       await storage.updateContentJob(jobId, {
         status: 'failed',
@@ -327,7 +327,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           killedBy: 'user'
         }
       });
-      
+
       await storage.createPipelineLog({
         jobId,
         step: 'manual_kill',
@@ -336,7 +336,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         details: 'User killed stuck job',
         metadata: { killedAt: new Date().toISOString() }
       });
-      
+
       await storage.createActivityLog({
         type: 'system',
         title: 'Job Manually Killed',
@@ -344,7 +344,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: 'warning',
         metadata: { jobId, action: 'manual_kill' }
       });
-      
+
       res.json({ success: true, message: `Job ${jobId} killed successfully` });
     } catch (error) {
       console.error("Kill job error:", error);
@@ -595,13 +595,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const jobId = req.params.jobId ? parseInt(req.params.jobId) : undefined;
       let logs;
-      
+
       if (jobId && !isNaN(jobId)) {
         logs = await storage.getPipelineLogsByJob(jobId);
       } else {
         logs = await storage.getPipelineLogs(50);
       }
-      
+
       res.json(logs);
     } catch (error) {
       console.error('Error fetching pipeline logs:', error);
@@ -619,6 +619,28 @@ app.post('/api/pipeline/cleanup-stuck-jobs', async (req, res) => {
     res.status(500).json({ error: 'Failed to cleanup stuck jobs' });
   }
 });
+
+  // Activity logs
+  app.get('/api/dashboard/recent-activity', async (req, res) => {
+    try {
+      const logs = await storage.getActivityLogs();
+      res.json(logs);
+    } catch (error) {
+      console.error('Activity logs error:', error);
+      res.status(500).json({ error: 'Failed to fetch activity logs' });
+    }
+  });
+
+  // Pipeline logs
+  app.get('/api/pipeline/logs', async (req, res) => {
+    try {
+      const logs = await storage.getPipelineLogs();
+      res.json(logs);
+    } catch (error) {
+      console.error('Pipeline logs error:', error);
+      res.status(500).json({ error: 'Failed to fetch pipeline logs' });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

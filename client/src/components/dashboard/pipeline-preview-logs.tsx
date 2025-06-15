@@ -56,7 +56,7 @@ function ScriptPreviewDialog({
             Compare the original content with the final validated script used for video generation
           </DialogDescription>
         </DialogHeader>
-        
+
         {/* Stats Row */}
         <div className="flex gap-4 p-3 bg-muted/50 rounded-lg text-sm">
           <div className="flex items-center gap-2">
@@ -357,37 +357,19 @@ export function PipelinePreviewLogs() {
                             {log.details}
                           </p>
                         )}
-                        
+
                         {/* Script Preview for completed script generation */}
                         {log.step === 'script_generation' && log.status === 'completed' && (
-                          <div className="mt-3 p-3 bg-green-50/50 rounded-lg border border-green-200">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm font-medium text-green-800">Script Generated Successfully</span>
-                              <ScriptPreviewDialog 
-                                finalScript={log.metadata?.finalScript}
-                                originalContent={log.metadata?.originalContent}
-                                title={`Job #${log.job_id}`}
-                              />
-                            </div>
-                            
-                            {/* Quick Stats */}
-                            <div className="flex gap-4 text-xs text-green-700">
-                              {log.metadata?.wordCount && (
-                                <span>Words: {log.metadata.wordCount}</span>
-                              )}
-                              {log.metadata?.estimatedDuration && (
-                                <span>Duration: ~{Math.round((log.metadata.estimatedDuration || 0) / 60)} min</span>
-                              )}
-                              {log.metadata?.finalScript && (
-                                <span>Characters: {log.metadata.finalScript.length}</span>
-                              )}
-                            </div>
-                            
-                            {/* Script Preview */}
-                            {log.metadata?.finalScript && (
-                              <div className="mt-2 p-2 bg-white/50 rounded text-xs text-gray-600 border-l-2 border-green-400">
-                                <strong>Preview:</strong> {log.metadata.finalScript.substring(0, 150)}
-                                {log.metadata.finalScript.length > 150 && '...'}
+                          <div className="mt-2">
+                            <ScriptPreviewDialog 
+                              finalScript={log.metadata?.finalScript}
+                              originalContent={log.metadata?.originalContent}
+                              title={`Job #${log.job_id}`}
+                            />
+                            {log.metadata?.wordCount && (
+                              <div className="text-xs text-muted-foreground mt-1">
+                                Word count: {log.metadata.wordCount} | 
+                                Estimated duration: {Math.round((log.metadata.estimatedDuration || 0) / 60)} minutes
                               </div>
                             )}
                           </div>

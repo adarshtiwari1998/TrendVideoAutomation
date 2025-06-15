@@ -472,12 +472,41 @@ Thank you for joining me today, and I'll see you in the next video where we'll c
       }
     });
 
+    // Calculate script metrics
+    const wordCount = script.split(' ').filter(w => w.length > 2).length;
+    const estimatedDuration = wordCount * 60 / 150; // ~150 words per minute
+
+    // Create pipeline log for script generation completion
+    await storage.createPipelineLog({
+      jobId: job.id,
+      step: 'script_generation',
+      status: 'completed',
+      message: `Script generation completed successfully`,
+      details: `Generated ${wordCount} words for ${videoType} video`,
+      progress: 100,
+      metadata: {
+        finalScript: script,
+        originalContent: selectedTopic.description,
+        wordCount,
+        estimatedDuration,
+        topicTitle: selectedTopic.title
+      }
+    });
+
     await storage.createActivityLog({
       type: 'generation',
       title: 'Script Generated Successfully',
       description: `Created ${videoType} script for "${selectedTopic.title}"`,
       status: 'success',
-      metadata: { jobId: job.id, videoType, topicTitle: selectedTopic.title }
+      metadata: { 
+        jobId: job.id, 
+        videoType, 
+        topicTitle: selectedTopic.title,
+        finalScript: script,
+        originalContent: selectedTopic.description,
+        wordCount,
+        estimatedDuration
+      }
     });
 
     return job;
