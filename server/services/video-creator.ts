@@ -429,13 +429,12 @@ export class VideoCreator {
     const dimensions = isShort ? '1080x1920' : '1920x1080';
     
     try {
-      // Create animated background using FFmpeg only
+      // Create animated background using FFmpeg only - fixed geq syntax
       const command = `ffmpeg -f lavfi -i "color=c=#1a1a2e:size=${dimensions}:duration=${duration}:rate=30" ` +
-        `-f lavfi -i "color=c=#16213e:size=${dimensions}:duration=${duration}:rate=30" ` +
         `-filter_complex "` +
-        `[0][1]blend=all_mode=overlay:all_opacity=0.8,` +
         `geq=r='128+64*sin(2*PI*t/8+x/120)':g='64+32*sin(2*PI*t/10+y/100)':b='192+64*sin(2*PI*t/6)',` +
-        `drawgrid=width=iw/30:height=ih/30:thickness=1:color=white@0.03` +
+        `drawgrid=width=iw/30:height=ih/30:thickness=1:color=white@0.03,` +
+        `fade=in:0:30:alpha=1,fade=out:${Math.max(0, duration*30-30)}:30:alpha=1` +
         `" -c:v libx264 -preset medium -crf 20 -t ${duration} ` +
         `"${outputPath}" -y`;
 
@@ -453,12 +452,12 @@ export class VideoCreator {
     const dimensions = isShort ? '1080x1920' : '1920x1080';
     
     try {
-      // Create professional video using FFmpeg only
-      const escapedTitle = jobData.title.replace(/'/g, "\\'").replace(/"/g, '\\"');
+      // Create professional video using FFmpeg only - simplified approach
+      const escapedTitle = jobData.title.replace(/'/g, "\\'").replace(/"/g, '\\"').substring(0, 60);
       
       const command = `ffmpeg -f lavfi -i "color=c=#1a1a2e:size=${dimensions}:duration=${duration}:rate=30" ` +
         `-vf "` +
-        `geq=r='128+64*sin(2*PI*t/10+x/50)':g='64+32*sin(2*PI*t/8+y/40)':b='192+64*sin(2*PI*t/12)',` +
+        `noise=alls=5:allf=t+u,` +
         `drawtext=text='${escapedTitle}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:` +
         `fontsize=${isShort ? 72 : 84}:fontcolor=#FFD700:` +
         `x=(w-text_w)/2:y=${isShort ? 'h*0.2' : 'h*0.15'}:` +
@@ -473,7 +472,8 @@ export class VideoCreator {
       return outputPath;
     } catch (error) {
       console.error('FFmpeg-only video creation failed:', error);
-      throw error;
+      // Fallback to simple color background
+      return await this.createSimpleColorBackground(jobId, duration, isShort);
     }
   }
 
