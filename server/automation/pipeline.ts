@@ -46,20 +46,28 @@ export class AutomationPipeline {
       // Wait a moment to ensure script is fully generated
       await new Promise(resolve => setTimeout(resolve, 2000));
       
+      // Get the latest job data to ensure we have all metadata
+      const updatedJob = await storage.getContentJobById(job.id);
+      const originalContent = updatedJob?.metadata?.originalContent || 'No original content available';
+      
+      console.log(`📋 Pipeline logging - Original content: ${originalContent.substring(0, 100)}...`);
+      console.log(`📋 Pipeline logging - Final script: ${job.script?.substring(0, 100)}...`);
+      
       await storage.createPipelineLog({
         jobId: job.id,
         step: 'script_generation',
         status: 'completed',
         message: 'AI script generation completed successfully',
-        details: `Generated engaging ${videoType} script with ${job.script?.length || 0} characters`,
+        details: `Generated engaging ${videoType} script with ${job.script?.length || 0} characters from original trending topic content`,
         progress: 100,
         metadata: { 
           title: job.title, 
           wordCount: job.script?.split(' ').length || 0,
           scriptLength: job.script?.length || 0,
           finalScript: job.script,
-          originalContent: job.metadata?.originalContent,
-          estimatedDuration: job.metadata?.estimatedDuration || 0
+          originalContent: originalContent,
+          estimatedDuration: job.metadata?.estimatedDuration || 0,
+          contentSource: 'AI generated from trending topic data'
         },
         createdAt: new Date()
       });

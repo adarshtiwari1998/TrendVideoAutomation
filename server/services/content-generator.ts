@@ -452,8 +452,15 @@ Thank you for joining me today, and I'll see you in the next video where we'll c
       throw new Error('Topic not found');
     }
 
+    console.log(`📝 Original content for topic ${topicId}:`, selectedTopic.description);
+    console.log(`📋 Topic title: ${selectedTopic.title}`);
+    console.log(`🏷️ Category: ${selectedTopic.category}`);
+
     const script = await this.generateScript(selectedTopic, videoType);
     const title = this.generateVideoTitle(selectedTopic, videoType);
+
+    // Store original content properly in job metadata
+    const originalContent = selectedTopic.description || `Topic: ${selectedTopic.title}\nCategory: ${selectedTopic.category}\nDetails: This trending topic was identified for content creation.`;
 
     const job = await storage.createContentJob({
       topicId,
@@ -465,6 +472,7 @@ Thank you for joining me today, and I'll see you in the next video where we'll c
       metadata: {
         topic: selectedTopic.title,
         category: selectedTopic.category,
+        originalContent: originalContent,
         targetDuration: videoType === 'long_form' ? '10-15 minutes' : '45-60 seconds'
       }
     });
@@ -473,20 +481,28 @@ Thank you for joining me today, and I'll see you in the next video where we'll c
     const wordCount = script.split(' ').filter(w => w.length > 2).length;
     const estimatedDuration = wordCount * 60 / 150; // ~150 words per minute
 
-    // Create pipeline log for script generation completion
+    console.log(`✅ Storing original content: ${originalContent.length} characters`);
+    console.log(`✅ Generated script: ${script.length} characters`);
+
+    // Create pipeline log for script generation completion with both original and final content
     await storage.createPipelineLog({
       jobId: job.id,
       step: 'script_generation',
       status: 'completed',
       message: `Script generation completed successfully`,
-      details: `Generated ${wordCount} words for ${videoType} video`,
+      details: `Generated ${wordCount} words for ${videoType} video from original content`,
       progress: 100,
       metadata: {
         finalScript: script,
-        originalContent: selectedTopic.description,
+        originalContent: originalContent,
         wordCount,
         estimatedDuration,
-        topicTitle: selectedTopic.title
+        topicTitle: selectedTopic.title,
+        contentTransformation: {
+          originalLength: originalContent.length,
+          finalLength: script.length,
+          expansion: script.length > originalContent.length ? 'expanded' : 'condensed'
+        }
       }
     });
 
@@ -500,7 +516,7 @@ Thank you for joining me today, and I'll see you in the next video where we'll c
         videoType, 
         topicTitle: selectedTopic.title,
         finalScript: script,
-        originalContent: selectedTopic.description,
+        originalContent: originalContent,
         wordCount,
         estimatedDuration
       }

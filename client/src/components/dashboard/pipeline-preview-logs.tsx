@@ -359,20 +359,12 @@ export function PipelinePreviewLogs() {
                         )}
 
                         {/* Script Preview for completed script generation */}
-                        {log.step === 'script_generation' && log.status === 'completed' && (
-                          <div className="mt-2">
-                            <ScriptPreviewDialog 
-                              finalScript={log.metadata?.finalScript}
-                              originalContent={log.metadata?.originalContent}
-                              title={`Job #${log.job_id}`}
-                            />
-                            {log.metadata?.wordCount && (
-                              <div className="text-xs text-muted-foreground mt-1">
-                                Word count: {log.metadata.wordCount} | 
-                                Estimated duration: {Math.round((log.metadata.estimatedDuration || 0) / 60)} minutes
-                              </div>
-                            )}
-                          </div>
+                        {log.step === 'script_generation' && log.status === 'completed' && log.metadata && (
+                          <ScriptPreviewDialog
+                            finalScript={log.metadata.finalScript || log.details}
+                            originalContent={log.metadata.originalContent || log.metadata.sourceContent || log.metadata.topicDescription}
+                            title={log.metadata.title || log.metadata.topicTitle || 'Script Generation'}
+                          />
                         )}
 
                         {/* Drive Links for file organization */}
