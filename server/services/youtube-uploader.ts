@@ -31,7 +31,8 @@ export class YouTubeUploader {
   }
 
   private getCredentials(): any {
-    const credentialsPath = process.env.GOOGLE_CREDENTIALS || './google-credentials.json';
+    // Use google-credentials.json for YouTube uploads
+    const credentialsPath = './google-credentials.json';
 
     if (!fs.existsSync(credentialsPath)) {
       console.warn('⚠️  Google credentials file not found, YouTube upload will be disabled');

@@ -19,7 +19,7 @@ export class StorageManager {
 
     const auth = new google.auth.JWT({
       email: credentials.client_email,
-      key: credentials.private_key,
+      key: credentials.private_key.replace(/\\n/g, '\n'), // Fix line breaks in private key
       scopes: ['https://www.googleapis.com/auth/drive'],
     });
 
@@ -28,7 +28,8 @@ export class StorageManager {
   }
 
   private getCredentials(): any {
-    const credentialsPath = process.env.GOOGLE_CREDENTIALS || './credentials.json';
+    // Use google-credentials.json for Google Drive (not credentials.json which is for TTS)
+    const credentialsPath = process.env.GOOGLE_CREDENTIALS || './google-credentials.json';
 
     if (!fs.existsSync(credentialsPath)) {
       console.warn('⚠️  Google credentials file not found, Drive storage will be disabled');
@@ -36,9 +37,17 @@ export class StorageManager {
     }
 
     try {
-      return JSON.parse(fs.readFileSync(credentialsPath, 'utf8'));
+      const credentials = JSON.parse(fs.readFileSync(credentialsPath, 'utf8'));
+      
+      // Validate that the credentials have required fields
+      if (!credentials.client_email || !credentials.private_key || !credentials.project_id) {
+        console.warn('⚠️  Invalid Google credentials - missing required fields');
+        return null;
+      }
+      
+      return credentials;
     } catch (error) {
-      console.warn('⚠️  Invalid Google credentials file format');
+      console.warn('⚠️  Invalid Google credentials file format:', error.message);
       return null;
     }
   }

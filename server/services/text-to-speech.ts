@@ -16,7 +16,7 @@ export class TextToSpeechService {
   constructor() {
     try {
       // Initialize Google Cloud TTS client with proper credential handling
-      const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS || process.env.GOOGLE_CREDENTIALS || './google-credentials.json';
+      const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS || './credentials.json';
 
       // Try to read credentials directly from file
       let credentials = null;
