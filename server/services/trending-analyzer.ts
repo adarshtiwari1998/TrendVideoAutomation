@@ -127,22 +127,25 @@ export class TrendingAnalyzer {
       // Enhanced query to find SPECIFIC ARTICLES, not homepage URLs
       const specificArticleQuery = `${query} "article" OR "news" OR "story" OR "report" OR "research" OR "study" OR "breakthrough" OR "discovery" -"home" -"category" -"tag" -"index" filetype:html`;
       
-      // SPACE & SCIENCE SPECIFIC SEARCH with article-focused terms
-      const spaceAndScienceQuery = `${specificArticleQuery} (site:nasa.gov/news OR site:nasa.gov/missions OR site:space.com/news OR site:spacenews.com OR site:spaceflightnow.com/news OR site:esa.int/ESA_Multimedia/Videos OR site:sciencenews.org/article OR site:newscientist.com/article OR site:scientificamerican.com/article OR site:smithsonianmag.com/science-nature OR site:nationalgeographic.com/science/article OR site:phys.org/news OR site:science.org/content/article OR site:nature.com/articles OR site:sciencedaily.com/releases OR site:astronomy.com/news OR site:universetoday.com OR site:spacex.com/updates OR site:jpl.nasa.gov/news)`;
+      // Dynamic site targeting based on category and query content
+      const dynamicSiteQuery = this.buildDynamicSiteQuery(query, category);
+      
+      // Combine specific article search with dynamic site targeting
+      const spaceAndScienceQuery = `${specificArticleQuery} ${dynamicSiteQuery}`;
 
-      console.log(`🎯 SPECIFIC ARTICLE SEARCH QUERY: ${spaceAndScienceQuery.substring(0, 200)}...`);
+      console.log(`🎯 DYNAMIC SEARCH QUERY: ${spaceAndScienceQuery.substring(0, 200)}...`);
 
       const topics: InsertTrendingTopic[] = [];
       let totalProcessed = 0;
       let validArticles = 0;
 
-      // Try multiple searches with different approaches to get at least 10 posts
+      // Try multiple searches with different dynamic approaches to get at least 10 posts
       const searchAttempts = [
         { query: spaceAndScienceQuery, num: 10 },
-        { query: `${query} recent space news article 2025 -"home" -"category" -"humans-in-space" -"science-nature"`, num: 10 },
-        { query: `${query} space discovery article today -"index" -"tag" -site:nasa.gov/category -site:space.com/category`, num: 10 },
-        { query: `${query} space breakthrough news article -"home" -"main" -"category" site:nasa.gov/news OR site:space.com/news`, num: 10 },
-        { query: `${query} astronomy science news discovery -"category" -"tag" -"section" filetype:html`, num: 10 },
+        { query: `${query} recent news article 2025 -"home" -"category" -"humans-in-space" -"science-nature"`, num: 10 },
+        { query: `${query} discovery article today -"index" -"tag" -"category"`, num: 10 },
+        { query: `${query} breakthrough news article -"home" -"main" -"category" ${this.getTopSourcesForCategory(category)}`, num: 10 },
+        { query: `${query} news discovery -"category" -"tag" -"section" filetype:html`, num: 10 },
         { query: `"${query.split(' ')[0]}" news article discovery recent -"home" -"index" -"category"`, num: 10 }
       ];
 
@@ -363,6 +366,74 @@ export class TrendingAnalyzer {
     }
   }
 
+  private buildDynamicSiteQuery(query: string, category: string): string {
+    // Determine relevant domains based on query keywords and category
+    const queryLower = query.toLowerCase();
+    let siteParts: string[] = [];
+
+    // NASA sources for space-related queries
+    if (queryLower.includes('nasa') || queryLower.includes('space') || queryLower.includes('mars') || queryLower.includes('moon')) {
+      siteParts.push('site:nasa.gov/news', 'site:nasa.gov/missions', 'site:jpl.nasa.gov/news');
+    }
+
+    // Space industry sources
+    if (queryLower.includes('spacex') || queryLower.includes('rocket') || queryLower.includes('launch')) {
+      siteParts.push('site:spacex.com/updates', 'site:spacenews.com', 'site:spaceflightnow.com/news');
+    }
+
+    // Astronomy sources
+    if (queryLower.includes('astronomy') || queryLower.includes('telescope') || queryLower.includes('star') || queryLower.includes('galaxy')) {
+      siteParts.push('site:astronomy.com/news', 'site:universetoday.com', 'site:space.com/news');
+    }
+
+    // Science journal sources
+    if (queryLower.includes('research') || queryLower.includes('study') || queryLower.includes('discovery')) {
+      siteParts.push('site:science.org/content/article', 'site:nature.com/articles', 'site:sciencedaily.com/releases');
+    }
+
+    // Popular science sources
+    if (queryLower.includes('science') || queryLower.includes('physics') || queryLower.includes('chemistry')) {
+      siteParts.push('site:sciencenews.org/article', 'site:newscientist.com/article', 'site:scientificamerican.com/article');
+    }
+
+    // Environment and earth science
+    if (queryLower.includes('earth') || queryLower.includes('climate') || queryLower.includes('environment')) {
+      siteParts.push('site:nationalgeographic.com/science/article', 'site:smithsonianmag.com/science-nature');
+    }
+
+    // General science and tech sources
+    if (queryLower.includes('technology') || queryLower.includes('breakthrough')) {
+      siteParts.push('site:phys.org/news', 'site:esa.int/ESA_Multimedia/Videos');
+    }
+
+    // If no specific matches, use broad science sources
+    if (siteParts.length === 0) {
+      siteParts = [
+        'site:nasa.gov/news', 'site:space.com/news', 'site:sciencenews.org/article',
+        'site:newscientist.com/article', 'site:phys.org/news', 'site:sciencedaily.com/releases'
+      ];
+    }
+
+    // Remove duplicates and limit to avoid overly long queries
+    const uniqueSites = [...new Set(siteParts)].slice(0, 8);
+    
+    return uniqueSites.length > 0 ? `(${uniqueSites.join(' OR ')})` : '';
+  }
+
+  private getTopSourcesForCategory(category: string): string {
+    const categorySourceMap: { [key: string]: string[] } = {
+      'space_news': ['site:nasa.gov/news', 'site:space.com/news', 'site:spacenews.com'],
+      'space_facts': ['site:astronomy.com/news', 'site:universetoday.com', 'site:space.com/news'],
+      'space_astronomy': ['site:astronomy.com/news', 'site:universetoday.com', 'site:nasa.gov/missions'],
+      'earth_space_science': ['site:nasa.gov/news', 'site:nationalgeographic.com/science/article', 'site:phys.org/news'],
+      'general_science_facts': ['site:sciencenews.org/article', 'site:newscientist.com/article', 'site:sciencedaily.com/releases'],
+      'nature_environment_cosmic': ['site:nationalgeographic.com/science/article', 'site:smithsonianmag.com/science-nature', 'site:phys.org/news']
+    };
+
+    const sources = categorySourceMap[category] || ['site:nasa.gov/news', 'site:space.com/news', 'site:sciencenews.org/article'];
+    return `(${sources.join(' OR ')})`;
+  }
+
   private isValidSpaceOrScienceContent(title: string, snippet: string, url: string): boolean {
     const spaceKeywords = [
       'space', 'nasa', 'astronomy', 'planet', 'mars', 'moon', 'solar', 'galaxy', 'star', 'universe',
@@ -385,17 +456,20 @@ export class TrendingAnalyzer {
     // Check if content contains excluded keywords
     const hasExcludedContent = excludeKeywords.some(keyword => content.includes(keyword));
 
-    // Check if URL is from a reliable space/science source
-    const validDomains = [
+    // Dynamic domain validation based on content relevance
+    const reliableDomains = [
       'nasa.gov', 'space.com', 'spacenews.com', 'spaceflightnow.com', 'esa.int',
       'sciencenews.org', 'newscientist.com', 'scientificamerican.com', 'smithsonianmag.com',
       'nationalgeographic.com', 'phys.org', 'science.org', 'nature.com', 'sciencedaily.com',
       'astronomy.com', 'universetoday.com', 'spacex.com', 'jpl.nasa.gov'
     ];
 
-    const isValidDomain = validDomains.some(domain => url.includes(domain));
+    const isReliableDomain = reliableDomains.some(domain => url.includes(domain));
 
-    return hasSpaceContent && !hasExcludedContent && isValidDomain;
+    // More flexible validation - allow content with strong space/science indicators even from other domains
+    const strongSpaceIndicators = ['nasa', 'spacex', 'astronomy', 'discovery', 'research', 'breakthrough'].some(keyword => content.includes(keyword));
+    
+    return hasSpaceContent && !hasExcludedContent && (isReliableDomain || strongSpaceIndicators);
   }
 
   private async extractSpaceAndScienceContent(url: string, fallbackSnippet: string, title: string): Promise<{
