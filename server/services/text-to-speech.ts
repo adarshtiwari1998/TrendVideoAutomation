@@ -51,7 +51,7 @@ export class TextToSpeechService {
 
   async generateSpeech(options: TTSOptions): Promise<string> {
     try {
-      const { text, outputPath, voice = 'en-IN-Neural2-D', speed = 0.92, pitch = -1.0 } = options;
+      const { text, outputPath, voice = 'en-IN-Neural2-B', speed = 0.92, pitch = -1.0 } = options;
 
       // Try ElevenLabs first (professional quality)
       try {
@@ -121,13 +121,16 @@ export class TextToSpeechService {
   }
 
   private async generateSingleChunk(text: string, outputPath: string, voice: string, speed: number, pitch: number): Promise<string> {
-    // Fix voice configuration - Neural2-D is actually male
+    // Fix voice configuration - Neural2-D is actually female according to Google Cloud TTS
+    const voiceGender = voice === 'en-IN-Neural2-D' ? 'FEMALE' : 
+                       voice.includes('Neural2-B') || voice.includes('Wavenet-B') || voice.includes('Standard-B') || voice.includes('Standard-D') ? 'MALE' : 'FEMALE';
+    
     const request = {
       input: { text: text },
       voice: {
         languageCode: 'en-IN',
         name: voice,
-        ssmlGender: 'MALE' as const, // Fixed: Neural2-D is male voice
+        ssmlGender: voiceGender as const,
       },
       audioConfig: {
         audioEncoding: 'MP3' as const,
@@ -462,7 +465,7 @@ export class TextToSpeechService {
       'en-IN-Neural2-A': 'Indian English Female (Neural)',
       'en-IN-Neural2-B': 'Indian English Male (Neural)',
       'en-IN-Neural2-C': 'Indian English Female (Neural)',
-      'en-IN-Neural2-D': 'Indian English Male (Neural)',
+      'en-IN-Neural2-D': 'Indian English Female (Neural)', // Corrected: This is actually female
     };
   }
 }

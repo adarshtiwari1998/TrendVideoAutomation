@@ -2,6 +2,7 @@ import path from 'path';
 import fs from 'fs/promises';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { createCanvas } from 'canvas';
 import { storage } from '../storage';
 import { textToSpeechService } from './text-to-speech';
 import { FFmpegInstaller } from './ffmpeg-installer';
@@ -494,7 +495,7 @@ export class VideoCreator {
       const audioPath = await textToSpeechService.generateSpeech({
         text: this.enhanceScriptForNaturalSpeech(script),
         outputPath: path.join(this.outputDir, `audio_${jobId}.mp3`),
-        voice: 'en-IN-Neural2-D', // Premium Indian English male voice
+        voice: 'en-IN-Neural2-B', // Premium Indian English male voice
         speed: 0.92, // Slightly slower for better comprehension
         pitch: -1.0 // Slightly lower pitch for authority
       });
