@@ -17,9 +17,15 @@ export class YouTubeUploader {
       return;
     }
 
+    // Clean and format the private key properly
+    let privateKey = credentials.private_key;
+    if (typeof privateKey === 'string') {
+      privateKey = privateKey.replace(/\\n/g, '\n').trim();
+    }
+
     const auth = new google.auth.JWT({
-      email: credentials.client_email,
-      key: credentials.private_key,
+      email: credentials.client_email.trim(),
+      key: privateKey,
       scopes: [
         'https://www.googleapis.com/auth/youtube.upload',
         'https://www.googleapis.com/auth/youtube'

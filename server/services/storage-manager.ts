@@ -8,6 +8,14 @@ export class StorageManager {
   private baseFolderId: string;
 
   constructor() {
+    this.initializeAsync().catch(error => {
+      console.error('❌ StorageManager initialization failed:', error.message);
+      this.drive = null;
+      this.baseFolderId = '';
+    });
+  }
+
+  private async initializeAsync() {
     const credentials = this.getCredentials();
     
     if (!credentials) {
@@ -17,11 +25,35 @@ export class StorageManager {
       return;
     }
 
+    // Clean and format the private key properly
+    let privateKey = credentials.private_key;
+    if (typeof privateKey === 'string') {
+      // Replace escaped newlines and ensure proper formatting
+      privateKey = privateKey.replace(/\\n/g, '\n').trim();
+      
+      // Ensure the key starts and ends with proper markers
+      if (!privateKey.startsWith('-----BEGIN PRIVATE KEY-----')) {
+        console.warn('⚠️  Private key missing BEGIN marker');
+      }
+      if (!privateKey.endsWith('-----END PRIVATE KEY-----')) {
+        console.warn('⚠️  Private key missing END marker');
+      }
+    }
+
     const auth = new google.auth.JWT({
-      email: credentials.client_email,
-      key: credentials.private_key.replace(/\\n/g, '\n'), // Fix line breaks in private key
+      email: credentials.client_email.trim(),
+      key: privateKey,
       scopes: ['https://www.googleapis.com/auth/drive'],
     });
+
+    // Test the authentication before proceeding
+    try {
+      await auth.authorize();
+      console.log('✅ Google Drive authentication successful');
+    } catch (authError) {
+      console.error('❌ Google Drive authentication failed:', authError.message);
+      throw new Error(`Authentication failed: ${authError.message}`);
+    }
 
     this.drive = google.drive({ version: 'v3', auth });
     this.baseFolderId = process.env.GOOGLE_DRIVE_BASE_FOLDER_ID || '';
@@ -42,6 +74,20 @@ export class StorageManager {
       // Validate that the credentials have required fields
       if (!credentials.client_email || !credentials.private_key || !credentials.project_id) {
         console.warn('⚠️  Invalid Google credentials - missing required fields');
+        console.warn('Available fields:', Object.keys(credentials));
+        return null;
+      }
+
+      // Validate email format
+      if (!credentials.client_email.includes('@') || !credentials.client_email.includes('.iam.gserviceaccount.com')) {
+        console.warn('⚠️  Invalid service account email format');
+        return null;
+      }
+
+      // Validate private key format
+      if (!credentials.private_key.includes('-----BEGIN PRIVATE KEY-----') || 
+          !credentials.private_key.includes('-----END PRIVATE KEY-----')) {
+        console.warn('⚠️  Invalid private key format');
         return null;
       }
       
