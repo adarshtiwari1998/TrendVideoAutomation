@@ -101,30 +101,35 @@ export function AutomationPipeline() {
   };
 
   const getStepClasses = (status: string, progress: number) => {
-    if (status === 'completed' || progress === 100) {
-      return "pipeline-step completed";
+    if (status === 'ready_for_upload' || progress === 100) {
+      return "pipeline-step completed bg-green-50 border-green-200";
     }
     if (status === 'failed') {
       return "pipeline-step bg-destructive/10 border border-destructive/20";
     }
-    if (status.includes('processing') || status.includes('generation') || status.includes('creation')) {
-      return "pipeline-step active";
+    if (status.includes('processing') || status.includes('generation') || status.includes('creation') || status.includes('scheduling')) {
+      return "pipeline-step active bg-blue-50 border-blue-200";
     }
-    return "pipeline-step pending";
+    return "pipeline-step pending bg-gray-50 border-gray-200";
   };
 
   const getStatusBadge = (status: string) => {
     const statusMap = {
       'pending': { variant: 'secondary' as const, label: 'Pending' },
       'script_generation': { variant: 'default' as const, label: 'Generating Script' },
+      'audio_generation': { variant: 'default' as const, label: 'Generating Audio' },
       'video_creation': { variant: 'default' as const, label: 'Creating Video' },
+      'video_processing': { variant: 'default' as const, label: 'Processing Video' },
       'thumbnail_generation': { variant: 'default' as const, label: 'Generating Thumbnail' },
-      'uploading': { variant: 'default' as const, label: 'Uploading' },
+      'file_organization': { variant: 'default' as const, label: 'Uploading to Drive' },
+      'scheduling_upload': { variant: 'default' as const, label: 'Scheduling Upload' },
+      'ready_for_upload': { variant: 'default' as const, label: 'Ready for Upload' },
+      'uploading': { variant: 'default' as const, label: 'Uploading to YouTube' },
       'completed': { variant: 'default' as const, label: 'Completed' },
       'failed': { variant: 'destructive' as const, label: 'Failed' }
     };
 
-    const statusInfo = statusMap[status] || { variant: 'secondary' as const, label: status };
+    const statusInfo = statusMap[status] || { variant: 'secondary' as const, label: status.replace('_', ' ').toUpperCase() };
     return (
       <Badge variant={statusInfo.variant} className={statusInfo.variant === 'default' ? 'bg-primary' : ''}>
         {statusInfo.label}
@@ -206,29 +211,46 @@ export function AutomationPipeline() {
         {/* Pipeline Steps Overview */}
         <div className="mt-8 pt-6 border-t border-border">
           <h4 className="text-sm font-medium text-foreground mb-4">Pipeline Stages</h4>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            {[
-              { label: 'Trending Analysis', icon: CheckCircle, status: 'completed' },
-              { label: 'Script Generation', icon: RotateCcw, status: hasActiveJobs ? 'active' : 'pending' },
-              { label: 'Video Creation', icon: Video, status: 'pending' },
-              { label: 'Thumbnail Generation', icon: Image, status: 'pending' },
-              { label: 'YouTube Upload', icon: Upload, status: 'pending' }
-            ].map((step, index) => (
-              <div key={index} className="text-center">
-                <div className={`w-10 h-10 mx-auto mb-2 rounded-full flex items-center justify-center ${
-                  step.status === 'completed' ? 'bg-success/10' :
-                  step.status === 'active' ? 'bg-primary/10' :
-                  'bg-muted'
-                }`}>
-                  <step.icon className={`w-5 h-5 ${
-                    step.status === 'completed' ? 'text-success' :
-                    step.status === 'active' ? 'text-primary' :
-                    'text-muted-foreground'
-                  } ${step.status === 'active' ? 'animate-spin' : ''}`} />
-                </div>
-                <p className="text-xs text-muted-foreground">{step.label}</p>
-              </div>
-            ))}
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+            {(() => {
+              const currentStatus = activeJobs[0]?.status || 'pending';
+              const stages = [
+                { label: 'Script Generation', icon: CheckCircle, step: 'script_generation' },
+                { label: 'Audio Generation', icon: RotateCcw, step: 'audio_generation' },
+                { label: 'Video Creation', icon: Video, step: 'video_creation' },
+                { label: 'Video Processing', icon: RotateCcw, step: 'video_processing' },
+                { label: 'Thumbnail Generation', icon: Image, step: 'thumbnail_generation' },
+                { label: 'YouTube Upload', icon: Upload, step: 'ready_for_upload' }
+              ];
+
+              const getStageStatus = (step: string) => {
+                if (!hasActiveJobs) return 'pending';
+                
+                const stageOrder = ['script_generation', 'audio_generation', 'video_creation', 'video_processing', 'thumbnail_generation', 'file_organization', 'scheduling_upload', 'ready_for_upload'];
+                const currentIndex = stageOrder.indexOf(currentStatus);
+                const stepIndex = stageOrder.indexOf(step);
+                
+                if (stepIndex < currentIndex) return 'completed';
+                if (stepIndex === currentIndex) return 'active';
+                return 'pending';
+              };
+
+              return stages.map((stage, index) => {
+                const status = getStageStatus(stage.step);
+                return (
+                  <div key={index} className="text-center">
+                    <div className={`w-10 h-10 mx-auto mb-2 rounded-full flex items-center justify-center ${
+                      status === 'completed' ? 'bg-green-100 text-green-600' :
+                      status === 'active' ? 'bg-blue-100 text-blue-600' :
+                      'bg-gray-100 text-gray-400'
+                    }`}>
+                      <stage.icon className={`w-5 h-5 ${status === 'active' ? 'animate-spin' : ''}`} />
+                    </div>
+                    <p className="text-xs text-muted-foreground">{stage.label}</p>
+                  </div>
+                );
+              });
+            })()}
           </div>
         </div>
       </CardContent>

@@ -46,12 +46,38 @@ export function PipelinePreviewLogs({ selectedJobId }: PipelinePreviewLogsProps)
       if (selectedJobId && selectedJobId > 0) {
         const response = await fetch(`/api/pipeline/logs/${selectedJobId}`);
         if (!response.ok) throw new Error('Failed to fetch job logs');
-        return response.json();
+        const data = await response.json();
+        
+        // Remove duplicates and sort by timestamp
+        const uniqueLogs = data.reduce((acc: any[], log: any) => {
+          const existing = acc.find(l => l.step === log.step && l.status === log.status && l.job_id === log.job_id);
+          if (!existing) {
+            acc.push(log);
+          }
+          return acc;
+        }, []);
+        
+        return uniqueLogs.sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
       } else {
         // Show recent logs when no active jobs
-        const response = await fetch('/api/pipeline/logs?limit=20');
+        const response = await fetch('/api/pipeline/logs?limit=15');
         if (!response.ok) throw new Error('Failed to fetch recent logs');
-        return response.json();
+        const data = await response.json();
+        
+        // Filter for only the latest status of each step per job
+        const latestLogs = data.reduce((acc: any[], log: any) => {
+          const key = `${log.job_id}-${log.step}`;
+          const existing = acc.find(l => `${l.job_id}-${l.step}` === key);
+          if (!existing || new Date(log.timestamp) > new Date(existing.timestamp)) {
+            if (existing) {
+              acc.splice(acc.indexOf(existing), 1);
+            }
+            acc.push(log);
+          }
+          return acc;
+        }, []);
+        
+        return latestLogs.sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
       }
     },
     refetchInterval: 2000,
