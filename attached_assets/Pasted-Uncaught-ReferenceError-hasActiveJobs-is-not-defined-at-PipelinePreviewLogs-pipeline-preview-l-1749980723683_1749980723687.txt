@@ -1,0 +1,92 @@
+Uncaught ReferenceError: hasActiveJobs is not defined
+    at PipelinePreviewLogs (pipeline-preview-logs.tsx:44:9)
+    at renderWithHooks (chunk-WERSD76P.js?v=0dc4fd33:11548:26)
+    at mountIndeterminateComponent (chunk-WERSD76P.js?v=0dc4fd33:14926:21)
+    at beginWork (chunk-WERSD76P.js?v=0dc4fd33:15914:22)
+    at HTMLUnknownElement.callCallback2 (chunk-WERSD76P.js?v=0dc4fd33:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-WERSD76P.js?v=0dc4fd33:3699:24)
+    at invokeGuardedCallback (chunk-WERSD76P.js?v=0dc4fd33:3733:39)
+    at beginWork$1 (chunk-WERSD76P.js?v=0dc4fd33:19765:15)
+    at performUnitOfWork (chunk-WERSD76P.js?v=0dc4fd33:19198:20)
+    at workLoopSync (chunk-WERSD76P.js?v=0dc4fd33:19137:13)Understand this error
+chunk-WERSD76P.js?v=0dc4fd33:14032 The above error occurred in the <PipelinePreviewLogs> component:
+
+    at PipelinePreviewLogs (https://c41ff9f3-e1e9-4baf-9fc4-a63ba3e65d39-00-chpmv1xb4wwt.sisko.replit.dev/src/components/dashboard/pipeline-preview-logs.tsx:36:39)
+    at div
+    at div
+    at div
+    at VideoPipelinePage (https://c41ff9f3-e1e9-4baf-9fc4-a63ba3e65d39-00-chpmv1xb4wwt.sisko.replit.dev/src/pages/video-pipeline.tsx:27:45)
+    at Route (https://c41ff9f3-e1e9-4baf-9fc4-a63ba3e65d39-00-chpmv1xb4wwt.sisko.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=0dc4fd33:323:16)
+    at Switch (https://c41ff9f3-e1e9-4baf-9fc4-a63ba3e65d39-00-chpmv1xb4wwt.sisko.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=0dc4fd33:379:17)
+    at Router
+    at Provider (https://c41ff9f3-e1e9-4baf-9fc4-a63ba3e65d39-00-chpmv1xb4wwt.sisko.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-XIZKKOCE.js?v=0dc4fd33:22:15)
+    at TooltipProvider (https://c41ff9f3-e1e9-4baf-9fc4-a63ba3e65d39-00-chpmv1xb4wwt.sisko.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@radix-ui_react-tooltip.js?v=0dc4fd33:2223:5)
+    at QueryClientProvider (https://c41ff9f3-e1e9-4baf-9fc4-a63ba3e65d39-00-chpmv1xb4wwt.sisko.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=0dc4fd33:2805:3)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+logCapturedError @ chunk-WERSD76P.js?v=0dc4fd33:14032Understand this error
+chunk-WERSD76P.js?v=0dc4fd33:9129 Uncaught ReferenceError: hasActiveJobs is not defined
+    at PipelinePreviewLogs (pipeline-preview-logs.tsx:44:9)
+    at renderWithHooks (chunk-WERSD76P.js?v=0dc4fd33:11548:26)
+    at mountIndeterminateComponent (chunk-WERSD76P.js?v=0dc4fd33:14926:21)
+    at beginWork (chunk-WERSD76P.js?v=0dc4fd33:15914:22)
+    at beginWork$1 (chunk-WERSD76P.js?v=0dc4fd33:19753:22)
+    at performUnitOfWork (chunk-WERSD76P.js?v=0dc4fd33:19198:20)
+    at workLoopSync (chunk-WERSD76P.js?v=0dc4fd33:19137:13)
+    at renderRootSync (chunk-WERSD76P.js?v=0dc4fd33:19116:15)
+    at recoverFromConcurrentError (chunk-WERSD76P.js?v=0dc4fd33:18736:28)
+    at performSyncWorkOnRoot (chunk-WERSD76P.js?v=0dc4fd33:18879:28)Understand this error
+0.0.0.0:3000/:1 
+            
+            
+           Failed to load resource: net::ERR_ADDRESS_INVALIDUnderstand this error
+0.0.0.0:3000/:1 
+            
+            
+           Failed to load resource: net::ERR_ADDRESS_INVALIDUnderstand this error
+0.0.0.0:3000/:1 
+            
+            
+           Failed to load resource: net::ERR_ADDRESS_INVALIDUnderstand this error
+0.0.0.0:3000/:1 
+            
+            
+           Failed to load resource: net::ERR_ADDRESS_INVALIDUnderstand this error
+0.0.0.0:3000/:1 
+            
+            
+           Failed to load resource: net::ERR_ADDRESS_INVALIDUnderstand this error
+0.0.0.0:3000/:1 
+            
+            
+           Failed to load resource: net::ERR_ADDRESS_INVALIDUnderstand this error
+client:736 
+            
+            
+           GET https://0.0.0.0:3000/ net::ERR_ADDRESS_INVALID
+ping @ client:736
+waitForSuccessfulPing @ client:755Understand this error
+client:736 
+            
+            
+           GET https://0.0.0.0:3000/ net::ERR_ADDRESS_INVALID
+ping @ client:736
+waitForSuccessfulPing @ client:755Understand this error
+client:736 
+            
+            
+           GET https://0.0.0.0:3000/ net::ERR_ADDRESS_INVALID
+ping @ client:736
+waitForSuccessfulPing @ client:755Understand this error
+client:736 
+            
+            
+           GET https://0.0.0.0:3000/ net::ERR_ADDRESS_INVALID
+ping @ client:736
+waitForSuccessfulPing @ client:755Understand this error
+client:736 
+            
+            
+           GET https://0.0.0.0:3000/ net::ERR_ADDRESS_INVALID
