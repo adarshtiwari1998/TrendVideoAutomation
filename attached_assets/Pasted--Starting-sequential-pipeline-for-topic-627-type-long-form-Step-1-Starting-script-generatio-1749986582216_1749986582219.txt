@@ -1,0 +1,100 @@
+🎬 Starting sequential pipeline for topic 627, type: long_form
+📝 Step 1: Starting script generation...
+🤖 Generating long_form script for topic: AI-Powered Protein Folding Algorithm Predicts Structures with Unprecedented Accuracy
+📝 Created prompt, calling Gemini API...
+11:22:17 AM [express] GET /api/dashboard/active-pipeline 304 in 468ms :: {"active":[],"scheduled":[],…
+11:22:21 AM [express] GET /api/dashboard/active-pipeline 200 in 468ms :: {"active":[],"scheduled":[],…
+11:22:23 AM [express] GET /api/dashboard/active-pipeline 304 in 472ms :: {"active":[],"scheduled":[],…
+11:22:24 AM [express] GET /api/dashboard/active-pipeline 304 in 470ms :: {"active":[],"scheduled":[],…
+11:22:26 AM [express] GET /api/dashboard/active-pipeline 304 in 475ms :: {"active":[],"scheduled":[],…
+11:22:27 AM [express] GET /api/dashboard/active-pipeline 304 in 469ms :: {"active":[],"scheduled":[],…
+✅ Gemini API response received, length: 4038
+📄 Using plain text response
+11:22:30 AM [express] GET /api/dashboard/active-pipeline 200 in 1770ms :: {"active":[{"id":75,"title"…
+🎵 Step 2: Starting audio generation...
+11:22:32 AM [express] GET /api/dashboard/active-pipeline 200 in 472ms :: {"active":[{"id":75,"title":…
+11:22:33 AM [express] GET /api/dashboard/active-pipeline 304 in 472ms :: {"active":[{"id":75,"title":…
+🎬 Step 3: Starting video creation...
+11:22:35 AM [express] GET /api/dashboard/active-pipeline 200 in 472ms :: {"active":[{"id":75,"title":…
+✅ FFmpeg is already installed
+🎬 Starting video creation for job 75
+🔄 Using fallback video creation method
+🔄 Creating fallback video: 600s duration for long_form
+🎵 Generating audio for job 75...
+🎤 Generating speech with Google Cloud TTS - voice: en-IN-Neural2-D
+⚠️ Google Cloud TTS failed, using fallback method: 3 INVALID_ARGUMENT: Requested male voice, but voice en-IN-Neural2-D is a female voice.
+🔄 Generating fallback audio with synthetic TTS...
+FFmpeg audio generation failed: require is not defined
+✅ Minimal MP3 audio file created: /home/runner/workspace/temp/videos/audio_75.mp3
+Audio file validation failed, recreating...
+11:22:37 AM [express] GET /api/dashboard/active-pipeline 304 in 482ms :: {"active":[{"id":75,"title":…
+11:22:38 AM [express] GET /api/dashboard/recent-activity 200 in 241ms :: [{"id":1354,"type":"generati…
+✅ Created fallback audio: /home/runner/workspace/temp/videos/fallback_audio_75.mp3 (4051KB, 259.20000000000005s)
+Professional video creation failed: Error: Command failed: ffprobe -v quiet -show_entries format=duration -of csv=p=0 "/home/runner/workspace/temp/videos/fallback_audio_75.mp3"
+/bin/sh: 1: ffprobe: not found
+
+    at genericNodeError (node:internal/errors:984:15)
+    at wrappedFn (node:internal/errors:538:14)
+    at ChildProcess.exithandler (node:child_process:422:12)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1104:16)
+    at Socket.<anonymous> (node:internal/child_process:456:11)
+    at Socket.emit (node:events:518:28)
+    at Pipe.<anonymous> (node:net:343:12) {
+  code: 127,
+  killed: false,
+  signal: null,
+  cmd: 'ffprobe -v quiet -show_entries format=duration -of csv=p=0 "/home/runner/workspace/temp/videos/fallback_audio_75.mp3"',
+  stdout: '',
+  stderr: '/bin/sh: 1: ffprobe: not found\n'
+}
+🎤 Generating speech with Google Cloud TTS - voice: en-IN-Neural2-D
+⚠️ Google Cloud TTS failed, using fallback method: 3 INVALID_ARGUMENT: Requested male voice, but voice en-IN-Neural2-D is a female voice.
+🔄 Generating fallback audio with synthetic TTS...
+FFmpeg audio generation failed: require is not defined
+✅ Minimal MP3 audio file created: /home/runner/workspace/temp/videos/audio_75.mp3
+Audio file validation failed, recreating...
+11:22:38 AM [express] GET /api/dashboard/scheduled-videos 200 in 474ms :: {"scheduled":[],"processing…
+11:22:38 AM [express] GET /api/dashboard/stats 304 in 730ms :: {"todayVideos":0,"todayShorts":0,"succ…
+11:22:40 AM [express] GET /api/dashboard/active-pipeline 304 in 1903ms :: {"active":[{"id":75,"title"…
+✅ Created fallback audio: /home/runner/workspace/temp/videos/fallback_audio_75.mp3 (4051KB, 259.20000000000005s)
+Basic video with audio creation failed: Error: Command failed: ffprobe -v quiet -show_entries format=duration -of csv=p=0 "/home/runner/workspace/temp/videos/fallback_audio_75.mp3"
+/bin/sh: 1: ffprobe: not found
+
+    at genericNodeError (node:internal/errors:984:15)
+    at wrappedFn (node:internal/errors:538:14)
+    at ChildProcess.exithandler (node:child_process:422:12)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1104:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5) {
+  code: 127,
+  killed: false,
+  signal: null,
+  cmd: 'ffprobe -v quiet -show_entries format=duration -of csv=p=0 "/home/runner/workspace/temp/videos/fallback_audio_75.mp3"',
+  stdout: '',
+  stderr: '/bin/sh: 1: ffprobe: not found\n'
+}
+📝 Created text-only content as final fallback
+✅ Video creation completed: /home/runner/workspace/temp/videos/text_only_75.txt
+🔄 Step 4: Starting MP4 conversion...
+11:22:41 AM [express] GET /api/dashboard/active-pipeline 304 in 492ms :: {"active":[{"id":75,"title":…
+11:22:43 AM [express] GET /api/dashboard/active-pipeline 200 in 472ms :: {"active":[{"id":75,"title":…
+🖼️ Step 5: Starting thumbnail generation...
+11:22:44 AM [express] GET /api/dashboard/active-pipeline 200 in 460ms :: {"active":[{"id":75,"title":…
+🖼️ Creating professional YouTube thumbnail for: BREAKING: AI-Powered Protein Folding Algorithm Predicts Structures with Unprecedented Accuracy - Full Story Explained
+🎨 Creating professional YouTube-style thumbnail...
+✅ Professional gradient thumbnail created
+✅ Thumbnail validated for YouTube compatibility
+✅ YouTube-compatible thumbnail created: /home/runner/workspace/generated/thumbnails/75_youtube_thumbnail.jpg
+☁️ Step 6: Starting Google Drive upload...
+11:22:46 AM [express] GET /api/dashboard/active-pipeline 200 in 462ms :: {"active":[{"id":75,"title":…
+11:22:48 AM [express] GET /api/dashboard/active-pipeline 304 in 460ms :: {"active":[{"id":75,"title":…
+11:22:49 AM [express] GET /api/dashboard/active-pipeline 304 in 461ms :: {"active":[{"id":75,"title":…
+Creating real file stream for: /home/runner/workspace/temp/videos/text_only_75.txt
+Creating real file stream for: /home/runner/workspace/generated/thumbnails/75_youtube_thumbnail.jpg
+11:22:51 AM [express] GET /api/dashboard/active-pipeline 304 in 470ms :: {"active":[{"id":75,"title":…
+11:22:52 AM [express] GET /api/dashboard/active-pipeline 304 in 462ms :: {"active":[{"id":75,"title":…
+11:22:54 AM [express] GET /api/dashboard/active-pipeline 304 in 461ms :: {"active":[{"id":75,"title":…
+📅 Step 7: Scheduling YouTube upload...
+11:22:56 AM [express] GET /api/dashboard/active-pipeline 200 in 487ms :: {"active":[{"id":75,"title":…
+✅ Pipeline completed successfully for job 75. Scheduled for: Sun Jun 15 2025 13:00:00 GMT+0000 (Coordinated 
