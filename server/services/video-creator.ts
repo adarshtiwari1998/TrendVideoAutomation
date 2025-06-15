@@ -537,12 +537,12 @@ export class ProfessionalVideoCreator {
     // Combine all scene texts into one
     const allText = scenes.map(scene => scene.segments[0].text).join(' ');
     
-    // Clean text for FFmpeg safety
+    // Ultra-safe text cleaning - remove everything except letters, numbers, spaces
     const safeText = allText
-      .replace(/['"]/g, '')
-      .replace(/[()]/g, '')
-      .replace(/[&|<>$`\\]/g, '')
-      .substring(0, 100) + '...';
+      .replace(/[^a-zA-Z0-9\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .substring(0, 50) || 'Video Content';
     
     // Single, simple FFmpeg command
     const command = `ffmpeg -loop 1 -i "${backgroundImage}" ` +
@@ -555,12 +555,53 @@ export class ProfessionalVideoCreator {
       `-pix_fmt yuv420p "${outputPath}" -y`;
     
     console.log('🎬 Executing ultra-simple video command...');
-    await execAsync(command);
+    console.log(`Command: ${command}`);
     
-    const stats = await fs.stat(outputPath);
-    console.log(`✅ Ultra-simple video rendered: ${Math.round(stats.size / 1024)}KB`);
+    try {
+      // Add timeout to prevent hanging
+      await execAsync(command, { timeout: 60000 }); // 60 second timeout
+      
+      // Verify output file exists and has content
+      const stats = await fs.stat(outputPath);
+      if (stats.size < 1000) {
+        throw new Error(`Output file too small: ${stats.size} bytes`);
+      }
+      
+      console.log(`✅ Ultra-simple video rendered: ${Math.round(stats.size / 1024)}KB`);
+      return outputPath;
+      
+    } catch (error) {
+      console.error('❌ Ultra-simple video rendering failed:', error.message);
+      
+      // Try even simpler approach - just create a static video
+      return await this.createFallbackVideo(duration, isShort, jobId, allText);
+    }
+  }
+
+  private async createFallbackVideo(duration: number, isShort: boolean, jobId: number, text: string): Promise<string> {
+    const outputPath = path.join(this.outputDir, `fallback_video_${jobId}.mp4`);
+    const dimensions = isShort ? '1080:1920' : '1920:1080';
     
-    return outputPath;
+    console.log('🔧 Creating fallback video with minimal settings...');
+    
+    try {
+      // Create the most basic video possible - just a colored background
+      const fallbackCommand = `ffmpeg -f lavfi -i "color=c=#1a365d:size=${dimensions}" ` +
+        `-t ${Math.min(duration, 30)} -r 15 -c:v libx264 -preset ultrafast -crf 30 ` +
+        `-pix_fmt yuv420p "${outputPath}" -y`;
+      
+      await execAsync(fallbackCommand, { timeout: 30000 });
+      
+      const stats = await fs.stat(outputPath);
+      if (stats.size > 500) {
+        console.log(`✅ Fallback video created: ${Math.round(stats.size / 1024)}KB`);
+        return outputPath;
+      }
+    } catch (fallbackError) {
+      console.error('❌ Even fallback video creation failed:', fallbackError.message);
+    }
+    
+    throw new Error('All video creation methods failed');
   }
 
   private async renderLongVideoSimple(
