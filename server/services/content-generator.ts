@@ -456,11 +456,36 @@ Thank you for joining me today, and I'll see you in the next video where we'll c
     console.log(`📋 Topic title: ${selectedTopic.title}`);
     console.log(`🏷️ Category: ${selectedTopic.category}`);
 
-    const script = await this.generateScript(selectedTopic, videoType);
-    const title = this.generateVideoTitle(selectedTopic, videoType);
+    // Use full extracted content if available from trending_data
+    let originalContent = selectedTopic.description;
+    let hasFullContent = false;
 
-    // Store original content properly in job metadata
-    const originalContent = selectedTopic.description || `Topic: ${selectedTopic.title}\nCategory: ${selectedTopic.category}\nDetails: This trending topic was identified for content creation.`;
+    try {
+      if (selectedTopic.trending_data && typeof selectedTopic.trending_data === 'object') {
+        const trendingData = selectedTopic.trending_data as any;
+        if (trendingData.fullContent && trendingData.fullContent.length > originalContent.length) {
+          originalContent = trendingData.fullContent;
+          hasFullContent = true;
+          console.log(`📰 Using full extracted content: ${originalContent.length} characters`);
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ Could not parse trending_data, using description');
+    }
+
+    if (!hasFullContent) {
+      console.log(`📄 Using topic description: ${originalContent.length} characters`);
+    }
+
+    // Create enhanced topic object with full content for script generation
+    const enhancedTopic = {
+      ...selectedTopic,
+      description: originalContent,
+      hasFullContent: hasFullContent
+    };
+
+    const script = await this.generateScript(enhancedTopic, videoType);
+    const title = this.generateVideoTitle(enhancedTopic, videoType);
 
     const job = await storage.createContentJob({
       topicId,
@@ -473,6 +498,7 @@ Thank you for joining me today, and I'll see you in the next video where we'll c
         topic: selectedTopic.title,
         category: selectedTopic.category,
         originalContent: originalContent,
+        hasFullContent: hasFullContent,
         targetDuration: videoType === 'long_form' ? '10-15 minutes' : '45-60 seconds'
       }
     });
@@ -481,7 +507,7 @@ Thank you for joining me today, and I'll see you in the next video where we'll c
     const wordCount = script.split(' ').filter(w => w.length > 2).length;
     const estimatedDuration = wordCount * 60 / 150; // ~150 words per minute
 
-    console.log(`✅ Storing original content: ${originalContent.length} characters`);
+    console.log(`✅ Storing original content: ${originalContent.length} characters (${hasFullContent ? 'FULL' : 'SNIPPET'})`);
     console.log(`✅ Generated script: ${script.length} characters`);
 
     // Create pipeline log for script generation completion with both original and final content
@@ -489,19 +515,21 @@ Thank you for joining me today, and I'll see you in the next video where we'll c
       jobId: job.id,
       step: 'script_generation',
       status: 'completed',
-      message: `Script generation completed successfully`,
-      details: `Generated ${wordCount} words for ${videoType} video from original content`,
+      message: `Script generation completed successfully${hasFullContent ? ' (using full extracted content)' : ' (using snippet content)'}`,
+      details: `Generated ${wordCount} words for ${videoType} video from ${hasFullContent ? 'full article content' : 'topic description'}`,
       progress: 100,
       metadata: {
         finalScript: script,
         originalContent: originalContent,
+        hasFullContent: hasFullContent,
         wordCount,
         estimatedDuration,
         topicTitle: selectedTopic.title,
         contentTransformation: {
           originalLength: originalContent.length,
           finalLength: script.length,
-          expansion: script.length > originalContent.length ? 'expanded' : 'condensed'
+          expansion: script.length > originalContent.length ? 'expanded' : 'condensed',
+          contentType: hasFullContent ? 'full_article' : 'snippet'
         }
       }
     });
@@ -509,7 +537,7 @@ Thank you for joining me today, and I'll see you in the next video where we'll c
     await storage.createActivityLog({
       type: 'generation',
       title: 'Script Generated Successfully',
-      description: `Created ${videoType} script for "${selectedTopic.title}"`,
+      description: `Created ${videoType} script for "${selectedTopic.title}"${hasFullContent ? ' (full content)' : ' (snippet)'}`,
       status: 'success',
       metadata: { 
         jobId: job.id, 
@@ -517,6 +545,7 @@ Thank you for joining me today, and I'll see you in the next video where we'll c
         topicTitle: selectedTopic.title,
         finalScript: script,
         originalContent: originalContent,
+        hasFullContent: hasFullContent,
         wordCount,
         estimatedDuration
       }

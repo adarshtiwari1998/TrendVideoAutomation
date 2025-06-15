@@ -2,6 +2,8 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { google } from 'googleapis';
 import { storage } from '../storage';
 import type { InsertTrendingTopic } from '@shared/schema';
+import * as cheerio from 'cheerio';
+import fetch from 'node-fetch';
 
 export class TrendingAnalyzer {
   private gemini: GoogleGenerativeAI;
@@ -222,9 +224,14 @@ export class TrendingAnalyzer {
 
       if (response.data.items) {
         for (const item of response.data.items) {
+          console.log(`🔍 Extracting full content from: ${item.link}`);
+          
+          // Extract full content from the article
+          const fullContent = await this.extractFullArticleContent(item.link, item.snippet);
+          
           topics.push({
             title: item.title,
-            description: item.snippet || 'Trending news article',
+            description: fullContent.description,
             searchVolume: Math.floor(Math.random() * 3000000) + 1000000, // Estimated
             priority: 'high',
             category: 'global_news',
@@ -235,18 +242,119 @@ export class TrendingAnalyzer {
               timeframe: 'last_24_hours',
               sourceUrl: item.link,
               realTime: true,
-              dataFreshness: 'current'
+              dataFreshness: 'current',
+              fullContent: fullContent.fullText,
+              extractedAt: currentDate.toISOString()
             },
             status: 'pending'
           });
         }
       }
 
-      console.log(`🔍 Found ${topics.length} trending search results for: ${query}`);
+      console.log(`🔍 Found ${topics.length} trending search results with full content for: ${query}`);
       return topics;
     } catch (error) {
       console.error('❌ Google Search API error:', error);
       return [];
+    }
+  }
+
+  private async extractFullArticleContent(url: string, fallbackSnippet: string): Promise<{ description: string; fullText: string }> {
+    try {
+      console.log(`📄 Fetching full content from: ${url}`);
+      
+      // Set timeout and headers to mimic browser request
+      const response = await fetch(url, {
+        timeout: 10000,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.5',
+          'Accept-Encoding': 'gzip, deflate',
+          'DNT': '1',
+          'Connection': 'keep-alive'
+        }
+      });
+
+      if (!response.ok) {
+        console.warn(`⚠️ Failed to fetch ${url}: ${response.status}`);
+        return { description: fallbackSnippet, fullText: fallbackSnippet };
+      }
+
+      const html = await response.text();
+      const $ = cheerio.load(html);
+
+      // Remove unwanted elements
+      $('script, style, nav, header, footer, aside, .advertisement, .ads, .social-share').remove();
+
+      // Try multiple selectors to find article content
+      const contentSelectors = [
+        'article',
+        '[role="main"]',
+        '.article-content',
+        '.post-content', 
+        '.entry-content',
+        '.content',
+        '.story-body',
+        '.article-body',
+        'main',
+        '.main-content',
+        '#main-content',
+        '.article-text',
+        '.story-content'
+      ];
+
+      let extractedText = '';
+      let foundContent = false;
+
+      for (const selector of contentSelectors) {
+        const element = $(selector);
+        if (element.length > 0) {
+          // Extract text from paragraphs within the content area
+          const paragraphs = element.find('p').map((_, el) => $(el).text().trim()).get();
+          if (paragraphs.length > 0) {
+            extractedText = paragraphs.join(' ').trim();
+            if (extractedText.length > 200) { // Ensure we have substantial content
+              foundContent = true;
+              break;
+            }
+          }
+        }
+      }
+
+      // Fallback: extract all paragraphs if specific selectors didn't work
+      if (!foundContent) {
+        const allParagraphs = $('p').map((_, el) => $(el).text().trim()).get();
+        extractedText = allParagraphs.filter(p => p.length > 20).join(' ').trim();
+      }
+
+      // Clean up the extracted text
+      extractedText = extractedText
+        .replace(/\s+/g, ' ')
+        .replace(/\n+/g, ' ')
+        .trim();
+
+      // If we have substantial content, use it; otherwise fall back to snippet
+      if (extractedText.length > 100) {
+        console.log(`✅ Extracted ${extractedText.length} characters from ${url}`);
+        
+        // Create a good description (first 500 chars) and keep full text
+        const description = extractedText.length > 500 
+          ? extractedText.substring(0, 500) + '...'
+          : extractedText;
+
+        return {
+          description: description,
+          fullText: extractedText
+        };
+      } else {
+        console.warn(`⚠️ Insufficient content extracted from ${url}, using fallback`);
+        return { description: fallbackSnippet, fullText: fallbackSnippet };
+      }
+
+    } catch (error) {
+      console.error(`❌ Error extracting content from ${url}:`, error.message);
+      return { description: fallbackSnippet, fullText: fallbackSnippet };
     }
   }
 
