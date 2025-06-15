@@ -1,0 +1,289 @@
+🎨 Creating professional thumbnail with FFmpeg...
+FFmpeg thumbnail creation failed: Error: Command failed: ffmpeg -i "/home/runner/workspace/generated/backgrounds/global_news_bg.jpg" -vf "scale=1280x720:force_original_aspect_ratio=increase,crop=1280x720,drawtext=text='SCIENCEDAILY YOUR SOURCE FOR THE LATEST RESEARCH NEWS COM...!':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=60:fontcolor=#ffffff:x=(w-text_w)/2:y=144:bordercolor=#000000:borderw=4:shadowcolor=black:shadowx=2:shadowy=2,drawbox=x=0:y=124:w=w:h=100:color=#1f2937@0.7:t=fill" -frames:v 1 -q:v 2 "/home/runner/workspace/generated/thumbnails/59_youtube_thumbnail.jpg" -y
+ffmpeg version 6.0-static https://johnvansickle.com/ffmpeg/  Copyright (c) 2000-2023 the FFmpeg developers
+  built with gcc 8 (Debian 8.3.0-6)
+  configuration: --enable-gpl --enable-version3 --enable-static --disable-debug --disable-ffplay --disable-indev=sndio --disable-outdev=sndio --cc=gcc --enable-fontconfig --enable-frei0r --enable-gnutls --enable-gmp --enable-libgme --enable-gray --enable-libaom --enable-libfribidi --enable-libass --enable-libvmaf --enable-libfreetype --enable-libmp3lame --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libopenjpeg --enable-librubberband --enable-libsoxr --enable-libspeex --enable-libsrt --enable-libvorbis --enable-libopus --enable-libtheora --enable-libvidstab --enable-libvo-amrwbenc --enable-libvpx --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxml2 --enable-libdav1d --enable-libxvid --enable-libzvbi --enable-libzimg
+  libavutil      58.  2.100 / 58.  2.100
+  libavcodec     60.  3.100 / 60.  3.100
+  libavformat    60.  3.100 / 60.  3.100
+  libavdevice    60.  1.100 / 60.  1.100
+  libavfilter     9.  3.100 /  9.  3.100
+  libswscale      7.  1.100 /  7.  1.100
+  libswresample   4. 10.100 /  4. 10.100
+  libpostproc    57.  1.100 / 57.  1.100
+[mjpeg @ 0x78b1240] dqt: len 65 is too large
+[image2 @ 0x78af9c0] Could not find codec parameters for stream 0 (Video: mjpeg, none(bt470bg/unknown/unknown)): unspecified size
+Consider increasing the value for the 'analyzeduration' (0) and 'probesize' (5000000) options
+Input #0, image2, from '/home/runner/workspace/generated/backgrounds/global_news_bg.jpg':
+  Duration: 00:00:00.04, start: 0.000000, bitrate: 15 kb/s
+  Stream #0:0: Video: mjpeg, none(bt470bg/unknown/unknown), 25 fps, 25 tbr, 25 tbn
+Stream mapping:
+  Stream #0:0 -> #0:0 (mjpeg (native) -> mjpeg (native))
+Press [q] to stop, [?] for help
+[mjpeg @ 0x78b8a40] dqt: len 65 is too large
+Error while decoding stream #0:0: Invalid data found when processing input
+Cannot determine format of input stream 0:0 after EOF
+Error marking filters as finished
+Conversion failed!
+
+    at genericNodeError (node:internal/errors:984:15)
+    at wrappedFn (node:internal/errors:538:14)
+    at checkExecSyncError (node:child_process:891:11)
+    at execSync (node:child_process:963:15)
+    at ThumbnailGenerator.createProfessionalThumbnail (/home/runner/workspace/server/services/thumbnail-generator.ts:117:7)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async ThumbnailGenerator.createYouTubeThumbnail (/home/runner/workspace/server/services/thumbnail-generator.ts:72:5)
+    at async ThumbnailGenerator.generateThumbnail (/home/runner/workspace/server/services/thumbnail-generator.ts:30:29)
+    at async AutomationPipeline.processTrendingTopic (/home/runner/workspace/server/automation/pipeline.ts:91:29)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:199:19) {
+  status: 1,
+  signal: null,
+  output: [
+    null,
+    '',
+    'ffmpeg version 6.0-static https://johnvansickle.com/ffmpeg/  Copyright (c) 2000-2023 the FFmpeg developers\n' +
+      '  built with gcc 8 (Debian 8.3.0-6)\n' +
+      '  configuration: --enable-gpl --enable-version3 --enable-static --disable-debug --disable-ffplay --disable-indev=sndio --disable-outdev=sndio --cc=gcc --enable-fontconfig --enable-frei0r --enable-gnutls --enable-gmp --enable-libgme --enable-gray --enable-libaom --enable-libfribidi --enable-libass --enable-libvmaf --enable-libfreetype --enable-libmp3lame --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libopenjpeg --enable-librubberband --enable-libsoxr --enable-libspeex --enable-libsrt --enable-libvorbis --enable-libopus --enable-libtheora --enable-libvidstab --enable-libvo-amrwbenc --enable-libvpx --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxml2 --enable-libdav1d --enable-libxvid --enable-libzvbi --enable-libzimg\n' +
+      '  libavutil      58.  2.100 / 58.  2.100\n' +
+      '  libavcodec     60.  3.100 / 60.  3.100\n' +
+      '  libavformat    60.  3.100 / 60.  3.100\n' +
+      '  libavdevice    60.  1.100 / 60.  1.100\n' +
+      '  libavfilter     9.  3.100 /  9.  3.100\n' +
+      '  libswscale      7.  1.100 /  7.  1.100\n' +
+      '  libswresample   4. 10.100 /  4. 10.100\n' +
+      '  libpostproc    57.  1.100 / 57.  1.100\n' +
+      '[mjpeg @ 0x78b1240] dqt: len 65 is too large\n' +
+      '[image2 @ 0x78af9c0] Could not find codec parameters for stream 0 (Video: mjpeg, none(bt470bg/unknown/unknown)): unspecified size\n' +
+      "Consider increasing the value for the 'analyzeduration' (0) and 'probesize' (5000000) options\n" +
+      "Input #0, image2, from '/home/runner/workspace/generated/backgrounds/global_news_bg.jpg':\n" +
+      '  Duration: 00:00:00.04, start: 0.000000, bitrate: 15 kb/s\n' +
+      '  Stream #0:0: Video: mjpeg, none(bt470bg/unknown/unknown), 25 fps, 25 tbr, 25 tbn\n' +
+      'Stream mapping:\n' +
+      '  Stream #0:0 -> #0:0 (mjpeg (native) -> mjpeg (native))\n' +
+      'Press [q] to stop, [?] for help\n' +
+      '[mjpeg @ 0x78b8a40] dqt: len 65 is too large\n' +
+      'Error while decoding stream #0:0: Invalid data found when processing input\n' +
+      'Cannot determine format of input stream 0:0 after EOF\n' +
+      'Error marking filters as finished\n' +
+      'Conversion failed!\n'
+  ],
+  pid: 1245,
+  stdout: '',
+  stderr: 'ffmpeg version 6.0-static https://johnvansickle.com/ffmpeg/  Copyright (c) 2000-2023 the FFmpeg developers\n' +
+    '  built with gcc 8 (Debian 8.3.0-6)\n' +
+    '  configuration: --enable-gpl --enable-version3 --enable-static --disable-debug --disable-ffplay --disable-indev=sndio --disable-outdev=sndio --cc=gcc --enable-fontconfig --enable-frei0r --enable-gnutls --enable-gmp --enable-libgme --enable-gray --enable-libaom --enable-libfribidi --enable-libass --enable-libvmaf --enable-libfreetype --enable-libmp3lame --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libopenjpeg --enable-librubberband --enable-libsoxr --enable-libspeex --enable-libsrt --enable-libvorbis --enable-libopus --enable-libtheora --enable-libvidstab --enable-libvo-amrwbenc --enable-libvpx --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxml2 --enable-libdav1d --enable-libxvid --enable-libzvbi --enable-libzimg\n' +
+    '  libavutil      58.  2.100 / 58.  2.100\n' +
+    '  libavcodec     60.  3.100 / 60.  3.100\n' +
+    '  libavformat    60.  3.100 / 60.  3.100\n' +
+    '  libavdevice    60.  1.100 / 60.  1.100\n' +
+    '  libavfilter     9.  3.100 /  9.  3.100\n' +
+    '  libswscale      7.  1.100 /  7.  1.100\n' +
+    '  libswresample   4. 10.100 /  4. 10.100\n' +
+    '  libpostproc    57.  1.100 / 57.  1.100\n' +
+    '[mjpeg @ 0x78b1240] dqt: len 65 is too large\n' +
+    '[image2 @ 0x78af9c0] Could not find codec parameters for stream 0 (Video: mjpeg, none(bt470bg/unknown/unknown)): unspecified size\n' +
+    "Consider increasing the value for the 'analyzeduration' (0) and 'probesize' (5000000) options\n" +
+    "Input #0, image2, from '/home/runner/workspace/generated/backgrounds/global_news_bg.jpg':\n" +
+    '  Duration: 00:00:00.04, start: 0.000000, bitrate: 15 kb/s\n' +
+    '  Stream #0:0: Video: mjpeg, none(bt470bg/unknown/unknown), 25 fps, 25 tbr, 25 tbn\n' +
+    'Stream mapping:\n' +
+    '  Stream #0:0 -> #0:0 (mjpeg (native) -> mjpeg (native))\n' +
+    'Press [q] to stop, [?] for help\n' +
+    '[mjpeg @ 0x78b8a40] dqt: len 65 is too large\n' +
+    'Error while decoding stream #0:0: Invalid data found when processing input\n' +
+    'Cannot determine format of input stream 0:0 after EOF\n' +
+    'Error marking filters as finished\n' +
+    'Conversion failed!\n'
+}
+Thumbnail generation error: Error: Command failed: ffmpeg -i "/home/runner/workspace/generated/backgrounds/global_news_bg.jpg" -vf "scale=1280x720:force_original_aspect_ratio=increase,crop=1280x720,drawtext=text='SCIENCEDAILY YOUR SOURCE FOR THE LATEST RESEARCH NEWS COM...!':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=60:fontcolor=#ffffff:x=(w-text_w)/2:y=144:bordercolor=#000000:borderw=4:shadowcolor=black:shadowx=2:shadowy=2,drawbox=x=0:y=124:w=w:h=100:color=#1f2937@0.7:t=fill" -frames:v 1 -q:v 2 "/home/runner/workspace/generated/thumbnails/59_youtube_thumbnail.jpg" -y
+ffmpeg version 6.0-static https://johnvansickle.com/ffmpeg/  Copyright (c) 2000-2023 the FFmpeg developers
+  built with gcc 8 (Debian 8.3.0-6)
+  configuration: --enable-gpl --enable-version3 --enable-static --disable-debug --disable-ffplay --disable-indev=sndio --disable-outdev=sndio --cc=gcc --enable-fontconfig --enable-frei0r --enable-gnutls --enable-gmp --enable-libgme --enable-gray --enable-libaom --enable-libfribidi --enable-libass --enable-libvmaf --enable-libfreetype --enable-libmp3lame --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libopenjpeg --enable-librubberband --enable-libsoxr --enable-libspeex --enable-libsrt --enable-libvorbis --enable-libopus --enable-libtheora --enable-libvidstab --enable-libvo-amrwbenc --enable-libvpx --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxml2 --enable-libdav1d --enable-libxvid --enable-libzvbi --enable-libzimg
+  libavutil      58.  2.100 / 58.  2.100
+  libavcodec     60.  3.100 / 60.  3.100
+  libavformat    60.  3.100 / 60.  3.100
+  libavdevice    60.  1.100 / 60.  1.100
+  libavfilter     9.  3.100 /  9.  3.100
+  libswscale      7.  1.100 /  7.  1.100
+  libswresample   4. 10.100 /  4. 10.100
+  libpostproc    57.  1.100 / 57.  1.100
+[mjpeg @ 0x78b1240] dqt: len 65 is too large
+[image2 @ 0x78af9c0] Could not find codec parameters for stream 0 (Video: mjpeg, none(bt470bg/unknown/unknown)): unspecified size
+Consider increasing the value for the 'analyzeduration' (0) and 'probesize' (5000000) options
+Input #0, image2, from '/home/runner/workspace/generated/backgrounds/global_news_bg.jpg':
+  Duration: 00:00:00.04, start: 0.000000, bitrate: 15 kb/s
+  Stream #0:0: Video: mjpeg, none(bt470bg/unknown/unknown), 25 fps, 25 tbr, 25 tbn
+Stream mapping:
+  Stream #0:0 -> #0:0 (mjpeg (native) -> mjpeg (native))
+Press [q] to stop, [?] for help
+[mjpeg @ 0x78b8a40] dqt: len 65 is too large
+Error while decoding stream #0:0: Invalid data found when processing input
+Cannot determine format of input stream 0:0 after EOF
+Error marking filters as finished
+Conversion failed!
+
+    at genericNodeError (node:internal/errors:984:15)
+    at wrappedFn (node:internal/errors:538:14)
+    at checkExecSyncError (node:child_process:891:11)
+    at execSync (node:child_process:963:15)
+    at ThumbnailGenerator.createProfessionalThumbnail (/home/runner/workspace/server/services/thumbnail-generator.ts:117:7)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async ThumbnailGenerator.createYouTubeThumbnail (/home/runner/workspace/server/services/thumbnail-generator.ts:72:5)
+    at async ThumbnailGenerator.generateThumbnail (/home/runner/workspace/server/services/thumbnail-generator.ts:30:29)
+    at async AutomationPipeline.processTrendingTopic (/home/runner/workspace/server/automation/pipeline.ts:91:29)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:199:19) {
+  status: 1,
+  signal: null,
+  output: [
+    null,
+    '',
+    'ffmpeg version 6.0-static https://johnvansickle.com/ffmpeg/  Copyright (c) 2000-2023 the FFmpeg developers\n' +
+      '  built with gcc 8 (Debian 8.3.0-6)\n' +
+      '  configuration: --enable-gpl --enable-version3 --enable-static --disable-debug --disable-ffplay --disable-indev=sndio --disable-outdev=sndio --cc=gcc --enable-fontconfig --enable-frei0r --enable-gnutls --enable-gmp --enable-libgme --enable-gray --enable-libaom --enable-libfribidi --enable-libass --enable-libvmaf --enable-libfreetype --enable-libmp3lame --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libopenjpeg --enable-librubberband --enable-libsoxr --enable-libspeex --enable-libsrt --enable-libvorbis --enable-libopus --enable-libtheora --enable-libvidstab --enable-libvo-amrwbenc --enable-libvpx --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxml2 --enable-libdav1d --enable-libxvid --enable-libzvbi --enable-libzimg\n' +
+      '  libavutil      58.  2.100 / 58.  2.100\n' +
+      '  libavcodec     60.  3.100 / 60.  3.100\n' +
+      '  libavformat    60.  3.100 / 60.  3.100\n' +
+      '  libavdevice    60.  1.100 / 60.  1.100\n' +
+      '  libavfilter     9.  3.100 /  9.  3.100\n' +
+      '  libswscale      7.  1.100 /  7.  1.100\n' +
+      '  libswresample   4. 10.100 /  4. 10.100\n' +
+      '  libpostproc    57.  1.100 / 57.  1.100\n' +
+      '[mjpeg @ 0x78b1240] dqt: len 65 is too large\n' +
+      '[image2 @ 0x78af9c0] Could not find codec parameters for stream 0 (Video: mjpeg, none(bt470bg/unknown/unknown)): unspecified size\n' +
+      "Consider increasing the value for the 'analyzeduration' (0) and 'probesize' (5000000) options\n" +
+      "Input #0, image2, from '/home/runner/workspace/generated/backgrounds/global_news_bg.jpg':\n" +
+      '  Duration: 00:00:00.04, start: 0.000000, bitrate: 15 kb/s\n' +
+      '  Stream #0:0: Video: mjpeg, none(bt470bg/unknown/unknown), 25 fps, 25 tbr, 25 tbn\n' +
+      'Stream mapping:\n' +
+      '  Stream #0:0 -> #0:0 (mjpeg (native) -> mjpeg (native))\n' +
+      'Press [q] to stop, [?] for help\n' +
+      '[mjpeg @ 0x78b8a40] dqt: len 65 is too large\n' +
+      'Error while decoding stream #0:0: Invalid data found when processing input\n' +
+      'Cannot determine format of input stream 0:0 after EOF\n' +
+      'Error marking filters as finished\n' +
+      'Conversion failed!\n'
+  ],
+  pid: 1245,
+  stdout: '',
+  stderr: 'ffmpeg version 6.0-static https://johnvansickle.com/ffmpeg/  Copyright (c) 2000-2023 the FFmpeg developers\n' +
+    '  built with gcc 8 (Debian 8.3.0-6)\n' +
+    '  configuration: --enable-gpl --enable-version3 --enable-static --disable-debug --disable-ffplay --disable-indev=sndio --disable-outdev=sndio --cc=gcc --enable-fontconfig --enable-frei0r --enable-gnutls --enable-gmp --enable-libgme --enable-gray --enable-libaom --enable-libfribidi --enable-libass --enable-libvmaf --enable-libfreetype --enable-libmp3lame --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libopenjpeg --enable-librubberband --enable-libsoxr --enable-libspeex --enable-libsrt --enable-libvorbis --enable-libopus --enable-libtheora --enable-libvidstab --enable-libvo-amrwbenc --enable-libvpx --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxml2 --enable-libdav1d --enable-libxvid --enable-libzvbi --enable-libzimg\n' +
+    '  libavutil      58.  2.100 / 58.  2.100\n' +
+    '  libavcodec     60.  3.100 / 60.  3.100\n' +
+    '  libavformat    60.  3.100 / 60.  3.100\n' +
+    '  libavdevice    60.  1.100 / 60.  1.100\n' +
+    '  libavfilter     9.  3.100 /  9.  3.100\n' +
+    '  libswscale      7.  1.100 /  7.  1.100\n' +
+    '  libswresample   4. 10.100 /  4. 10.100\n' +
+    '  libpostproc    57.  1.100 / 57.  1.100\n' +
+    '[mjpeg @ 0x78b1240] dqt: len 65 is too large\n' +
+    '[image2 @ 0x78af9c0] Could not find codec parameters for stream 0 (Video: mjpeg, none(bt470bg/unknown/unknown)): unspecified size\n' +
+    "Consider increasing the value for the 'analyzeduration' (0) and 'probesize' (5000000) options\n" +
+    "Input #0, image2, from '/home/runner/workspace/generated/backgrounds/global_news_bg.jpg':\n" +
+    '  Duration: 00:00:00.04, start: 0.000000, bitrate: 15 kb/s\n' +
+    '  Stream #0:0: Video: mjpeg, none(bt470bg/unknown/unknown), 25 fps, 25 tbr, 25 tbn\n' +
+    'Stream mapping:\n' +
+    '  Stream #0:0 -> #0:0 (mjpeg (native) -> mjpeg (native))\n' +
+    'Press [q] to stop, [?] for help\n' +
+    '[mjpeg @ 0x78b8a40] dqt: len 65 is too large\n' +
+    'Error while decoding stream #0:0: Invalid data found when processing input\n' +
+    'Cannot determine format of input stream 0:0 after EOF\n' +
+    'Error marking filters as finished\n' +
+    'Conversion failed!\n'
+}
+Pipeline error: Error: Command failed: ffmpeg -i "/home/runner/workspace/generated/backgrounds/global_news_bg.jpg" -vf "scale=1280x720:force_original_aspect_ratio=increase,crop=1280x720,drawtext=text='SCIENCEDAILY YOUR SOURCE FOR THE LATEST RESEARCH NEWS COM...!':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:fontsize=60:fontcolor=#ffffff:x=(w-text_w)/2:y=144:bordercolor=#000000:borderw=4:shadowcolor=black:shadowx=2:shadowy=2,drawbox=x=0:y=124:w=w:h=100:color=#1f2937@0.7:t=fill" -frames:v 1 -q:v 2 "/home/runner/workspace/generated/thumbnails/59_youtube_thumbnail.jpg" -y
+ffmpeg version 6.0-static https://johnvansickle.com/ffmpeg/  Copyright (c) 2000-2023 the FFmpeg developers
+  built with gcc 8 (Debian 8.3.0-6)
+  configuration: --enable-gpl --enable-version3 --enable-static --disable-debug --disable-ffplay --disable-indev=sndio --disable-outdev=sndio --cc=gcc --enable-fontconfig --enable-frei0r --enable-gnutls --enable-gmp --enable-libgme --enable-gray --enable-libaom --enable-libfribidi --enable-libass --enable-libvmaf --enable-libfreetype --enable-libmp3lame --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libopenjpeg --enable-librubberband --enable-libsoxr --enable-libspeex --enable-libsrt --enable-libvorbis --enable-libopus --enable-libtheora --enable-libvidstab --enable-libvo-amrwbenc --enable-libvpx --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxml2 --enable-libdav1d --enable-libxvid --enable-libzvbi --enable-libzimg
+  libavutil      58.  2.100 / 58.  2.100
+  libavcodec     60.  3.100 / 60.  3.100
+  libavformat    60.  3.100 / 60.  3.100
+  libavdevice    60.  1.100 / 60.  1.100
+  libavfilter     9.  3.100 /  9.  3.100
+  libswscale      7.  1.100 /  7.  1.100
+  libswresample   4. 10.100 /  4. 10.100
+  libpostproc    57.  1.100 / 57.  1.100
+[mjpeg @ 0x78b1240] dqt: len 65 is too large
+[image2 @ 0x78af9c0] Could not find codec parameters for stream 0 (Video: mjpeg, none(bt470bg/unknown/unknown)): unspecified size
+Consider increasing the value for the 'analyzeduration' (0) and 'probesize' (5000000) options
+Input #0, image2, from '/home/runner/workspace/generated/backgrounds/global_news_bg.jpg':
+  Duration: 00:00:00.04, start: 0.000000, bitrate: 15 kb/s
+  Stream #0:0: Video: mjpeg, none(bt470bg/unknown/unknown), 25 fps, 25 tbr, 25 tbn
+Stream mapping:
+  Stream #0:0 -> #0:0 (mjpeg (native) -> mjpeg (native))
+Press [q] to stop, [?] for help
+[mjpeg @ 0x78b8a40] dqt: len 65 is too large
+Error while decoding stream #0:0: Invalid data found when processing input
+Cannot determine format of input stream 0:0 after EOF
+Error marking filters as finished
+Conversion failed!
+
+    at genericNodeError (node:internal/errors:984:15)
+    at wrappedFn (node:internal/errors:538:14)
+    at checkExecSyncError (node:child_process:891:11)
+    at execSync (node:child_process:963:15)
+    at ThumbnailGenerator.createProfessionalThumbnail (/home/runner/workspace/server/services/thumbnail-generator.ts:117:7)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async ThumbnailGenerator.createYouTubeThumbnail (/home/runner/workspace/server/services/thumbnail-generator.ts:72:5)
+    at async ThumbnailGenerator.generateThumbnail (/home/runner/workspace/server/services/thumbnail-generator.ts:30:29)
+    at async AutomationPipeline.processTrendingTopic (/home/runner/workspace/server/automation/pipeline.ts:91:29)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:199:19) {
+  status: 1,
+  signal: null,
+  output: [
+    null,
+    '',
+    'ffmpeg version 6.0-static https://johnvansickle.com/ffmpeg/  Copyright (c) 2000-2023 the FFmpeg developers\n' +
+      '  built with gcc 8 (Debian 8.3.0-6)\n' +
+      '  configuration: --enable-gpl --enable-version3 --enable-static --disable-debug --disable-ffplay --disable-indev=sndio --disable-outdev=sndio --cc=gcc --enable-fontconfig --enable-frei0r --enable-gnutls --enable-gmp --enable-libgme --enable-gray --enable-libaom --enable-libfribidi --enable-libass --enable-libvmaf --enable-libfreetype --enable-libmp3lame --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libopenjpeg --enable-librubberband --enable-libsoxr --enable-libspeex --enable-libsrt --enable-libvorbis --enable-libopus --enable-libtheora --enable-libvidstab --enable-libvo-amrwbenc --enable-libvpx --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxml2 --enable-libdav1d --enable-libxvid --enable-libzvbi --enable-libzimg\n' +
+      '  libavutil      58.  2.100 / 58.  2.100\n' +
+      '  libavcodec     60.  3.100 / 60.  3.100\n' +
+      '  libavformat    60.  3.100 / 60.  3.100\n' +
+      '  libavdevice    60.  1.100 / 60.  1.100\n' +
+      '  libavfilter     9.  3.100 /  9.  3.100\n' +
+      '  libswscale      7.  1.100 /  7.  1.100\n' +
+      '  libswresample   4. 10.100 /  4. 10.100\n' +
+      '  libpostproc    57.  1.100 / 57.  1.100\n' +
+      '[mjpeg @ 0x78b1240] dqt: len 65 is too large\n' +
+      '[image2 @ 0x78af9c0] Could not find codec parameters for stream 0 (Video: mjpeg, none(bt470bg/unknown/unknown)): unspecified size\n' +
+      "Consider increasing the value for the 'analyzeduration' (0) and 'probesize' (5000000) options\n" +
+      "Input #0, image2, from '/home/runner/workspace/generated/backgrounds/global_news_bg.jpg':\n" +
+      '  Duration: 00:00:00.04, start: 0.000000, bitrate: 15 kb/s\n' +
+      '  Stream #0:0: Video: mjpeg, none(bt470bg/unknown/unknown), 25 fps, 25 tbr, 25 tbn\n' +
+      'Stream mapping:\n' +
+      '  Stream #0:0 -> #0:0 (mjpeg (native) -> mjpeg (native))\n' +
+      'Press [q] to stop, [?] for help\n' +
+      '[mjpeg @ 0x78b8a40] dqt: len 65 is too large\n' +
+      'Error while decoding stream #0:0: Invalid data found when processing input\n' +
+      'Cannot determine format of input stream 0:0 after EOF\n' +
+      'Error marking filters as finished\n' +
+      'Conversion failed!\n'
+  ],
+  pid: 1245,
+  stdout: '',
+  stderr: 'ffmpeg version 6.0-static https://johnvansickle.com/ffmpeg/  Copyright (c) 2000-2023 the FFmpeg developers\n' +
+    '  built with gcc 8 (Debian 8.3.0-6)\n' +
+    '  configuration: --enable-gpl --enable-version3 --enable-static --disable-debug --disable-ffplay --disable-indev=sndio --disable-outdev=sndio --cc=gcc --enable-fontconfig --enable-frei0r --enable-gnutls --enable-gmp --enable-libgme --enable-gray --enable-libaom --enable-libfribidi --enable-libass --enable-libvmaf --enable-libfreetype --enable-libmp3lame --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libopenjpeg --enable-librubberband --enable-libsoxr --enable-libspeex --enable-libsrt --enable-libvorbis --enable-libopus --enable-libtheora --enable-libvidstab --enable-libvo-amrwbenc --enable-libvpx --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxml2 --enable-libdav1d --enable-libxvid --enable-libzvbi --enable-libzimg\n' +
+    '  libavutil      58.  2.100 / 58.  2.100\n' +
+    '  libavcodec     60.  3.100 / 60.  3.100\n' +
+    '  libavformat    60.  3.100 / 60.  3.100\n' +
+    '  libavdevice    60.  1.100 / 60.  1.100\n' +
+    '  libavfilter     9.  3.100 /  9.  3.100\n' +
+    '  libswscale      7.  1.100 /  7.  1.100\n' +
+    '  libswresample   4. 10.100 /  4. 10.100\n' +
+    '  libpostproc    57.  1.100 / 57.  1.100\n' +
+    '[mjpeg @ 0x78b1240] dqt: len 65 is too large\n' +
+    '[image2 @ 0x78af9c0] Could not find codec parameters for stream 0 (Video: mjpeg, none(bt470bg/unknown/unknown)): unspecified size\n' +
+    "Consider increasing the value for the 'analyzeduration' (0) and 'probesize' (5000000) options\n" +
+    "Input #0, image2, from '/home/runner/workspace/generated/backgrounds/global_news_bg.jpg':\n" +
+    '  Duration: 00:00:00.04, start: 0.000000, bitrate: 15 kb/s\n' +
+    '  Stream #0:0: Video: mjpeg, none(bt470bg/unknown/unknown), 25 fps, 25 tbr, 25 tbn\n' +
+    'Stream mapping:\n' +
+    '  Stream #0:0 -> #0:0 (mjpeg (native) -> mjpeg (native))\n' +
+    'Press [q] to stop, [?] for help\n' +
+    '[mjpeg @ 0x78b8a40] dqt: len 65 is too large\n' +
+    'Error while decoding stream #0:0: Invalid data found when processing input\n' +
+    'Cannot determine format of input stream 0:0 after EOF\n' +
+    'Error marking filters as finished\n' +
+    'Conversion failed!\n'
+}
