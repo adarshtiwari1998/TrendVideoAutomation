@@ -1,0 +1,194 @@
+🔄 Creating fallback video: 600s duration for long_form
+🎵 Generating audio for job 73...
+🎤 Generating speech with Google Cloud TTS - voice: en-IN-Neural2-D
+⚠️ Google Cloud TTS failed, using fallback method: 3 INVALID_ARGUMENT: Either `input.text` or `input.ssml` is longer than the limit of 5000 bytes. This limit is different from quotas. To fix, reduce the byte length of the characters in this request, or consider using the Long Audio API: https://cloud.google.com/text-to-speech/docs/create-audio-text-long-audio-synthesis.
+🔄 Generating fallback audio with synthetic TTS...
+FFmpeg audio generation failed: require is not defined
+✅ Basic audio file created: /home/runner/workspace/temp/videos/audio_73.mp3
+Audio generation failed: Error: Command failed: ffmpeg -i "/home/runner/workspace/temp/videos/audio_73.mp3" -af "highpass=f=85,lowpass=f=8000,compand=.3|.3:1|1:-90/-60|-60/-40|-40/-30|-20/-20:6:0:-90:0.2,equalizer=f=200:width_type=h:width=100:g=2,equalizer=f=1000:width_type=h:width=200:g=1,dynaudnorm=f=75:g=25:p=0.95,volume=1.3" -b:a 192k "/home/runner/workspace/temp/videos/audio_enhanced_73.mp3" -y
+ffmpeg version 6.0-static https://johnvansickle.com/ffmpeg/  Copyright (c) 2000-2023 the FFmpeg developers
+  built with gcc 8 (Debian 8.3.0-6)
+  configuration: --enable-gpl --enable-version3 --enable-static --disable-debug --disable-ffplay --disable-indev=sndio --disable-outdev=sndio --cc=gcc --enable-fontconfig --enable-frei0r --enable-gnutls --enable-gmp --enable-libgme --enable-gray --enable-libaom --enable-libfribidi --enable-libass --enable-libvmaf --enable-libfreetype --enable-libmp3lame --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libopenjpeg --enable-librubberband --enable-libsoxr --enable-libspeex --enable-libsrt --enable-libvorbis --enable-libopus --enable-libtheora --enable-libvidstab --enable-libvo-amrwbenc --enable-libvpx --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxml2 --enable-libdav1d --enable-libxvid --enable-libzvbi --enable-libzimg
+  libavutil      58.  2.100 / 58.  2.100
+  libavcodec     60.  3.100 / 60.  3.100
+  libavformat    60.  3.100 / 60.  3.100
+  libavdevice    60.  1.100 / 60.  1.100
+  libavfilter     9.  3.100 /  9.  3.100
+  libswscale      7.  1.100 /  7.  1.100
+  libswresample   4. 10.100 /  4. 10.100
+  libpostproc    57.  1.100 / 57.  1.100
+[mp3 @ 0x65fe980] Format mp3 detected only with low score of 1, misdetection possible!
+[mp3 @ 0x65fe980] Failed to read frame size: Could not seek to 9215.
+/home/runner/workspace/temp/videos/audio_73.mp3: Invalid argument
+
+    at genericNodeError (node:internal/errors:984:15)
+    at wrappedFn (node:internal/errors:538:14)
+    at ChildProcess.exithandler (node:child_process:422:12)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1104:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5) {
+  code: 1,
+  killed: false,
+  signal: null,
+  cmd: 'ffmpeg -i "/home/runner/workspace/temp/videos/audio_73.mp3" -af "highpass=f=85,lowpass=f=8000,compand=.3|.3:1|1:-90/-60|-60/-40|-40/-30|-20/-20:6:0:-90:0.2,equalizer=f=200:width_type=h:width=100:g=2,equalizer=f=1000:width_type=h:width=200:g=1,dynaudnorm=f=75:g=25:p=0.95,volume=1.3" -b:a 192k "/home/runner/workspace/temp/videos/audio_enhanced_73.mp3" -y',
+  stdout: '',
+  stderr: 'ffmpeg version 6.0-static https://johnvansickle.com/ffmpeg/  Copyright (c) 2000-2023 the FFmpeg developers\n' +
+    '  built with gcc 8 (Debian 8.3.0-6)\n' +
+    '  configuration: --enable-gpl --enable-version3 --enable-static --disable-debug --disable-ffplay --disable-indev=sndio --disable-outdev=sndio --cc=gcc --enable-fontconfig --enable-frei0r --enable-gnutls --enable-gmp --enable-libgme --enable-gray --enable-libaom --enable-libfribidi --enable-libass --enable-libvmaf --enable-libfreetype --enable-libmp3lame --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libopenjpeg --enable-librubberband --enable-libsoxr --enable-libspeex --enable-libsrt --enable-libvorbis --enable-libopus --enable-libtheora --enable-libvidstab --enable-libvo-amrwbenc --enable-libvpx --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxml2 --enable-libdav1d --enable-libxvid --enable-libzvbi --enable-libzimg\n' +
+    '  libavutil      58.  2.100 / 58.  2.100\n' +
+    '  libavcodec     60.  3.100 / 60.  3.100\n' +
+    '  libavformat    60.  3.100 / 60.  3.100\n' +
+    '  libavdevice    60.  1.100 / 60.  1.100\n' +
+    '  libavfilter     9.  3.100 /  9.  3.100\n' +
+    '  libswscale      7.  1.100 /  7.  1.100\n' +
+    '  libswresample   4. 10.100 /  4. 10.100\n' +
+    '  libpostproc    57.  1.100 / 57.  1.100\n' +
+    '[mp3 @ 0x65fe980] Format mp3 detected only with low score of 1, misdetection possible!\n' +
+    '[mp3 @ 0x65fe980] Failed to read frame size: Could not seek to 9215.\n' +
+    '/home/runner/workspace/temp/videos/audio_73.mp3: Invalid argument\n'
+}
+Professional video creation failed: Error: Command failed: ffmpeg -i "/home/runner/workspace/temp/videos/audio_73.mp3" -af "highpass=f=85,lowpass=f=8000,compand=.3|.3:1|1:-90/-60|-60/-40|-40/-30|-20/-20:6:0:-90:0.2,equalizer=f=200:width_type=h:width=100:g=2,equalizer=f=1000:width_type=h:width=200:g=1,dynaudnorm=f=75:g=25:p=0.95,volume=1.3" -b:a 192k "/home/runner/workspace/temp/videos/audio_enhanced_73.mp3" -y
+ffmpeg version 6.0-static https://johnvansickle.com/ffmpeg/  Copyright (c) 2000-2023 the FFmpeg developers
+  built with gcc 8 (Debian 8.3.0-6)
+  configuration: --enable-gpl --enable-version3 --enable-static --disable-debug --disable-ffplay --disable-indev=sndio --disable-outdev=sndio --cc=gcc --enable-fontconfig --enable-frei0r --enable-gnutls --enable-gmp --enable-libgme --enable-gray --enable-libaom --enable-libfribidi --enable-libass --enable-libvmaf --enable-libfreetype --enable-libmp3lame --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libopenjpeg --enable-librubberband --enable-libsoxr --enable-libspeex --enable-libsrt --enable-libvorbis --enable-libopus --enable-libtheora --enable-libvidstab --enable-libvo-amrwbenc --enable-libvpx --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxml2 --enable-libdav1d --enable-libxvid --enable-libzvbi --enable-libzimg
+  libavutil      58.  2.100 / 58.  2.100
+  libavcodec     60.  3.100 / 60.  3.100
+  libavformat    60.  3.100 / 60.  3.100
+  libavdevice    60.  1.100 / 60.  1.100
+  libavfilter     9.  3.100 /  9.  3.100
+  libswscale      7.  1.100 /  7.  1.100
+  libswresample   4. 10.100 /  4. 10.100
+  libpostproc    57.  1.100 / 57.  1.100
+[mp3 @ 0x65fe980] Format mp3 detected only with low score of 1, misdetection possible!
+[mp3 @ 0x65fe980] Failed to read frame size: Could not seek to 9215.
+/home/runner/workspace/temp/videos/audio_73.mp3: Invalid argument
+
+    at genericNodeError (node:internal/errors:984:15)
+    at wrappedFn (node:internal/errors:538:14)
+    at ChildProcess.exithandler (node:child_process:422:12)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1104:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5) {
+  code: 1,
+  killed: false,
+  signal: null,
+  cmd: 'ffmpeg -i "/home/runner/workspace/temp/videos/audio_73.mp3" -af "highpass=f=85,lowpass=f=8000,compand=.3|.3:1|1:-90/-60|-60/-40|-40/-30|-20/-20:6:0:-90:0.2,equalizer=f=200:width_type=h:width=100:g=2,equalizer=f=1000:width_type=h:width=200:g=1,dynaudnorm=f=75:g=25:p=0.95,volume=1.3" -b:a 192k "/home/runner/workspace/temp/videos/audio_enhanced_73.mp3" -y',
+  stdout: '',
+  stderr: 'ffmpeg version 6.0-static https://johnvansickle.com/ffmpeg/  Copyright (c) 2000-2023 the FFmpeg developers\n' +
+    '  built with gcc 8 (Debian 8.3.0-6)\n' +
+    '  configuration: --enable-gpl --enable-version3 --enable-static --disable-debug --disable-ffplay --disable-indev=sndio --disable-outdev=sndio --cc=gcc --enable-fontconfig --enable-frei0r --enable-gnutls --enable-gmp --enable-libgme --enable-gray --enable-libaom --enable-libfribidi --enable-libass --enable-libvmaf --enable-libfreetype --enable-libmp3lame --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libopenjpeg --enable-librubberband --enable-libsoxr --enable-libspeex --enable-libsrt --enable-libvorbis --enable-libopus --enable-libtheora --enable-libvidstab --enable-libvo-amrwbenc --enable-libvpx --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxml2 --enable-libdav1d --enable-libxvid --enable-libzvbi --enable-libzimg\n' +
+    '  libavutil      58.  2.100 / 58.  2.100\n' +
+    '  libavcodec     60.  3.100 / 60.  3.100\n' +
+    '  libavformat    60.  3.100 / 60.  3.100\n' +
+    '  libavdevice    60.  1.100 / 60.  1.100\n' +
+    '  libavfilter     9.  3.100 /  9.  3.100\n' +
+    '  libswscale      7.  1.100 /  7.  1.100\n' +
+    '  libswresample   4. 10.100 /  4. 10.100\n' +
+    '  libpostproc    57.  1.100 / 57.  1.100\n' +
+    '[mp3 @ 0x65fe980] Format mp3 detected only with low score of 1, misdetection possible!\n' +
+    '[mp3 @ 0x65fe980] Failed to read frame size: Could not seek to 9215.\n' +
+    '/home/runner/workspace/temp/videos/audio_73.mp3: Invalid argument\n'
+}
+🎤 Generating speech with Google Cloud TTS - voice: en-IN-Neural2-D
+⚠️ Google Cloud TTS failed, using fallback method: 3 INVALID_ARGUMENT: Either `input.text` or `input.ssml` is longer than the limit of 5000 bytes. This limit is different from quotas. To fix, reduce the byte length of the characters in this request, or consider using the Long Audio API: https://cloud.google.com/text-to-speech/docs/create-audio-text-long-audio-synthesis.
+🔄 Generating fallback audio with synthetic TTS...
+FFmpeg audio generation failed: require is not defined
+✅ Basic audio file created: /home/runner/workspace/temp/videos/audio_73.mp3
+Audio generation failed: Error: Command failed: ffmpeg -i "/home/runner/workspace/temp/videos/audio_73.mp3" -af "highpass=f=85,lowpass=f=8000,compand=.3|.3:1|1:-90/-60|-60/-40|-40/-30|-20/-20:6:0:-90:0.2,equalizer=f=200:width_type=h:width=100:g=2,equalizer=f=1000:width_type=h:width=200:g=1,dynaudnorm=f=75:g=25:p=0.95,volume=1.3" -b:a 192k "/home/runner/workspace/temp/videos/audio_enhanced_73.mp3" -y
+ffmpeg version 6.0-static https://johnvansickle.com/ffmpeg/  Copyright (c) 2000-2023 the FFmpeg developers
+  built with gcc 8 (Debian 8.3.0-6)
+  configuration: --enable-gpl --enable-version3 --enable-static --disable-debug --disable-ffplay --disable-indev=sndio --disable-outdev=sndio --cc=gcc --enable-fontconfig --enable-frei0r --enable-gnutls --enable-gmp --enable-libgme --enable-gray --enable-libaom --enable-libfribidi --enable-libass --enable-libvmaf --enable-libfreetype --enable-libmp3lame --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libopenjpeg --enable-librubberband --enable-libsoxr --enable-libspeex --enable-libsrt --enable-libvorbis --enable-libopus --enable-libtheora --enable-libvidstab --enable-libvo-amrwbenc --enable-libvpx --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxml2 --enable-libdav1d --enable-libxvid --enable-libzvbi --enable-libzimg
+  libavutil      58.  2.100 / 58.  2.100
+  libavcodec     60.  3.100 / 60.  3.100
+  libavformat    60.  3.100 / 60.  3.100
+  libavdevice    60.  1.100 / 60.  1.100
+  libavfilter     9.  3.100 /  9.  3.100
+  libswscale      7.  1.100 /  7.  1.100
+  libswresample   4. 10.100 /  4. 10.100
+  libpostproc    57.  1.100 / 57.  1.100
+[mp3 @ 0x63a4980] Format mp3 detected only with low score of 1, misdetection possible!
+[mp3 @ 0x63a4980] Failed to read frame size: Could not seek to 9215.
+/home/runner/workspace/temp/videos/audio_73.mp3: Invalid argument
+
+    at genericNodeError (node:internal/errors:984:15)
+    at wrappedFn (node:internal/errors:538:14)
+    at ChildProcess.exithandler (node:child_process:422:12)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1104:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5) {
+  code: 1,
+  killed: false,
+  signal: null,
+  cmd: 'ffmpeg -i "/home/runner/workspace/temp/videos/audio_73.mp3" -af "highpass=f=85,lowpass=f=8000,compand=.3|.3:1|1:-90/-60|-60/-40|-40/-30|-20/-20:6:0:-90:0.2,equalizer=f=200:width_type=h:width=100:g=2,equalizer=f=1000:width_type=h:width=200:g=1,dynaudnorm=f=75:g=25:p=0.95,volume=1.3" -b:a 192k "/home/runner/workspace/temp/videos/audio_enhanced_73.mp3" -y',
+  stdout: '',
+  stderr: 'ffmpeg version 6.0-static https://johnvansickle.com/ffmpeg/  Copyright (c) 2000-2023 the FFmpeg developers\n' +
+    '  built with gcc 8 (Debian 8.3.0-6)\n' +
+    '  configuration: --enable-gpl --enable-version3 --enable-static --disable-debug --disable-ffplay --disable-indev=sndio --disable-outdev=sndio --cc=gcc --enable-fontconfig --enable-frei0r --enable-gnutls --enable-gmp --enable-libgme --enable-gray --enable-libaom --enable-libfribidi --enable-libass --enable-libvmaf --enable-libfreetype --enable-libmp3lame --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libopenjpeg --enable-librubberband --enable-libsoxr --enable-libspeex --enable-libsrt --enable-libvorbis --enable-libopus --enable-libtheora --enable-libvidstab --enable-libvo-amrwbenc --enable-libvpx --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxml2 --enable-libdav1d --enable-libxvid --enable-libzvbi --enable-libzimg\n' +
+    '  libavutil      58.  2.100 / 58.  2.100\n' +
+    '  libavcodec     60.  3.100 / 60.  3.100\n' +
+    '  libavformat    60.  3.100 / 60.  3.100\n' +
+    '  libavdevice    60.  1.100 / 60.  1.100\n' +
+    '  libavfilter     9.  3.100 /  9.  3.100\n' +
+    '  libswscale      7.  1.100 /  7.  1.100\n' +
+    '  libswresample   4. 10.100 /  4. 10.100\n' +
+    '  libpostproc    57.  1.100 / 57.  1.100\n' +
+    '[mp3 @ 0x63a4980] Format mp3 detected only with low score of 1, misdetection possible!\n' +
+    '[mp3 @ 0x63a4980] Failed to read frame size: Could not seek to 9215.\n' +
+    '/home/runner/workspace/temp/videos/audio_73.mp3: Invalid argument\n'
+}
+Basic video with audio creation failed: Error: Command failed: ffmpeg -i "/home/runner/workspace/temp/videos/audio_73.mp3" -af "highpass=f=85,lowpass=f=8000,compand=.3|.3:1|1:-90/-60|-60/-40|-40/-30|-20/-20:6:0:-90:0.2,equalizer=f=200:width_type=h:width=100:g=2,equalizer=f=1000:width_type=h:width=200:g=1,dynaudnorm=f=75:g=25:p=0.95,volume=1.3" -b:a 192k "/home/runner/workspace/temp/videos/audio_enhanced_73.mp3" -y
+ffmpeg version 6.0-static https://johnvansickle.com/ffmpeg/  Copyright (c) 2000-2023 the FFmpeg developers
+  built with gcc 8 (Debian 8.3.0-6)
+  configuration: --enable-gpl --enable-version3 --enable-static --disable-debug --disable-ffplay --disable-indev=sndio --disable-outdev=sndio --cc=gcc --enable-fontconfig --enable-frei0r --enable-gnutls --enable-gmp --enable-libgme --enable-gray --enable-libaom --enable-libfribidi --enable-libass --enable-libvmaf --enable-libfreetype --enable-libmp3lame --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libopenjpeg --enable-librubberband --enable-libsoxr --enable-libspeex --enable-libsrt --enable-libvorbis --enable-libopus --enable-libtheora --enable-libvidstab --enable-libvo-amrwbenc --enable-libvpx --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxml2 --enable-libdav1d --enable-libxvid --enable-libzvbi --enable-libzimg
+  libavutil      58.  2.100 / 58.  2.100
+  libavcodec     60.  3.100 / 60.  3.100
+  libavformat    60.  3.100 / 60.  3.100
+  libavdevice    60.  1.100 / 60.  1.100
+  libavfilter     9.  3.100 /  9.  3.100
+  libswscale      7.  1.100 /  7.  1.100
+  libswresample   4. 10.100 /  4. 10.100
+  libpostproc    57.  1.100 / 57.  1.100
+[mp3 @ 0x63a4980] Format mp3 detected only with low score of 1, misdetection possible!
+[mp3 @ 0x63a4980] Failed to read frame size: Could not seek to 9215.
+/home/runner/workspace/temp/videos/audio_73.mp3: Invalid argument
+
+    at genericNodeError (node:internal/errors:984:15)
+    at wrappedFn (node:internal/errors:538:14)
+    at ChildProcess.exithandler (node:child_process:422:12)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1104:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5) {
+  code: 1,
+  killed: false,
+  signal: null,
+  cmd: 'ffmpeg -i "/home/runner/workspace/temp/videos/audio_73.mp3" -af "highpass=f=85,lowpass=f=8000,compand=.3|.3:1|1:-90/-60|-60/-40|-40/-30|-20/-20:6:0:-90:0.2,equalizer=f=200:width_type=h:width=100:g=2,equalizer=f=1000:width_type=h:width=200:g=1,dynaudnorm=f=75:g=25:p=0.95,volume=1.3" -b:a 192k "/home/runner/workspace/temp/videos/audio_enhanced_73.mp3" -y',
+  stdout: '',
+  stderr: 'ffmpeg version 6.0-static https://johnvansickle.com/ffmpeg/  Copyright (c) 2000-2023 the FFmpeg developers\n' +
+    '  built with gcc 8 (Debian 8.3.0-6)\n' +
+    '  configuration: --enable-gpl --enable-version3 --enable-static --disable-debug --disable-ffplay --disable-indev=sndio --disable-outdev=sndio --cc=gcc --enable-fontconfig --enable-frei0r --enable-gnutls --enable-gmp --enable-libgme --enable-gray --enable-libaom --enable-libfribidi --enable-libass --enable-libvmaf --enable-libfreetype --enable-libmp3lame --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libopenjpeg --enable-librubberband --enable-libsoxr --enable-libspeex --enable-libsrt --enable-libvorbis --enable-libopus --enable-libtheora --enable-libvidstab --enable-libvo-amrwbenc --enable-libvpx --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxml2 --enable-libdav1d --enable-libxvid --enable-libzvbi --enable-libzimg\n' +
+    '  libavutil      58.  2.100 / 58.  2.100\n' +
+    '  libavcodec     60.  3.100 / 60.  3.100\n' +
+    '  libavformat    60.  3.100 / 60.  3.100\n' +
+    '  libavdevice    60.  1.100 / 60.  1.100\n' +
+    '  libavfilter     9.  3.100 /  9.  3.100\n' +
+    '  libswscale      7.  1.100 /  7.  1.100\n' +
+    '  libswresample   4. 10.100 /  4. 10.100\n' +
+    '  libpostproc    57.  1.100 / 57.  1.100\n' +
+    '[mp3 @ 0x63a4980] Format mp3 detected only with low score of 1, misdetection possible!\n' +
+    '[mp3 @ 0x63a4980] Failed to read frame size: Could not seek to 9215.\n' +
+    '/home/runner/workspace/temp/videos/audio_73.mp3: Invalid argument\n'
+}
+📝 Created text-only content as final fallback
+✅ Video creation completed: /home/runner/workspace/temp/videos/text_only_73.txt
+10:57:40 AM [express] GET /api/dashboard/stats 200 in 714ms :: {"todayVideos":0,"todayShorts":0,"succ…
+🔄 Step 4: Starting MP4 conversion...
+10:57:40 AM [express] GET /api/dashboard/active-pipeline 200 in 472ms :: {"active":[{"id":73,"title":…
+10:57:40 AM [express] GET /api/dashboard/scheduled-videos 200 in 1696ms :: {"scheduled":[],"processin…
+10:57:42 AM [express] GET /api/dashboard/active-pipeline 304 in 465ms :: {"active":[{"id":73,"title":…
+🖼️ Step 5: Starting thumbnail generation...
+🖼️ Creating professional YouTube thumbnail for: Mid-East Crisis escalates - Iran rains missiles on Israel after attacks on nuclear sites | BBC News: The Truth Behind the Headlines
+🎨 Creating professional YouTube-style thumbnail...
+Gradient thumbnail failed, trying solid color approach: Command failed: ffmpeg -f lavfi -i "color=c=#FF6B35:size=1280x720:duration=0.1" -f lavfi -i "color=c=#F7931E:size=1280x720:duration=0.1" -filter_complex "[0][1]blend=all_mode=screen:all_opacity=0.6,geq=r='255*0.9':g='128*0.9+64*sin(2*PI*X/W)':b='64*0.9+32*cos(2*PI*Y/H)',drawtext=text='LATEST: MID-EAST CRISIS ESCALATES - IRAN RAINS MIS...!':fontsize=56:fontcolor=white:x=(w-text_w)/2:y=h*0.3:bordercolor=black:borderw=4:shadowcolor=black:shadowx=3:shadowy=3,drawbox=x=20:y=h*0.3-20:w=w-40:h=96:color=black@0.3:t=fill" -frames:v 1 -q:v 2 "/home/runner/workspace/generated/thumbnails/73_youtube_thumbnail.jpg" -y
+ffmpeg version 6.0-static https://johnvansickle.com/ffmpeg/  Copyright (c) 2000-2023 the FFmpeg developers
+  built with gcc 8 (Debian 8.3.0-6)
+  configuration: --enable-gpl --enable-version3 --enable-static --disable-debug --disable-ffplay --disable-indev=sndio --disable-outdev=sndio --cc=gcc --enable-fontconfig --enable-frei0r --enable-gnutls --enable-gmp --enable-libgme --enable-gray --enable-libaom --enable-libfribidi --enable-libass --enable-libvmaf --enable-libfreetype --enable-libmp3lame --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libopenjpeg --enable-librubberb
