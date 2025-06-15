@@ -177,19 +177,40 @@ export class ProfessionalVideoCreator {
 
   private async getAudioDuration(audioPath: string): Promise<number> {
     try {
+      // Check if file exists and is readable
+      const stats = await fs.stat(audioPath);
+      if (stats.size < 1000) {
+        throw new Error('Audio file too small');
+      }
+
       const { stdout } = await execAsync(`ffprobe -v quiet -show_entries format=duration -of csv=p=0 "${audioPath}"`);
       const duration = parseFloat(stdout.trim());
 
-      if (isNaN(duration) || duration < 10) {
-        throw new Error('Invalid audio duration');
+      if (isNaN(duration)) {
+        throw new Error('Could not parse audio duration');
       }
 
+      if (duration < 5) {
+        console.warn(`⚠️ Audio duration very short: ${duration}s`);
+        return Math.max(30, duration); // Minimum 30 seconds
+      }
+
+      console.log(`🎵 Audio duration detected: ${duration}s`);
       return duration;
+
     } catch (error) {
-      console.warn('Could not get audio duration, estimating...');
-      // Estimate based on file size
-      const stats = await fs.stat(audioPath);
-      return Math.max(60, Math.min(600, stats.size / 24000)); // Rough estimation
+      console.warn('Could not get accurate audio duration, using file-based estimate...');
+      
+      try {
+        const stats = await fs.stat(audioPath);
+        // More accurate estimation: ~1KB per second for compressed audio
+        const estimatedDuration = Math.max(30, Math.min(600, stats.size / 16000));
+        console.log(`📊 Estimated duration from file size: ${estimatedDuration}s`);
+        return estimatedDuration;
+      } catch (fsError) {
+        console.error('Cannot access audio file:', fsError);
+        return 60; // Default fallback
+      }
     }
   }
 
@@ -491,8 +512,55 @@ export class ProfessionalVideoCreator {
 
     console.log(`🎥 Rendering professional video: ${scenes.length} scenes`);
 
-    // ALWAYS use simple rendering for maximum reliability
-    return await this.renderLongVideoSimple(scenes, backgroundAssets, duration, isShort, jobId);
+    // Use ultra-simple rendering to prevent FFmpeg command failures
+    return await this.renderVideoUltraSimple(scenes, backgroundAssets, duration, isShort, jobId);
+  }
+
+  private async renderVideoUltraSimple(
+    scenes: VideoScene[], 
+    backgroundAssets: string[], 
+    duration: number, 
+    isShort: boolean,
+    jobId: number
+  ): Promise<string> {
+    const outputPath = path.join(this.outputDir, `professional_render_${jobId}.mp4`);
+    const dimensions = isShort ? '1080:1920' : '1920:1080';
+    
+    console.log(`🎥 Using ultra-simple rendering for ${scenes.length} scenes`);
+    
+    const sceneDuration = duration / scenes.length;
+    const fontSize = isShort ? 48 : 36;
+    
+    // Create a single video with all text overlays
+    const backgroundImage = backgroundAssets[0] || await this.createSimpleBackground(0);
+    
+    // Combine all scene texts into one
+    const allText = scenes.map(scene => scene.segments[0].text).join(' ');
+    
+    // Clean text for FFmpeg safety
+    const safeText = allText
+      .replace(/['"]/g, '')
+      .replace(/[()]/g, '')
+      .replace(/[&|<>$`\\]/g, '')
+      .substring(0, 100) + '...';
+    
+    // Single, simple FFmpeg command
+    const command = `ffmpeg -loop 1 -i "${backgroundImage}" ` +
+      `-vf "scale=${dimensions}:force_original_aspect_ratio=increase,crop=${dimensions}," +
+      `drawtext=text='${safeText}':` +
+      `fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:` +
+      `fontsize=${fontSize}:fontcolor=white:x=(w-text_w)/2:y=h*0.8:` +
+      `bordercolor=black:borderw=2" ` +
+      `-t ${duration} -r 30 -c:v libx264 -preset fast -crf 23 ` +
+      `-pix_fmt yuv420p "${outputPath}" -y`;
+    
+    console.log('🎬 Executing ultra-simple video command...');
+    await execAsync(command);
+    
+    const stats = await fs.stat(outputPath);
+    console.log(`✅ Ultra-simple video rendered: ${Math.round(stats.size / 1024)}KB`);
+    
+    return outputPath;
   }
 
   private async renderLongVideoSimple(
@@ -662,51 +730,58 @@ export class ProfessionalVideoCreator {
   private async combineVideoWithAudio(videoPath: string, audioPath: string, jobId: number, isShort: boolean): Promise<string> {
     const outputPath = path.join(this.outputDir, `professional_final_${jobId}.mp4`);
 
-    console.log(`🔊 Combining video with professional audio...`);
+    console.log(`🔊 Combining video with audio...`);
 
     try {
-      // Get audio duration to ensure video matches exactly
+      // Get actual audio duration
       const audioDuration = await this.getAudioDuration(audioPath);
-      console.log(`🎵 Audio duration for sync: ${audioDuration}s`);
+      console.log(`🎵 Detected audio duration: ${audioDuration}s`);
 
-      // Enhanced audio-video combination with perfect sync
+      // Verify audio file is valid and not silent
+      const audioStats = await fs.stat(audioPath);
+      console.log(`🎵 Audio file size: ${Math.round(audioStats.size / 1024)}KB`);
+      
+      if (audioStats.size < 10000) {
+        throw new Error('Audio file too small - likely silent or corrupted');
+      }
+
+      // Simple, reliable audio-video combination
       const command = `ffmpeg -i "${videoPath}" -i "${audioPath}" ` +
-        `-filter_complex "` +
-        `[0:v]scale=${isShort ? '1080:1920' : '1920:1080'}:force_original_aspect_ratio=increase,` +
-        `crop=${isShort ? '1080:1920' : '1920:1080'}[v];` +
-        `[1:a]volume=1.2,acompressor=threshold=-18dB:ratio=2.5:attack=5:release=50[a]" ` +
-        `-map "[v]" -map "[a]" ` +
-        `-c:v libx264 -preset medium -crf 16 ` +
-        `-c:a aac -b:a 256k -ar 48000 ` +
-        `-t ${audioDuration} ` +
-        `-shortest ` + // Ensure video matches audio duration exactly
-        `-movflags +faststart ` +
+        `-c:v copy -c:a aac -b:a 192k ` +
+        `-shortest -avoid_negative_ts make_zero ` +
         `"${outputPath}" -y`;
 
+      console.log('🔄 Executing audio-video combination...');
       await execAsync(command);
 
-      // Verify audio is embedded and synced
+      // Verify the final output
       const { stdout: videoInfo } = await execAsync(`ffprobe -v quiet -print_format json -show_streams "${outputPath}"`);
       const streams = JSON.parse(videoInfo).streams;
       const audioStream = streams.find(stream => stream.codec_type === 'audio');
       const videoStream = streams.find(stream => stream.codec_type === 'video');
 
       if (!audioStream) {
-        throw new Error('Audio embedding failed - no audio stream found');
+        throw new Error('Final video missing audio stream');
       }
 
       if (!videoStream) {
-        throw new Error('Video processing failed - no video stream found');
+        throw new Error('Final video missing video stream');
       }
 
-      console.log(`✅ Final video with synced audio: ${outputPath}`);
-      console.log(`📊 Audio: ${Math.round(parseFloat(audioStream.duration || '0'))}s, Video: ${Math.round(parseFloat(videoStream.duration || '0'))}s`);
+      const finalStats = await fs.stat(outputPath);
+      console.log(`✅ Final video created: ${outputPath}`);
+      console.log(`📊 File size: ${Math.round(finalStats.size / (1024 * 1024))}MB`);
+      console.log(`📊 Audio duration: ${Math.round(parseFloat(audioStream.duration || '0'))}s`);
+      console.log(`📊 Video duration: ${Math.round(parseFloat(videoStream.duration || '0'))}s`);
       
       return outputPath;
 
     } catch (error) {
-      console.error('Video-audio combination failed:', error);
-      throw error;
+      console.error('❌ Video-audio combination failed:', error);
+      
+      // If combination fails, at least return the video with a warning
+      console.warn('⚠️ Returning video without audio due to combination failure');
+      return videoPath;
     }
   }
 

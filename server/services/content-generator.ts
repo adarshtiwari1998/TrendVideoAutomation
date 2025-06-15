@@ -132,12 +132,13 @@ export class ContentGenerator {
   }
 
   private validateAndCleanScript(script: string): string {
+    console.log(`🔍 Validating script: "${script.substring(0, 100)}..."`);
+    
     // Ensure the script is actual content, not system messages
     const invalidPatterns = [
       /^(I'll|I'm|Here's|This is)/i,
       /^(Sure|Certainly|Of course)/i,
       /^(Let me|I can)/i,
-      /(API|Gemini|model|generate|create)/i
     ];
 
     // Check if script contains invalid patterns at the start
@@ -150,41 +151,45 @@ export class ContentGenerator {
 
     // Clean the script content with proper formatting
     let cleaned = script
-      // Remove problematic formatting elements
+      // Remove problematic formatting elements but preserve content
       .replace(/\[.*?\]/g, '') // Remove stage directions
       .replace(/\(.*?\)/g, '') // Remove parenthetical notes
       .replace(/^\s*[-*]\s*/gm, '') // Remove bullet points
       .replace(/^Step \d+:.*$/gm, '') // Remove step indicators
       .replace(/^\d+\.\s*/gm, '') // Remove numbered lists
-      // Clean up text structure
+      // Clean up text structure while preserving content
       .split('\n')
-      .filter(line => line.trim().length > 0)
+      .filter(line => line.trim().length > 5) // Keep meaningful lines
       .filter(line => !line.match(/^(Note:|Remember:|Important:)/i))
-      .join(' ') // Join with spaces instead of newlines for better flow
+      .join(' ') // Join with spaces for natural flow
       .replace(/\s+/g, ' ') // Normalize whitespace
       .trim();
 
-    // Ensure proper sentence structure
+    // Ensure proper sentence structure for TTS
     cleaned = cleaned
-      // Fix common sentence flow issues
-      .replace(/([.!?])\s*([a-z])/g, '$1 $2') // Ensure space after punctuation
-      .replace(/([a-zA-Z])([A-Z])/g, '$1. $2') // Add periods between sentences if missing
+      .replace(/([.!?])\s*([a-z])/g, '$1 $2') // Space after punctuation
+      .replace(/([a-zA-Z])([A-Z])/g, '$1. $2') // Add periods between sentences
       .replace(/\s+/g, ' ') // Final whitespace cleanup
-      // Ensure proper ending
-      .replace(/([a-zA-Z])\s*$/g, '$1.'); // Add period at end if missing
+      .replace(/([a-zA-Z])\s*$/g, '$1.'); // Add period at end
 
-    // Validate the cleaned content
-    if (cleaned.length < 50) {
-      console.warn('⚠️ Cleaned script too short, using fallback');
+    console.log(`✅ Cleaned script length: ${cleaned.length} characters`);
+
+    // Ensure we have substantial content for video generation
+    if (cleaned.length < 200) {
+      console.warn('⚠️ Script too short for proper video, using fallback');
       return '';
     }
 
     // Check for coherent content
     const words = cleaned.split(' ').filter(w => w.length > 2);
-    if (words.length < 20) {
-      console.warn('⚠️ Script appears to lack sufficient content, using fallback');
+    if (words.length < 50) {
+      console.warn('⚠️ Script lacks sufficient content, using fallback');
       return '';
     }
+
+    // Ensure minimum duration for long-form videos
+    const estimatedDuration = words.length / 2.5; // ~2.5 words per second
+    console.log(`📊 Estimated speech duration: ${Math.round(estimatedDuration)}s`);
 
     return cleaned;
   }

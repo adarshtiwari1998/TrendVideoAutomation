@@ -69,10 +69,15 @@ export class TextToSpeechService {
       const { text, outputPath, voice = 'en-IN-Neural2-B', speed = 0.92, pitch = -1.0 } = options;
 
       console.log(`🎤 Starting Google Cloud TTS generation for text: "${text.substring(0, 100)}..."`);
+      console.log(`🎤 Text length: ${text.length} characters`);
 
-      // Use Google Cloud TTS directly
+      // Force Google Cloud TTS usage - no fallbacks
       try {
-        const chunks = this.splitTextIntoChunks(text, 4000);
+        // Test TTS client connection first
+        await this.testTTSConnection();
+        
+        const chunks = this.splitTextIntoChunks(text, 3500); // Smaller chunks for reliability
+        console.log(`📝 Split into ${chunks.length} chunks for processing`);
 
         if (chunks.length === 1) {
           return await this.generateSingleChunk(chunks[0], outputPath, voice, speed, pitch);
@@ -81,14 +86,11 @@ export class TextToSpeechService {
         }
 
       } catch (googleError) {
-        console.error('❌ Google Cloud TTS failed:', googleError);
+        console.error('❌ Google Cloud TTS authentication failed:', googleError);
+        console.error('❌ Check your google-credentials.json file and API access');
         
-        // Only use fallback if absolutely necessary and log the issue
-        console.warn('⚠️ Using emergency fallback audio - this will NOT contain your script content');
-        console.warn('⚠️ Please fix Google Cloud TTS authentication to get proper speech synthesis');
-        
-        // Create a simple MP3 with appropriate duration but log the issue clearly
-        return await this.createEmergencyFallback(text, outputPath);
+        // Instead of silent fallback, throw error to force fixing the issue
+        throw new Error(`Google TTS authentication failed: ${googleError.message}. Please check your credentials.`);
       }
 
     } catch (error) {
@@ -517,6 +519,37 @@ export class TextToSpeechService {
       'en-IN-Neural2-C': 'Indian English Female (Neural)',
       'en-IN-Neural2-D': 'Indian English Female (Neural)', // Corrected: This is actually female
     };
+  }
+
+  private async testTTSConnection(): Promise<void> {
+    try {
+      console.log('🔧 Testing Google Cloud TTS connection...');
+      
+      const testRequest = {
+        input: { text: 'Test connection' },
+        voice: {
+          languageCode: 'en-IN',
+          name: 'en-IN-Neural2-B',
+          ssmlGender: 'MALE' as const,
+        },
+        audioConfig: {
+          audioEncoding: 'MP3' as const,
+          speakingRate: 1.0,
+          pitch: 0.0,
+        },
+      };
+
+      const [response] = await this.client.synthesizeSpeech(testRequest);
+      
+      if (!response.audioContent) {
+        throw new Error('No audio content received from test request');
+      }
+      
+      console.log('✅ Google Cloud TTS connection successful');
+    } catch (error) {
+      console.error('❌ TTS connection test failed:', error);
+      throw new Error(`TTS connection failed: ${error.message}`);
+    }
   }
 
   private enhanceScriptForNaturalSpeech(script: string): string {
