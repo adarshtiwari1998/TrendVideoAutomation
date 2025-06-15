@@ -1,0 +1,35 @@
+📝 Full script length before enhancement: 2913 characters
+✅ Enhanced script length: 2913 characters
+📝 Content growth: +0 characters
+📝 Enhanced script preview: "Hey everyone, and welcome back to my channel. today's update, we're going to talk about something super So, imagine the Great Barrier Reef is a giant, colorful underwater city. It's filled with amazing coral, which are like tiny houses for fish and other sea creatures. But something not-so-good is h..."
+📝 Cleaned text length: 2913
+📝 Final text preview: "Hey everyone, and welcome back to my channel. today's update, we're going to talk about something super So, imagine the Great Barrier Reef is a giant, colorful underwater city. It's filled with amazing coral, which are like tiny houses for fish and other sea creatures. But something not-so-good is h..."
+✅ Content preserved: 100.0% of enhanced text
+🎤 Processing text for TTS - Length: 2913 chars
+🎤 Text to synthesize: "Hey everyone, and welcome back to my channel. today's update, we're going to talk about something su..."
+🎤 Generating speech with Google Cloud TTS - voice: en-IN-Neural2-B (MALE)
+🎤 Expected audio duration: ~209 seconds (based on ~14 chars/second)
+12:40:38 PM [express] GET /api/dashboard/active-pipeline 200 in 469ms :: {"active":[{"id":82,"title":…
+12:40:39 PM [express] GET /api/dashboard/active-pipeline 304 in 469ms :: {"active":[{"id":82,"title":…
+12:40:39 PM [express] GET /api/dashboard/scheduled-videos 200 in 1817ms :: {"scheduled":[],"processin…
+✅ Audio saved to: /home/runner/workspace/temp/videos/professional_audio_82.mp3 (1342KB)
+12:40:41 PM [express] GET /api/dashboard/active-pipeline 304 in 478ms :: {"active":[{"id":82,"title":…
+12:40:42 PM [express] GET /api/dashboard/active-pipeline 304 in 570ms :: {"active":[{"id":82,"title":…
+12:40:42 PM [express] GET /api/dashboard/active-pipeline 304 in 465ms :: {"active":[{"id":82,"title":…
+12:40:43 PM [express] GET /api/pipeline/logs 200 in 470ms :: [{"id":305,"job_id":82,"step":"video_cre…
+12:40:44 PM [express] GET /api/dashboard/active-pipeline 304 in 489ms :: {"active":[{"id":82,"title":…
+✅ Audio enhanced: /home/runner/workspace/temp/videos/enhanced_audio_82.mp3 (6712KB)
+Could not get audio duration, estimating...
+🎵 Audio duration: 286.3618333333333s
+Unsplash request failed, using fallback
+Failed to download background for scene 0, using fallback
+12:40:45 PM [express] GET /api/dashboard/active-pipeline 304 in 464ms :: {"active":[{"id":82,"title":…
+Unsplash request failed, using fallback
+Failed to download background for scene 1, using fallback
+Unsplash request failed, using fallback
+12:40:46 PM [express] GET /api/dashboard/active-pipeline 304 in 478ms :: {"active":[{"id":82,"title":…
+Failed to download background for scene 2, using fallback
+Unsplash request failed, using fallback
+Failed to download background for scene 3, using fallback
+12:40:46 PM [express] GET /api/pipeline/logs 304 in 466ms :: [{"id":305,"job_id":82,"step":"video_cre…
+Unsplash request failed, using fallbac
