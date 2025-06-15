@@ -16,33 +16,48 @@ export class TextToSpeechService {
   constructor() {
     try {
       // Initialize Google Cloud TTS client with proper credential handling
-      const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS || './credentials.json';
-
-      // Try to read credentials directly from file
       let credentials = null;
-      try {
-        const fs = require('fs');
-        if (fs.existsSync(credentialsPath)) {
-          credentials = JSON.parse(fs.readFileSync(credentialsPath, 'utf8'));
+      let projectId = process.env.GOOGLE_CLOUD_PROJECT_ID || 'magnetic-racer-442915-u4';
+
+      // Try multiple credential sources
+      const credentialSources = [
+        './google-credentials.json',
+        './credentials.json',
+        process.env.GOOGLE_APPLICATION_CREDENTIALS
+      ];
+
+      for (const source of credentialSources) {
+        if (source && typeof source === 'string') {
+          try {
+            const fs = require('fs');
+            if (fs.existsSync(source)) {
+              const credData = fs.readFileSync(source, 'utf8');
+              credentials = JSON.parse(credData);
+              projectId = credentials.project_id || projectId;
+              console.log(`✅ Found Google credentials at: ${source}`);
+              break;
+            }
+          } catch (e) {
+            console.warn(`Could not read credentials from ${source}:`, e.message);
+          }
         }
-      } catch (e) {
-        console.warn('Could not read credentials file, trying environment variable');
       }
 
-      // Initialize with credentials object or keyFilename
+      // Initialize with explicit credentials
       if (credentials) {
         this.client = new TextToSpeechClient({
           credentials: credentials,
-          projectId: credentials.project_id || process.env.GOOGLE_CLOUD_PROJECT_ID || 'magnetic-racer-442915-u4'
+          projectId: projectId
         });
+        console.log('✅ Google Cloud TTS client initialized with explicit credentials');
       } else {
+        // Fallback to environment-based auth
         this.client = new TextToSpeechClient({
-          keyFilename: credentialsPath,
-          projectId: process.env.GOOGLE_CLOUD_PROJECT_ID || 'magnetic-racer-442915-u4'
+          projectId: projectId
         });
+        console.log('✅ Google Cloud TTS client initialized with environment auth');
       }
 
-      console.log('✅ Google Cloud TTS client initialized');
     } catch (error) {
       console.error('❌ Failed to initialize Google Cloud TTS client:', error);
       throw new Error(`TTS client initialization failed: ${error.message}`);
@@ -53,14 +68,9 @@ export class TextToSpeechService {
     try {
       const { text, outputPath, voice = 'en-IN-Neural2-B', speed = 0.92, pitch = -1.0 } = options;
 
-      // Try ElevenLabs first (professional quality)
-      try {
-        return await this.generateElevenLabsAudio(text, outputPath);
-      } catch (elevenError) {
-        console.warn('⚠️ ElevenLabs failed, trying Google Cloud TTS:', elevenError.message);
-      }
+      console.log(`🎤 Starting Google Cloud TTS generation for text: "${text.substring(0, 100)}..."`);
 
-      // Fallback to Google Cloud TTS with fixed voice configuration
+      // Use Google Cloud TTS directly
       try {
         const chunks = this.splitTextIntoChunks(text, 4000);
 
@@ -71,8 +81,14 @@ export class TextToSpeechService {
         }
 
       } catch (googleError) {
-        console.warn('⚠️ Google Cloud TTS failed, using advanced fallback:', googleError.message);
-        return await this.generateAdvancedFallbackAudio(text, outputPath);
+        console.error('❌ Google Cloud TTS failed:', googleError);
+        
+        // Only use fallback if absolutely necessary and log the issue
+        console.warn('⚠️ Using emergency fallback audio - this will NOT contain your script content');
+        console.warn('⚠️ Please fix Google Cloud TTS authentication to get proper speech synthesis');
+        
+        // Create a simple MP3 with appropriate duration but log the issue clearly
+        return await this.createEmergencyFallback(text, outputPath);
       }
 
     } catch (error) {
@@ -81,44 +97,7 @@ export class TextToSpeechService {
     }
   }
 
-  private async generateElevenLabsAudio(text: string, outputPath: string): Promise<string> {
-    const elevenLabsKey = process.env.ELEVEN_LABS_API_KEY;
-    if (!elevenLabsKey) {
-      throw new Error('ElevenLabs API key not found');
-    }
-
-    try {
-      const axios = require('axios');
-
-      const response = await axios.post('https://api.elevenlabs.io/v1/text-to-speech/pNInz6obpgDQGcFmaJgB', {
-        text: text,
-        model_id: 'eleven_multilingual_v2',
-        voice_settings: {
-          stability: 0.75,
-          similarity_boost: 0.85,
-          style: 0.5,
-          use_speaker_boost: true
-        }
-      }, {
-        headers: {
-          'Accept': 'audio/mpeg',
-          'Content-Type': 'application/json',
-          'xi-api-key': elevenLabsKey
-        },
-        responseType: 'arraybuffer'
-      });
-
-      const outputDir = path.dirname(outputPath);
-      await fs.mkdir(outputDir, { recursive: true });
-      await fs.writeFile(outputPath, response.data);
-
-      console.log('✅ ElevenLabs audio generated successfully');
-      return outputPath;
-    } catch (error) {
-      console.error('ElevenLabs generation failed:', error.message);
-      throw error;
-    }
-  }
+  
 
   private async generateSingleChunk(text: string, outputPath: string, voice: string, speed: number, pitch: number): Promise<string> {
     // Correct voice gender mapping for Google Cloud TTS voices
@@ -174,8 +153,11 @@ export class TextToSpeechService {
   }
 
   private cleanTextForSpeech(text: string): string {
+    console.log(`📝 Cleaning text for speech. Original length: ${text.length}`);
+    console.log(`📝 First 200 chars: "${text.substring(0, 200)}..."`);
+    
     // Remove any system messages or meta-commentary that might have leaked through
-    return text
+    const cleaned = text
       .replace(/^(I'll|I'm|Here's|This is).*?\./i, '') // Remove system introductions
       .replace(/^(Sure|Certainly|Of course).*?\./i, '') // Remove confirmations
       .replace(/\[.*?\]/g, '') // Remove stage directions
@@ -183,6 +165,14 @@ export class TextToSpeechService {
       .replace(/API|Gemini|model|generate/gi, 'system') // Replace technical terms
       .replace(/\n{3,}/g, '\n\n') // Clean up excessive newlines
       .trim();
+
+    console.log(`📝 Cleaned text length: ${cleaned.length}`);
+    
+    if (cleaned.length < 50) {
+      console.warn('⚠️ Cleaned text is very short, might be a system message');
+    }
+    
+    return cleaned;
   }
 
   private async generateAndCombineChunks(chunks: string[], outputPath: string, voice: string, speed: number, pitch: number): Promise<string> {
@@ -236,46 +226,60 @@ export class TextToSpeechService {
     }
   }
 
-  private async generateAdvancedFallbackAudio(text: string, outputPath: string): Promise<string> {
+  private async createEmergencyFallback(text: string, outputPath: string): Promise<string> {
     try {
-      console.log('🔄 Generating advanced fallback audio...');
+      console.log('🚨 CREATING EMERGENCY FALLBACK - THIS IS NOT YOUR SCRIPT CONTENT!');
+      console.log('🚨 PLEASE FIX GOOGLE CLOUD TTS AUTHENTICATION TO GET ACTUAL SPEECH');
 
       const outputDir = path.dirname(outputPath);
       await fs.mkdir(outputDir, { recursive: true });
 
-      // Calculate proper duration
+      // Calculate proper duration based on text length
       const wordCount = text.split(' ').length;
-      const estimatedDuration = Math.max(60, Math.min(600, (wordCount / 150) * 60));
+      const estimatedDuration = Math.max(30, Math.min(300, (wordCount / 150) * 60));
 
-      // Create multiple frequency layers for more natural speech-like audio
-      const frequencyLayers = [
-        220, 246.94, 261.63, 293.66, 329.63, 349.23, 392.00, 440, 493.88, 523.25
-      ];
+      // Create a simple silence MP3 with proper duration
+      await this.createSilentMp3(outputPath, estimatedDuration);
 
-      // Try Node.js built-in audio generation first
-      try {
-        const audioData = await this.generateSpeechLikeAudio(estimatedDuration, 44100);
-        await fs.writeFile(outputPath, audioData);
-
-        const stats = await fs.stat(outputPath);
-        if (stats.size > 100000) { // At least 100KB
-          console.log(`✅ Advanced fallback audio created: ${outputPath} (${Math.round(stats.size / 1024)}KB)`);
-          return outputPath;
-        }
-      } catch (nodeError) {
-        console.warn('Node.js audio generation failed, trying alternative method');
-      }
-
-      // Web Audio API simulation fallback
-      await this.createWebAudioStyleMp3(outputPath, estimatedDuration);
-
-      console.log('✅ Web Audio style MP3 created:', outputPath);
+      console.log(`⚠️ Emergency fallback created: ${outputPath} (${estimatedDuration}s silence)`);
+      console.log('⚠️ This file contains SILENCE, not your script content!');
+      
       return outputPath;
 
     } catch (error) {
-      console.error('❌ Advanced fallback audio generation failed:', error);
-      throw new Error(`Advanced fallback TTS generation failed: ${error.message}`);
+      console.error('❌ Emergency fallback creation failed:', error);
+      throw new Error(`Emergency fallback creation failed: ${error.message}`);
     }
+  }
+
+  private async createSilentMp3(outputPath: string, duration: number): Promise<void> {
+    // Create a proper silent MP3 file
+    const sampleRate = 44100;
+    const channels = 1;
+    const samples = Math.floor(duration * sampleRate);
+    
+    // Create WAV header for silence
+    const header = Buffer.alloc(44);
+    header.write('RIFF', 0);
+    header.writeUInt32LE(36 + samples * 2, 4);
+    header.write('WAVE', 8);
+    header.write('fmt ', 12);
+    header.writeUInt32LE(16, 16);
+    header.writeUInt16LE(1, 20);  // PCM
+    header.writeUInt16LE(channels, 22);
+    header.writeUInt32LE(sampleRate, 24);
+    header.writeUInt32LE(sampleRate * 2, 28);
+    header.writeUInt16LE(2, 32);
+    header.writeUInt16LE(16, 34);
+    header.write('data', 36);
+    header.writeUInt32LE(samples * 2, 40);
+
+    // Create silent audio data
+    const audioData = Buffer.alloc(samples * 2, 0);
+
+    // Combine header and data
+    const completeAudio = Buffer.concat([header, audioData]);
+    await fs.writeFile(outputPath, completeAudio);
   }
 
   private async generateSpeechLikeAudio(duration: number, sampleRate: number): Promise<Buffer> {
