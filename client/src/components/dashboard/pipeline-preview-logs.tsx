@@ -40,14 +40,33 @@ export function PipelinePreviewLogs({ selectedJobId }: PipelinePreviewLogsProps)
   const [expandedLogs, setExpandedLogs] = useState<Set<number>>(new Set());
 
   const { data: logs, isLoading } = useQuery({
-    queryKey: ['pipeline-logs', selectedJobId || 'all'],
+    queryKey: ['pipeline-logs', selectedJobId || 'active-only'],
     queryFn: async () => {
-      const url = selectedJobId && selectedJobId > 0
-        ? `/api/pipeline/logs/${selectedJobId}`
-        : '/api/pipeline/logs';
-      const response = await fetch(url);
-      if (!response.ok) throw new Error('Failed to fetch logs');
-      return response.json();
+      if (selectedJobId && selectedJobId > 0) {
+        // Fetch logs for specific job
+        const response = await fetch(`/api/pipeline/logs/${selectedJobId}`);
+        if (!response.ok) throw new Error('Failed to fetch logs');
+        return response.json();
+      } else {
+        // Fetch active jobs first, then get logs only for those jobs
+        const activeJobsResponse = await fetch('/api/dashboard/active-pipeline');
+        if (!activeJobsResponse.ok) throw new Error('Failed to fetch active jobs');
+        const pipelineData = await activeJobsResponse.json();
+        
+        const activeJobIds = pipelineData.active?.map((job: any) => job.id) || [];
+        
+        if (activeJobIds.length === 0) {
+          return []; // No active jobs, return empty logs
+        }
+        
+        // Fetch all logs and filter to only active job IDs
+        const logsResponse = await fetch('/api/pipeline/logs');
+        if (!logsResponse.ok) throw new Error('Failed to fetch logs');
+        const allLogs = await logsResponse.json();
+        
+        // Filter logs to only include active job IDs
+        return allLogs.filter((log: any) => activeJobIds.includes(log.jobId));
+      }
     },
     refetchInterval: 1000, // Refresh every 1 second for faster real-time updates
     enabled: true,
@@ -120,7 +139,7 @@ export function PipelinePreviewLogs({ selectedJobId }: PipelinePreviewLogsProps)
           {selectedJobId && selectedJobId > 0 ? (
             <Badge variant="default">Job #{selectedJobId} Only</Badge>
           ) : (
-            <Badge variant="outline">All Jobs</Badge>
+            <Badge variant="outline">Active Jobs Only</Badge>
           )}
         </CardTitle>
       </CardHeader>
@@ -194,9 +213,14 @@ export function PipelinePreviewLogs({ selectedJobId }: PipelinePreviewLogsProps)
           ) : (
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <Sparkles className="h-12 w-12 text-muted-foreground mb-3" />
-              <p className="text-muted-foreground">No pipeline activity yet</p>
+              <p className="text-muted-foreground">
+                {selectedJobId ? 'No logs for this job' : 'No active pipeline jobs'}
+              </p>
               <p className="text-sm text-muted-foreground mt-1">
-                Logs will appear here when automation starts
+                {selectedJobId 
+                  ? 'This job may not have generated any logs yet'
+                  : 'Logs will appear here when active jobs are running'
+                }
               </p>
             </div>
           )}
