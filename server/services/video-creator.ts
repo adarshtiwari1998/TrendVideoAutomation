@@ -633,23 +633,37 @@ export class VideoCreator {
 
       // Validate the generated audio file
       const stats = await fs.stat(audioPath);
-      if (stats.size < 50000) { // Less than 50KB indicates corrupted file
-        console.warn('Generated audio file too small, creating new one...');
-        return await this.createValidAudio(script, jobId);
+      console.log(`📊 Generated audio file size: ${Math.round(stats.size / 1024)}KB`);
+      
+      if (stats.size < 100000) { // Less than 100KB indicates corrupted file
+        console.warn('Audio file validation failed, recreating...');
+        throw new Error('Generated audio file too small, indicates invalid content');
       }
 
-      // Test if the audio file is valid
+      // Test if the audio file is valid and has reasonable duration
       try {
         const { stdout } = await execAsync(`ffprobe -v quiet -show_entries format=duration -of csv=p=0 "${audioPath}"`);
         const duration = parseFloat(stdout.trim());
         
-        if (isNaN(duration) || duration < 10) {
-          console.warn('Audio file invalid or too short, recreating...');
-          return await this.createValidAudio(script, jobId);
+        console.log(`🎵 Audio duration: ${duration} seconds`);
+        
+        if (isNaN(duration) || duration < 20) {
+          console.warn('Audio duration too short, indicates system text was processed');
+          throw new Error('Audio file invalid or too short, recreating...');
         }
+        
+        // Check if duration makes sense for script length
+        const wordCount = script.split(' ').length;
+        const expectedDuration = (wordCount / 150) * 60; // 150 WPM
+        
+        if (duration < expectedDuration * 0.3) { // Duration way too short
+          console.warn(`Audio duration ${duration}s too short for ${wordCount} words (expected ~${expectedDuration}s)`);
+          throw new Error('Audio duration inconsistent with script length');
+        }
+        
       } catch (probeError) {
-        console.warn('Audio file validation failed, recreating...');
-        return await this.createValidAudio(script, jobId);
+        console.warn('Audio file validation failed:', probeError.message);
+        throw new Error('Audio file validation failed, recreating...');
       }
 
       // Professional audio enhancement - broadcast quality

@@ -63,7 +63,7 @@ export class TextToSpeechService {
       // Fallback to Google Cloud TTS with fixed voice configuration
       try {
         const chunks = this.splitTextIntoChunks(text, 4000);
-        
+
         if (chunks.length === 1) {
           return await this.generateSingleChunk(chunks[0], outputPath, voice, speed, pitch);
         } else {
@@ -89,7 +89,7 @@ export class TextToSpeechService {
 
     try {
       const axios = require('axios');
-      
+
       const response = await axios.post('https://api.elevenlabs.io/v1/text-to-speech/pNInz6obpgDQGcFmaJgB', {
         text: text,
         model_id: 'eleven_multilingual_v2',
@@ -111,7 +111,7 @@ export class TextToSpeechService {
       const outputDir = path.dirname(outputPath);
       await fs.mkdir(outputDir, { recursive: true });
       await fs.writeFile(outputPath, response.data);
-      
+
       console.log('✅ ElevenLabs audio generated successfully');
       return outputPath;
     } catch (error) {
@@ -125,17 +125,17 @@ export class TextToSpeechService {
     const getVoiceGender = (voiceName: string): 'MALE' | 'FEMALE' => {
       const maleVoices = ['en-IN-Neural2-B', 'en-IN-Wavenet-B', 'en-IN-Standard-B', 'en-IN-Standard-D'];
       const femaleVoices = ['en-IN-Neural2-A', 'en-IN-Neural2-C', 'en-IN-Neural2-D', 'en-IN-Wavenet-A', 'en-IN-Wavenet-C', 'en-IN-Standard-A', 'en-IN-Standard-C'];
-      
+
       if (maleVoices.includes(voiceName)) return 'MALE';
       if (femaleVoices.includes(voiceName)) return 'FEMALE';
       return 'MALE'; // Default fallback
     };
 
     const voiceGender = getVoiceGender(voice);
-    
+
     // Clean the text to ensure it's actual content
     const cleanText = this.cleanTextForSpeech(text);
-    
+
     const request = {
       input: { text: cleanText },
       voice: {
@@ -204,29 +204,29 @@ export class TextToSpeechService {
         const { execSync } = require('child_process');
         const fileList = chunkFiles.map(f => `file '${f}'`).join('\n');
         const listPath = path.join(outputDir, `filelist_${Date.now()}.txt`);
-        
+
         await fs.writeFile(listPath, fileList);
-        
+
         const combineCommand = `ffmpeg -f concat -safe 0 -i "${listPath}" -c copy "${outputPath}" -y`;
         execSync(combineCommand, { stdio: 'pipe' });
-        
+
         // Cleanup
         await fs.unlink(listPath);
         for (const chunkFile of chunkFiles) {
           await fs.unlink(chunkFile).catch(() => {});
         }
-        
+
         console.log(`✅ Combined audio chunks into: ${outputPath}`);
         return outputPath;
       } catch (combineError) {
         console.warn('Failed to combine chunks, using first chunk:', combineError.message);
         await fs.copyFile(chunkFiles[0], outputPath);
-        
+
         // Cleanup
         for (const chunkFile of chunkFiles) {
           await fs.unlink(chunkFile).catch(() => {});
         }
-        
+
         return outputPath;
       }
     } else {
@@ -246,17 +246,17 @@ export class TextToSpeechService {
       // Calculate proper duration
       const wordCount = text.split(' ').length;
       const estimatedDuration = Math.max(60, Math.min(600, (wordCount / 150) * 60));
-      
+
       // Create multiple frequency layers for more natural speech-like audio
       const frequencyLayers = [
         220, 246.94, 261.63, 293.66, 329.63, 349.23, 392.00, 440, 493.88, 523.25
       ];
-      
+
       // Try Node.js built-in audio generation first
       try {
         const audioData = await this.generateSpeechLikeAudio(estimatedDuration, 44100);
         await fs.writeFile(outputPath, audioData);
-        
+
         const stats = await fs.stat(outputPath);
         if (stats.size > 100000) { // At least 100KB
           console.log(`✅ Advanced fallback audio created: ${outputPath} (${Math.round(stats.size / 1024)}KB)`);
@@ -268,10 +268,10 @@ export class TextToSpeechService {
 
       // Web Audio API simulation fallback
       await this.createWebAudioStyleMp3(outputPath, estimatedDuration);
-      
+
       console.log('✅ Web Audio style MP3 created:', outputPath);
       return outputPath;
-      
+
     } catch (error) {
       console.error('❌ Advanced fallback audio generation failed:', error);
       throw new Error(`Advanced fallback TTS generation failed: ${error.message}`);
@@ -281,29 +281,29 @@ export class TextToSpeechService {
   private async generateSpeechLikeAudio(duration: number, sampleRate: number): Promise<Buffer> {
     const numSamples = Math.floor(duration * sampleRate);
     const audioBuffer = Buffer.alloc(numSamples * 2); // 16-bit audio
-    
+
     // Generate speech-like waveform with varying frequencies and amplitude
     for (let i = 0; i < numSamples; i++) {
       const time = i / sampleRate;
-      
+
       // Create speech-like frequency modulation
       const baseFreq = 150 + 50 * Math.sin(2 * Math.PI * time * 0.5); // Fundamental frequency
       const harmonic1 = Math.sin(2 * Math.PI * baseFreq * time) * 0.5;
       const harmonic2 = Math.sin(2 * Math.PI * baseFreq * 2 * time) * 0.3;
       const harmonic3 = Math.sin(2 * Math.PI * baseFreq * 3 * time) * 0.2;
-      
+
       // Add some noise for naturalness
       const noise = (Math.random() - 0.5) * 0.1;
-      
+
       // Amplitude modulation (speech envelope)
       const envelope = 0.8 + 0.2 * Math.sin(2 * Math.PI * time * 3);
-      
+
       const sample = (harmonic1 + harmonic2 + harmonic3 + noise) * envelope * 16384;
       const clampedSample = Math.max(-32768, Math.min(32767, sample));
-      
+
       audioBuffer.writeInt16LE(clampedSample, i * 2);
     }
-    
+
     // Create WAV header
     const wavHeader = this.createWavHeader(numSamples * 2, sampleRate);
     return Buffer.concat([wavHeader, audioBuffer]);
@@ -311,12 +311,12 @@ export class TextToSpeechService {
 
   private createWavHeader(dataSize: number, sampleRate: number): Buffer {
     const header = Buffer.alloc(44);
-    
+
     // RIFF header
     header.write('RIFF', 0);
     header.writeUInt32LE(36 + dataSize, 4);
     header.write('WAVE', 8);
-    
+
     // fmt chunk
     header.write('fmt ', 12);
     header.writeUInt32LE(16, 16); // chunk size
@@ -326,11 +326,11 @@ export class TextToSpeechService {
     header.writeUInt32LE(sampleRate * 2, 28); // byte rate
     header.writeUInt16LE(2, 32);  // block align
     header.writeUInt16LE(16, 34); // bits per sample
-    
+
     // data chunk
     header.write('data', 36);
     header.writeUInt32LE(dataSize, 40);
-    
+
     return header;
   }
 
@@ -340,28 +340,28 @@ export class TextToSpeechService {
     const bitRate = 192000;
     const frameSize = 1152; // MP3 frame size
     const framesNeeded = Math.floor(duration * sampleRate / frameSize);
-    
+
     // MP3 header structure
     const mp3Header = Buffer.from([
       0xFF, 0xFB, 0x92, 0x00, // MP3 sync + header for 44.1kHz, 192kbps
       0x00, 0x00, 0x00, 0x00  // Additional header bytes
     ]);
-    
+
     // Generate audio data with better structure
     const frameData = Buffer.alloc(417); // Standard MP3 frame size for 192kbps
-    
+
     // Fill with pseudo-random but structured data
     for (let i = 0; i < frameData.length; i++) {
       frameData[i] = Math.floor(Math.random() * 256);
     }
-    
+
     // Combine header with repeated frame data
     const frames = [];
     for (let i = 0; i < framesNeeded; i++) {
       frames.push(mp3Header);
       frames.push(frameData);
     }
-    
+
     const completeAudio = Buffer.concat(frames);
     await fs.writeFile(outputPath, completeAudio);
   }
@@ -370,7 +370,7 @@ export class TextToSpeechService {
     // Calculate duration based on text
     const wordCount = text.split(' ').length;
     const duration = Math.max(30, Math.min(600, (wordCount / 150) * 60));
-    
+
     // Create a proper MP3 header and data
     const mp3Header = Buffer.from([
       0xFF, 0xFB, 0x90, 0x00, // MP3 sync word and header
@@ -378,15 +378,15 @@ export class TextToSpeechService {
       0x00, 0x00, 0x00, 0x00,
       0x00, 0x00, 0x00, 0x00
     ]);
-    
+
     // Create audio data (silence)
     const frameSize = 417; // Standard MP3 frame size for 44.1kHz
     const framesNeeded = Math.floor(duration * 38.28); // ~38.28 frames per second
     const audioData = Buffer.alloc(framesNeeded * frameSize, 0x00);
-    
+
     // Combine header and data
     const completeAudio = Buffer.concat([mp3Header, audioData]);
-    
+
     await fs.writeFile(outputPath, completeAudio);
   }
 
@@ -490,6 +490,38 @@ export class TextToSpeechService {
       'en-IN-Neural2-C': 'Indian English Female (Neural)',
       'en-IN-Neural2-D': 'Indian English Female (Neural)', // Corrected: This is actually female
     };
+  }
+
+  private enhanceScriptForNaturalSpeech(script: string): string {
+    // Ensure we have actual content to enhance
+    if (!script || script.length < 50) {
+      console.warn('⚠️ Script too short or empty, cannot enhance');
+      throw new Error('Script content is insufficient for enhancement');
+    }
+
+    // Add natural pauses and emphasis for Indian speaking style
+    let enhanced = script
+      .replace(/\. /g, '... ') // Add pauses after sentences
+      .replace(/\, /g, ', ') // Natural comma pauses
+      .replace(/\! /g, '! ') // Excitement emphasis
+      .replace(/\? /g, '? ') // Question emphasis
+      .replace(/\bvery important\b/g, 'extremely important') // Add emphasis
+      .replace(/\bamazing\b/g, 'absolutely amazing'); // Natural expressions
+
+    // Only add intro/outro if script doesn't already have them
+    if (!enhanced.toLowerCase().includes('hello') && 
+        !enhanced.toLowerCase().includes('welcome') &&
+        !enhanced.toLowerCase().includes('namaste')) {
+      enhanced = `Hello friends! ${enhanced}`;
+    }
+
+    if (!enhanced.toLowerCase().includes('subscribe') && 
+        !enhanced.toLowerCase().includes('like')) {
+      enhanced += ` Thank you for watching, and don't forget to like and subscribe for more updates!`;
+    }
+
+    console.log(`✅ Enhanced script length: ${enhanced.length} characters`);
+    return enhanced;
   }
 }
 

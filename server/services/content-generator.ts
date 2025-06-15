@@ -61,15 +61,25 @@ export class ContentGenerator {
       // Remove JSON wrapper if it exists but keep the content
       .replace(/^```json\s*\n?/i, '')
       .replace(/\n?```\s*$/i, '')
-      // Remove Gemini's explanatory text
-      .replace(/Here's a.*?script.*?:/i, '')
-      .replace(/I'll create.*?for you.*?\./i, '')
-      .replace(/This script.*?includes.*?\./i, '')
+      // Remove Gemini's explanatory text at the beginning
+      .replace(/^Here's a.*?script.*?[:.][\s\n]*/i, '')
+      .replace(/^I'll create.*?for you.*?[:.][\s\n]*/i, '')
+      .replace(/^This script.*?includes.*?[:.][\s\n]*/i, '')
+      .replace(/^I'll.*?script.*?[:.][\s\n]*/i, '')
+      .replace(/^Sure.*?here.*?[:.][\s\n]*/i, '')
+      .replace(/^Certainly.*?[:.][\s\n]*/i, '')
+      // Remove system notes
       .replace(/Note:.*?\n/gi, '')
+      .replace(/Remember:.*?\n/gi, '')
+      .replace(/Important:.*?\n/gi, '')
       // Remove system instructions that leaked through
       .replace(/Return JSON format:.*$/i, '')
       .replace(/\{"script":\s*"/i, '')
       .replace(/",\s*"visual_cues":.*$/i, '')
+      // Remove meta instructions
+      .replace(/Write ONLY.*?\./gi, '')
+      .replace(/Structure.*?:/gi, '')
+      .replace(/STRICT REQUIREMENTS.*?\./gi, '')
       // Clean up multiple newlines and spaces
       .replace(/\n\s*\n\s*\n/g, '\n\n')
       .trim();
@@ -84,6 +94,16 @@ export class ContentGenerator {
       } catch (e) {
         // Continue with text cleaning
       }
+    }
+
+    // If the cleaned text is still system-like, return empty to trigger fallback
+    if (cleaned.length < 100 || 
+        /^(I'll|I'm|Here's|This is|Sure|Certainly)/i.test(cleaned) ||
+        cleaned.includes('API') || 
+        cleaned.includes('Gemini') ||
+        cleaned.includes('model')) {
+      console.warn('⚠️ Detected system text in cleaned script, returning empty for fallback');
+      return '';
     }
 
     return cleaned;
@@ -122,36 +142,33 @@ export class ContentGenerator {
 
   private createPrompt(topic: TrendingTopic, videoType: 'long_form' | 'short'): string {
     const duration = videoType === 'long_form' ? '8-12 minutes' : '45-60 seconds';
-    const audience = 'Indian and global audience interested in ' + topic.category;
     
     return `
-Write ONLY the video script content for a ${duration} ${videoType} video about: "${topic.title}"
+You are a YouTube content creator making a ${duration} video about "${topic.title}".
 
-Topic: ${topic.description}
+Topic details: ${topic.description}
 Category: ${topic.category}
 
-STRICT REQUIREMENTS:
-- Write ONLY the actual spoken content
-- NO explanations, NO system messages, NO meta-commentary
-- Start directly with the video content
-- Natural, conversational tone for Indian English speakers
-- Include specific facts about the topic
-- Make it engaging and informative
+Start speaking directly to your audience right now. Begin with an engaging hook and provide the actual content they came to learn about.
 
 ${videoType === 'long_form' ? `
-Structure (600-800 words):
-1. Strong hook (first 15 seconds)
-2. Main explanation with facts
-3. Real-world implications
-4. Call to action
+Your video should be 600-800 words covering:
+- Compelling opening hook
+- Detailed explanation with facts and examples  
+- Real-world applications and impact
+- Engaging conclusion with call to action
+
+Make it educational, entertaining, and valuable for viewers interested in ${topic.category}.
 ` : `
-Structure (150-200 words):
-1. Attention-grabbing opening (3 seconds)
-2. Key facts quickly
-3. Strong conclusion with CTA
+Your video should be 150-200 words covering:
+- Immediate attention-grabbing opening
+- Key facts and insights quickly delivered
+- Strong, memorable conclusion
+
+Make it fast-paced, informative, and perfect for short-form content.
 `}
 
-Write ONLY the script content that will be spoken. No JSON, no formatting, no instructions.
+Write the complete script as if you're speaking directly to your YouTube audience. Use natural conversational tone that works well for Indian English speakers.
     `;
   }
 
