@@ -217,15 +217,35 @@ This video was created with AI assistance for educational and informational purp
   }
 
   private getMockVideoStream(videoPath: string) {
-    // In real implementation: return fs.createReadStream(videoPath);
-    console.log('Mock video stream for:', videoPath);
-    return Buffer.from('mock video content');
+    // Check if the file actually exists, if so use real stream
+    if (fs.existsSync(videoPath)) {
+      console.log('Creating real video stream for:', videoPath);
+      return fs.createReadStream(videoPath);
+    }
+    
+    // Otherwise create a mock readable stream
+    console.log('Creating mock video stream for:', videoPath);
+    const { Readable } = require('stream');
+    const mockStream = new Readable();
+    mockStream.push('mock video content');
+    mockStream.push(null); // End the stream
+    return mockStream;
   }
 
   private getMockThumbnailStream(thumbnailPath: string) {
-    // In real implementation: return fs.createReadStream(thumbnailPath);
-    console.log('Mock thumbnail stream for:', thumbnailPath);
-    return Buffer.from('mock thumbnail content');
+    // Check if the file actually exists, if so use real stream
+    if (fs.existsSync(thumbnailPath)) {
+      console.log('Creating real thumbnail stream for:', thumbnailPath);
+      return fs.createReadStream(thumbnailPath);
+    }
+    
+    // Otherwise create a mock readable stream
+    console.log('Creating mock thumbnail stream for:', thumbnailPath);
+    const { Readable } = require('stream');
+    const mockStream = new Readable();
+    mockStream.push('mock thumbnail content');
+    mockStream.push(null); // End the stream
+    return mockStream;
   }
 
   private async updateDailyStats(videoType: string): Promise<void> {

@@ -298,9 +298,19 @@ export class StorageManager {
   }
 
   private getMockFileStream(filePath: string) {
-    // In real implementation: return fs.createReadStream(filePath);
-    console.log('Mock file stream for:', filePath);
-    return Buffer.from(`mock file content for ${filePath}`);
+    // Check if the file actually exists, if so use real stream
+    if (fs.existsSync(filePath)) {
+      console.log('Creating real file stream for:', filePath);
+      return fs.createReadStream(filePath);
+    }
+    
+    // Otherwise create a mock readable stream
+    console.log('Creating mock file stream for:', filePath);
+    const { Readable } = require('stream');
+    const mockStream = new Readable();
+    mockStream.push(`mock file content for ${filePath}`);
+    mockStream.push(null); // End the stream
+    return mockStream;
   }
 
   async getStorageUsage(): Promise<string> {
