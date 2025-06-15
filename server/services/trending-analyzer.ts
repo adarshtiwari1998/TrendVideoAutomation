@@ -127,27 +127,27 @@ export class TrendingAnalyzer {
       let totalProcessed = 0;
       let validArticles = 0;
 
-      // Simplified search strategies for Google Custom Search API
+      // Enhanced search strategies to get direct article URLs
       const searchStrategies = [
         { 
-          query: `${query} article news`, 
+          query: `"${query}" article OR news OR story OR report filetype:html -category -tag -index`, 
           num: 10, 
-          description: 'News articles' 
+          description: 'Direct news articles' 
         },
         { 
-          query: `${query} discovery breakthrough`, 
+          query: `"${query}" discovery OR breakthrough OR research OR study filetype:html`, 
           num: 10, 
-          description: 'Research breakthroughs' 
+          description: 'Research articles' 
         },
         { 
-          query: `${query} latest news today`, 
+          query: `${query} site:astrobiology.com OR site:space.com OR site:sciencenews.org OR site:phys.org`, 
           num: 10, 
-          description: 'Latest updates' 
+          description: 'Trusted sources' 
         },
         { 
-          query: `${query} research study`, 
+          query: `${query} "2025" OR "June 2025" OR "recent" article news -homepage -category`, 
           num: 10, 
-          description: 'Research studies' 
+          description: 'Recent articles' 
         }
       ];
 
@@ -173,9 +173,16 @@ export class TrendingAnalyzer {
               if (validArticles >= 5) break;
               
               totalProcessed++;
-              const itemUrl = item.link || '';
+              let itemUrl = item.link || '';
               console.log(`\n🔍 PROCESSING ${totalProcessed}: ${item.title?.substring(0, 60)}...`);
-              console.log(`📎 URL: ${itemUrl}`);
+              console.log(`📎 Original URL: ${itemUrl}`);
+
+              // Try to extract better URL from pagemap if available
+              const betterUrl = this.extractBetterArticleUrl(item, itemUrl);
+              if (betterUrl !== itemUrl) {
+                console.log(`🔧 Found better URL: ${betterUrl}`);
+                itemUrl = betterUrl;
+              }
 
               // Skip if not a valid article URL
               if (!this.isValidArticleUrl(itemUrl)) {
@@ -210,9 +217,21 @@ export class TrendingAnalyzer {
                 console.warn(`❌ Content extraction error for ${itemUrl}: ${error.message}`);
               }
 
-              // Skip articles with too little content - reduce minimum requirement
-              if (realWordCount < 20) {
+              // Skip articles with too little content or poor quality indicators
+              if (realWordCount < 50) {
                 console.log(`❌ Article too short: ${realWordCount} words`);
+                continue;
+              }
+
+              // Additional quality checks for full articles
+              if (contentQuality === 'low' && realWordCount < 100) {
+                console.log(`❌ Low quality content with insufficient length`);
+                continue;
+              }
+
+              // Check if content seems to be a homepage/category listing
+              if (this.isListingContent(fullContent)) {
+                console.log(`❌ Content appears to be a listing/category page`);
                 continue;
               }
 
@@ -324,14 +343,27 @@ export class TrendingAnalyzer {
         pathname === '/',
         pathname === '/index.html',
         pathname === '/home',
+        pathname === '/about',
+        pathname === '/contact',
         pathname.includes('/category/'),
+        pathname.includes('/categories/'),
         pathname.includes('/tag/'),
+        pathname.includes('/tags/'),
         pathname.includes('/search'),
         pathname.includes('/feed'),
         pathname.includes('/rss'),
         pathname.includes('/sitemap'),
+        pathname.includes('/archive'),
+        pathname.includes('/archives'),
         pathname.endsWith('/index.php'),
-        pathname.endsWith('/index.html')
+        pathname.endsWith('/index.html'),
+        pathname.endsWith('/'),
+        // Common non-article pages
+        pathname.includes('/login'),
+        pathname.includes('/signup'),
+        pathname.includes('/register'),
+        pathname.includes('/subscribe'),
+        pathname.includes('/newsletter')
       ];
 
       if (immediateExclusions.some(condition => condition)) {
@@ -339,42 +371,69 @@ export class TrendingAnalyzer {
         return false;
       }
 
-      // Count meaningful path segments
+      // Count meaningful path segments (excluding empty segments)
       const pathSegments = pathname.split('/').filter(p => p.length > 1);
       
-      // Must have at least one meaningful segment
+      // Must have meaningful path segments for an article
       if (pathSegments.length === 0) {
         console.log(`❌ No meaningful path segments`);
         return false;
       }
 
-      // For known trusted domains, be more lenient
-      const trustedDomains = ['space.com', 'nasa.gov', 'sciencenews.org', 'astronomy.com', 'phys.org', 'sciencedaily.com', 'newscientist.com'];
+      // Strong article indicators - these are very likely to be actual articles
+      const strongArticleIndicators = [
+        // Date patterns in URL
+        /\d{4}\/\d{2}\/\d{2}/.test(pathname), // 2025/06/15
+        /\d{4}-\d{2}-\d{2}/.test(pathname),   // 2025-06-15
+        /\d{4}\/\d{2}/.test(pathname),        // 2025/06
+        // Article-specific paths
+        pathname.includes('/article/'),
+        pathname.includes('/articles/'),
+        pathname.includes('/news/'),
+        pathname.includes('/story/'),
+        pathname.includes('/stories/'),
+        pathname.includes('/post/'),
+        pathname.includes('/posts/'),
+        pathname.includes('/blog/'),
+        pathname.includes('/press-release/'),
+        pathname.includes('/report/'),
+        pathname.includes('/research/'),
+        // Long meaningful segments (likely article titles)
+        pathSegments.some(segment => segment.includes('-') && segment.length > 8),
+        // Multiple meaningful segments suggesting article structure
+        pathSegments.length >= 3 && pathSegments.every(seg => seg.length > 3)
+      ];
+
+      if (strongArticleIndicators.some(condition => condition)) {
+        console.log(`✅ Strong article indicators found: VALID`);
+        return true;
+      }
+
+      // For trusted domains, be more selective but still accept good patterns
+      const trustedDomains = [
+        'space.com', 'nasa.gov', 'sciencenews.org', 'astronomy.com', 
+        'phys.org', 'sciencedaily.com', 'newscientist.com', 'astrobiology.com',
+        'universetoday.com', 'spacenews.com', 'nationalgeographic.com'
+      ];
+      
       const isTrustedDomain = trustedDomains.some(domain => hostname.includes(domain));
       
       if (isTrustedDomain) {
-        // Just ensure it's not obviously a homepage/category and has content
-        const isLikelyArticle = pathSegments.length >= 1 && 
+        // For trusted domains, require at least 2 path segments and no trailing slash
+        const isLikelyArticle = pathSegments.length >= 2 && 
                                !pathname.endsWith('/') &&
-                               !pathname.includes('/category') &&
-                               !pathname.includes('/tag');
-        console.log(`✅ Trusted domain (${hostname}): ${isLikelyArticle ? 'VALID' : 'INVALID'}`);
+                               pathSegments.some(segment => segment.length > 5);
+        console.log(`🔍 Trusted domain (${hostname}): ${isLikelyArticle ? 'VALID' : 'INVALID'}`);
         return isLikelyArticle;
       }
 
-      // For other domains, look for article patterns - be more permissive
-      const hasArticlePattern = pathname.includes('article') || 
-                               pathname.includes('news') || 
-                               pathname.includes('story') ||
-                               pathname.includes('post') ||
-                               pathname.includes('blog') ||
-                               /\d{4}\/\d{2}/.test(pathname) ||
-                               /\d{4}-\d{2}-\d{2}/.test(pathname) ||
-                               pathSegments.some(segment => segment.includes('-') && segment.length > 5) ||
-                               pathSegments.length >= 2; // Any URL with multiple segments
+      // For other domains, require stronger evidence
+      const hasGoodPattern = pathSegments.length >= 2 && 
+                            pathSegments.some(segment => segment.includes('-') && segment.length > 6) &&
+                            !pathname.endsWith('/');
 
-      console.log(`🔍 General domain: ${hasArticlePattern ? 'VALID' : 'INVALID'}`);
-      return hasArticlePattern;
+      console.log(`🔍 General domain: ${hasGoodPattern ? 'VALID' : 'INVALID'}`);
+      return hasGoodPattern;
     } catch (error) {
       console.error(`❌ URL validation error: ${error.message}`);
       return false;
@@ -831,6 +890,26 @@ export class TrendingAnalyzer {
     };
   }
 
+  private isListingContent(content: string): boolean {
+    const lowerContent = content.toLowerCase();
+    
+    // Signs this might be a listing/category page
+    const listingIndicators = [
+      // Multiple "read more" or "continue reading" links
+      (lowerContent.match(/read more|continue reading|full article/g) || []).length > 3,
+      // Multiple date patterns (suggesting article list)
+      (lowerContent.match(/\d{1,2}\/\d{1,2}\/\d{4}|\d{1,2} hours? ago|\d{1,2} days? ago/g) || []).length > 3,
+      // Common listing patterns
+      lowerContent.includes('latest news') && lowerContent.includes('more stories'),
+      lowerContent.includes('recent articles') && lowerContent.includes('see all'),
+      lowerContent.includes('trending') && lowerContent.includes('popular'),
+      // Short snippets with multiple titles (typical of category pages)
+      content.split('\n').filter(line => line.trim().length > 20 && line.trim().length < 100).length > 5
+    ];
+
+    return listingIndicators.some(indicator => indicator);
+  }
+
   private createFallbackContent(snippet: string, title: string): {
     cleanText: string;
     description: string;
@@ -980,6 +1059,87 @@ export class TrendingAnalyzer {
     const randomPrefix = categoryPrefixes[Math.floor(Math.random() * categoryPrefixes.length)];
 
     return `${randomPrefix} ${title}`.substring(0, 100);
+  }
+
+  private extractBetterArticleUrl(item: any, originalUrl: string): string {
+    try {
+      // Check pagemap for canonical or og:url
+      if (item.pagemap) {
+        // Try canonical URL first
+        if (item.pagemap.metatags?.[0]?.['og:url']) {
+          const ogUrl = item.pagemap.metatags[0]['og:url'];
+          if (this.isMoreSpecificUrl(ogUrl, originalUrl)) {
+            console.log(`🔗 Found og:url: ${ogUrl}`);
+            return ogUrl;
+          }
+        }
+
+        // Try canonical link
+        if (item.pagemap.metatags?.[0]?.['canonical']) {
+          const canonicalUrl = item.pagemap.metatags[0]['canonical'];
+          if (this.isMoreSpecificUrl(canonicalUrl, originalUrl)) {
+            console.log(`🔗 Found canonical: ${canonicalUrl}`);
+            return canonicalUrl;
+          }
+        }
+
+        // Check for article-specific URLs in cse_thumbnail or other sources
+        if (item.pagemap.cse_thumbnail?.[0]?.src) {
+          const thumbnailSrc = item.pagemap.cse_thumbnail[0].src;
+          // Sometimes thumbnail URLs contain the article path
+          const articlePath = this.extractArticlePathFromThumbnail(thumbnailSrc, originalUrl);
+          if (articlePath && this.isMoreSpecificUrl(articlePath, originalUrl)) {
+            console.log(`🔗 Extracted from thumbnail: ${articlePath}`);
+            return articlePath;
+          }
+        }
+      }
+
+      return originalUrl;
+    } catch (error) {
+      console.warn(`⚠️ Error extracting better URL: ${error.message}`);
+      return originalUrl;
+    }
+  }
+
+  private isMoreSpecificUrl(newUrl: string, originalUrl: string): boolean {
+    try {
+      const newUrlObj = new URL(newUrl);
+      const originalUrlObj = new URL(originalUrl);
+      
+      // Same domain check
+      if (newUrlObj.hostname !== originalUrlObj.hostname) {
+        return false;
+      }
+      
+      // More specific if it has more path segments
+      const newPathSegments = newUrlObj.pathname.split('/').filter(p => p.length > 0);
+      const originalPathSegments = originalUrlObj.pathname.split('/').filter(p => p.length > 0);
+      
+      return newPathSegments.length > originalPathSegments.length ||
+             newUrlObj.pathname.includes('/article/') ||
+             newUrlObj.pathname.includes('/news/') ||
+             newUrlObj.pathname.includes('/story/') ||
+             /\d{4}\/\d{2}/.test(newUrlObj.pathname);
+    } catch {
+      return false;
+    }
+  }
+
+  private extractArticlePathFromThumbnail(thumbnailUrl: string, baseUrl: string): string | null {
+    try {
+      const baseUrlObj = new URL(baseUrl);
+      
+      // Look for patterns in thumbnail URL that might indicate article path
+      if (thumbnailUrl.includes('article') || thumbnailUrl.includes('news') || thumbnailUrl.includes('story')) {
+        // This is a simple heuristic - you might need to adjust based on specific sites
+        return baseUrl; // For now, return the base URL
+      }
+      
+      return null;
+    } catch {
+      return null;
+    }
   }
 
   private extractDomain(url: string): string {
