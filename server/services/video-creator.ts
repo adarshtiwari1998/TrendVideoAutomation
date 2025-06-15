@@ -254,26 +254,31 @@ export class ProfessionalVideoCreator {
     const assets: string[] = [];
 
     for (let i = 0; i < scenes.length; i++) {
+      let backgroundPath: string;
+
       try {
-        // Download relevant images from Unsplash
+        // Try to download high-quality background image
         const imageUrl = await this.getUnsplashImage(category, i);
         const imagePath = path.join(this.backgroundsDir, `scene_${i}_bg.jpg`);
 
         await this.downloadImage(imageUrl, imagePath);
-        assets.push(imagePath);
+        console.log(`✅ Downloaded background for scene ${i}`);
+        backgroundPath = imagePath;
       } catch (error) {
-        console.warn(`Failed to download background for scene ${i}, using fallback`);
+        console.warn(`Failed to download background for scene ${i}, creating professional fallback`);
+        
         try {
-          // Create a professional gradient background as fallback
-          const fallbackPath = await this.createGradientBackground(i);
-          assets.push(fallbackPath);
+          // Create a high-quality gradient background
+          backgroundPath = await this.createProfessionalGradientBackground(category, i);
+          console.log(`✅ Created professional gradient for scene ${i}`);
         } catch (gradientError) {
-          console.warn(`Gradient creation failed for scene ${i}, using simple fallback`);
-          // Create a simple colored background as final fallback
-          const simpleFallbackPath = await this.createSimpleBackground(i);
-          assets.push(simpleFallbackPath);
+          console.warn(`Professional gradient failed for scene ${i}, using simple background`);
+          // Final fallback - simple solid background
+          backgroundPath = await this.createSimpleBackground(i);
         }
       }
+
+      assets.push(backgroundPath);
     }
 
     return assets;
@@ -283,22 +288,36 @@ export class ProfessionalVideoCreator {
     const keywords = this.getCategoryKeywords(category);
     const query = keywords[sceneIndex % keywords.length];
 
-    try {
-      // Using Unsplash API or direct URL pattern
-      const response = await axios.get(`https://source.unsplash.com/1920x1080/?${query}`, {
-        responseType: 'arraybuffer',
-        timeout: 10000
-      });
+    // Try multiple image sources in order of preference
+    const imageSources = [
+      `https://picsum.photos/1920/1080?random=${Date.now() + sceneIndex}`,
+      `https://source.unsplash.com/1920x1080/?${encodeURIComponent(query)}`,
+      `https://picsum.photos/1920/1080?blur=1&random=${sceneIndex}`,
+      `https://source.unsplash.com/1920x1080/?abstract,colorful`
+    ];
 
-      if (response.status === 200) {
-        return response.request.res.responseUrl;
+    for (let i = 0; i < imageSources.length; i++) {
+      try {
+        const response = await axios.get(imageSources[i], {
+          responseType: 'arraybuffer',
+          timeout: 15000,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; VideoGenerator/1.0)',
+            'Accept': 'image/*'
+          }
+        });
+
+        if (response.status === 200 && response.data.byteLength > 5000) {
+          return imageSources[i];
+        }
+      } catch (error) {
+        console.warn(`Image source ${i + 1} failed:`, error.message);
+        continue;
       }
-    } catch (error) {
-      console.warn('Unsplash request failed, using fallback');
     }
 
-    // Fallback to curated images
-    return `https://source.unsplash.com/1920x1080/?nature,technology,business`;
+    // All sources failed, return null to trigger local fallback creation
+    throw new Error('All image sources failed');
   }
 
   private getCategoryKeywords(category: string): string[] {
@@ -315,29 +334,97 @@ export class ProfessionalVideoCreator {
 
   private async downloadImage(url: string, outputPath: string): Promise<void> {
     try {
-      const response = await axios.get(url, { responseType: 'arraybuffer', timeout: 15000 });
+      const response = await axios.get(url, { 
+        responseType: 'arraybuffer', 
+        timeout: 20000,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; VideoGenerator/1.0)',
+          'Accept': 'image/jpeg,image/png,image/*'
+        },
+        maxRedirects: 5
+      });
+
+      if (!response.data || response.data.byteLength < 5000) {
+        throw new Error('Downloaded image is too small or corrupted');
+      }
+
       await fs.writeFile(outputPath, response.data);
+
+      // Verify the downloaded file is a valid image
+      try {
+        await execAsync(`ffmpeg -i "${outputPath}" -frames:v 1 -f null - 2>/dev/null`);
+      } catch (verifyError) {
+        await fs.unlink(outputPath).catch(() => {});
+        throw new Error('Downloaded file is not a valid image');
+      }
+
     } catch (error) {
       throw new Error(`Failed to download image: ${error.message}`);
     }
+  }
+
+  private async createProfessionalGradientBackground(category: string, sceneIndex: number): Promise<string> {
+    const outputPath = path.join(this.backgroundsDir, `pro_${category}_${sceneIndex}_bg.jpg`);
+
+    // Check if this background already exists
+    if (fs.existsSync(outputPath)) {
+      try {
+        const stats = await fs.stat(outputPath);
+        if (stats.size > 1000) {
+          return outputPath;
+        }
+      } catch (error) {
+        // File exists but corrupted, recreate it
+      }
+    }
+
+    // Category-specific professional color schemes
+    const colorSchemes = {
+      'technology': ['#1a365d', '#2b77e6', '#4299e1'],
+      'science': ['#2d3748', '#38a169', '#68d391'],
+      'business': ['#1a202c', '#e53e3e', '#fc8181'],
+      'news': ['#2c5282', '#3182ce', '#63b3ed'],
+      'general': ['#2d3748', '#4a5568', '#718096']
+    };
+
+    const colors = colorSchemes[category] || colorSchemes['general'];
+    const baseColor = colors[sceneIndex % colors.length];
+
+    try {
+      // Create professional gradient background with FFmpeg
+      const command = `ffmpeg -f lavfi ` +
+        `-i "color=c=${baseColor}:size=1920x1080:duration=1" ` +
+        `-vf "geq=r='255*sin(X/50)*sin(Y/50)*0.1+${parseInt(baseColor.slice(1, 3), 16)}':` +
+        `g='255*cos(X/40)*cos(Y/40)*0.1+${parseInt(baseColor.slice(3, 5), 16)}':` +
+        `b='255*sin(X/60)*cos(Y/60)*0.1+${parseInt(baseColor.slice(5, 7), 16)}'" ` +
+        `-frames:v 1 -q:v 2 "${outputPath}" -y`;
+
+      await execAsync(command);
+
+      // Verify the created file
+      const stats = await fs.stat(outputPath);
+      if (stats.size > 1000) {
+        return outputPath;
+      }
+    } catch (error) {
+      console.warn('Professional gradient creation failed, using simple background');
+    }
+
+    // Fallback to simple gradient
+    return await this.createGradientBackground(sceneIndex);
   }
 
   private async createGradientBackground(sceneIndex: number): Promise<string> {
     const outputPath = path.join(this.backgroundsDir, `gradient_${sceneIndex}_bg.jpg`);
 
     const gradients = [
-      '#1a1a2e,#16213e,#0f172a', // Deep blue
-      '#2d1b69,#11998e,#38ef7d', // Blue to green
-      '#8360c3,#2ebf91,#52c9a6', // Purple to teal
-      '#ee0979,#ff6a00,#ffcc00', // Pink to orange
-      '#0f0c29,#302b63,#24243e'  // Dark professional
+      '#1a1a2e', '#16213e', '#0f172a', '#2d1b69', '#8360c3',
+      '#ee0979', '#0f0c29', '#1a365d', '#2d3748', '#2c5282'
     ];
 
-    const gradient = gradients[sceneIndex % gradients.length];
-    const colors = gradient.split(',');
+    const color = gradients[sceneIndex % gradients.length];
 
-    // Create a simple solid color background instead of complex gradient to avoid FFmpeg issues
-    const command = `ffmpeg -f lavfi -i "color=c=${colors[0]}:size=1920x1080:duration=1" ` +
+    const command = `ffmpeg -f lavfi -i "color=c=${color}:size=1920x1080:duration=1" ` +
       `-frames:v 1 "${outputPath}" -y`;
 
     await execAsync(command);

@@ -233,10 +233,8 @@ export class ThumbnailGenerator {
     // Check if background already exists and is valid
     if (fs.existsSync(backgroundPath)) {
       try {
-        // Verify the existing file is valid
         const stats = fs.statSync(backgroundPath);
         if (stats.size > 1000) {
-          // Try to validate it's a proper image
           execSync(`ffmpeg -i "${backgroundPath}" -frames:v 1 -f null - 2>/dev/null`, { stdio: 'pipe' });
           return backgroundPath;
         }
@@ -246,63 +244,82 @@ export class ThumbnailGenerator {
       }
     }
 
-    // Try multiple approaches to get a valid background
-    try {
-      // Method 1: Try direct URL with better headers
-      const keywords = this.getCategoryKeywords(category);
-      const imageUrl = `https://source.unsplash.com/1920x1080/?${encodeURIComponent(keywords)}`;
+    // Try multiple image sources with better reliability
+    const imageSources = [
+      `https://picsum.photos/1920/1080?random=${Date.now()}`,
+      `https://picsum.photos/1920/1080?blur=1&random=${Math.floor(Math.random() * 1000)}`,
+      `https://source.unsplash.com/1920x1080/?${encodeURIComponent(this.getCategoryKeywords(category))}`,
+      `https://picsum.photos/1920/1080?grayscale&random=${Math.floor(Math.random() * 1000)}`
+    ];
 
-      const response = await axios.get(imageUrl, { 
-        responseType: 'arraybuffer',
-        timeout: 10000,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; ThumbnailGenerator/1.0)'
-        }
-      });
+    for (let i = 0; i < imageSources.length; i++) {
+      try {
+        console.log(`Trying image source ${i + 1} for ${category}...`);
+        const response = await axios.get(imageSources[i], { 
+          responseType: 'arraybuffer',
+          timeout: 15000,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; ThumbnailGenerator/1.0)',
+            'Accept': 'image/jpeg,image/png,image/*'
+          },
+          maxRedirects: 5
+        });
 
-      if (response.data && response.data.byteLength > 1000) {
-        fs.writeFileSync(backgroundPath, response.data);
-        
-        // Verify the downloaded file
-        try {
-          execSync(`ffmpeg -i "${backgroundPath}" -frames:v 1 -f null - 2>/dev/null`, { stdio: 'pipe' });
-          console.log(`✅ Downloaded and verified background for ${category}`);
-          return backgroundPath;
-        } catch (verifyError) {
-          console.log('Downloaded image is corrupted, trying fallback...');
-          fs.unlinkSync(backgroundPath);
+        if (response.data && response.data.byteLength > 5000) {
+          fs.writeFileSync(backgroundPath, response.data);
+          
+          // Verify the downloaded file is valid
+          try {
+            execSync(`ffmpeg -i "${backgroundPath}" -frames:v 1 -f null - 2>/dev/null`, { stdio: 'pipe' });
+            console.log(`✅ Downloaded and verified background for ${category} from source ${i + 1}`);
+            return backgroundPath;
+          } catch (verifyError) {
+            console.log(`Downloaded image from source ${i + 1} is corrupted, trying next...`);
+            fs.unlinkSync(backgroundPath);
+          }
         }
+      } catch (error) {
+        console.warn(`Image source ${i + 1} failed:`, error.message);
+        continue;
       }
-    } catch (error) {
-      console.warn('Failed to download background from Unsplash:', error.message);
     }
 
-    // Method 2: Try alternative image source
-    try {
-      const altUrl = `https://picsum.photos/1920/1080?random=${Date.now()}`;
-      const response = await axios.get(altUrl, { 
-        responseType: 'arraybuffer',
-        timeout: 8000
-      });
+    // All image sources failed, create professional gradient background
+    console.log(`Creating professional gradient background for ${category}...`);
+    return await this.createProfessionalGradientBackground(category, backgroundPath);
+  }
 
-      if (response.data && response.data.byteLength > 1000) {
-        fs.writeFileSync(backgroundPath, response.data);
-        
-        try {
-          execSync(`ffmpeg -i "${backgroundPath}" -frames:v 1 -f null - 2>/dev/null`, { stdio: 'pipe' });
-          console.log(`✅ Downloaded alternative background for ${category}`);
-          return backgroundPath;
-        } catch (verifyError) {
-          fs.unlinkSync(backgroundPath);
-        }
+  private async createProfessionalGradientBackground(category: string, outputPath: string): Promise<string> {
+    // Category-specific professional colors
+    const colorSchemes = {
+      'technology': '#1a365d',
+      'science': '#2d3748', 
+      'business': '#1a202c',
+      'news': '#2c5282',
+      'general': '#2d3748'
+    };
+
+    const baseColor = colorSchemes[category] || colorSchemes['general'];
+
+    try {
+      // Create a professional gradient background
+      const command = `ffmpeg -f lavfi ` +
+        `-i "color=c=${baseColor}:size=1920x1080:duration=1" ` +
+        `-vf "geq=r='r(X,Y)*0.8+40':g='g(X,Y)*0.8+40':b='b(X,Y)*0.8+40'" ` +
+        `-frames:v 1 -q:v 2 "${outputPath}" -y`;
+
+      execSync(command, { stdio: 'pipe', timeout: 10000 });
+      
+      if (fs.existsSync(outputPath) && fs.statSync(outputPath).size > 1000) {
+        console.log(`✅ Created professional gradient background for ${category}`);
+        return outputPath;
       }
     } catch (error) {
-      console.warn('Alternative image source also failed:', error.message);
+      console.warn('Professional gradient creation failed, using solid color');
     }
 
-    // Method 3: Create solid color background
-    console.log('Creating solid color background as fallback...');
-    return await this.createSolidBackground(category, backgroundPath);
+    // Final fallback - solid color
+    return await this.createSolidBackground(category, outputPath);
   }
 
   private async createSolidBackground(category: string, outputPath: string): Promise<string> {
