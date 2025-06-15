@@ -133,51 +133,74 @@ export class TrendingAnalyzer {
 
   private async getYouTubeTrendingTopics(region: string = 'IN', categoryId: string = '28'): Promise<InsertTrendingTopic[]> {
     try {
-      const response = await this.youtube.videos.list({
-        part: ['snippet', 'statistics'],
-        chart: 'mostPopular',
-        regionCode: region,
-        maxResults: 10,
-        videoCategoryId: categoryId // 28=Science & Technology, 27=Education
-      });
+      // Try multiple approaches to get trending videos
+      const attempts = [
+        // First try with specific category
+        { regionCode: region, videoCategoryId: categoryId },
+        // Fallback to general trending without category
+        { regionCode: region },
+        // Fallback to US region if regional fails
+        { regionCode: 'US', videoCategoryId: categoryId },
+        // Final fallback - US general trending
+        { regionCode: 'US' }
+      ];
 
-      const currentDate = new Date();
-      const topics: InsertTrendingTopic[] = [];
+      for (const params of attempts) {
+        try {
+          const response = await this.youtube.videos.list({
+            part: ['snippet', 'statistics'],
+            chart: 'mostPopular',
+            maxResults: 10,
+            ...params
+          });
 
-      if (response.data.items) {
-        for (const video of response.data.items) {
-          const publishedAt = new Date(video.snippet.publishedAt);
-          const hoursAgo = (currentDate.getTime() - publishedAt.getTime()) / (1000 * 60 * 60);
+          const currentDate = new Date();
+          const topics: InsertTrendingTopic[] = [];
 
-          // Only include videos from last 24 hours
-          if (hoursAgo <= 24) {
-            topics.push({
-              title: video.snippet.title,
-              description: video.snippet.description?.substring(0, 200) || 'Trending YouTube video',
-              searchVolume: parseInt(video.statistics?.viewCount || '1000000'),
-              priority: 'high',
-              category: region === 'IN' ? 'india_news' : 'global_news',
-              source: 'youtube_trending',
-              trending_data: {
-                date: currentDate.toISOString().split('T')[0],
-                timestamp: currentDate.toISOString(),
-                timeframe: 'last_24_hours',
-                sourceUrl: `https://www.youtube.com/watch?v=${video.id}`,
-                realTime: true,
-                dataFreshness: 'current',
-                videoId: video.id,
-                channelTitle: video.snippet.channelTitle
-              },
-              status: 'pending'
-            });
+          if (response.data.items && response.data.items.length > 0) {
+            for (const video of response.data.items) {
+              const publishedAt = new Date(video.snippet.publishedAt);
+              const hoursAgo = (currentDate.getTime() - publishedAt.getTime()) / (1000 * 60 * 60);
+
+              // Include videos from last 48 hours (more lenient for trending)
+              if (hoursAgo <= 48) {
+                topics.push({
+                  title: video.snippet.title,
+                  description: video.snippet.description?.substring(0, 200) || 'Trending YouTube video',
+                  searchVolume: parseInt(video.statistics?.viewCount || '1000000'),
+                  priority: 'high',
+                  category: region === 'IN' ? 'india_news' : 'global_news',
+                  source: 'youtube_trending',
+                  trending_data: {
+                    date: currentDate.toISOString().split('T')[0],
+                    timestamp: currentDate.toISOString(),
+                    timeframe: 'last_48_hours',
+                    sourceUrl: `https://www.youtube.com/watch?v=${video.id}`,
+                    realTime: true,
+                    dataFreshness: 'current',
+                    videoId: video.id,
+                    channelTitle: video.snippet.channelTitle,
+                    region: params.regionCode,
+                    category: params.videoCategoryId || 'general'
+                  },
+                  status: 'pending'
+                });
+              }
+            }
+
+            console.log(`🎬 Found ${topics.length} trending YouTube videos for region ${params.regionCode} (category: ${params.videoCategoryId || 'general'})`);
+            return topics.slice(0, 5); // Return top 5 videos
           }
+        } catch (attemptError) {
+          console.log(`⚠️ YouTube API attempt failed for region ${params.regionCode}, category ${params.videoCategoryId || 'general'}:`, attemptError.message);
+          continue; // Try next approach
         }
       }
 
-      console.log(`🎬 Found ${topics.length} trending YouTube videos for region ${region}`);
-      return topics;
+      console.log('❌ All YouTube API attempts failed, returning empty array');
+      return [];
     } catch (error) {
-      console.error('❌ YouTube API error:', error);
+      console.error('❌ YouTube API error:', error.message);
       return [];
     }
   }
@@ -252,20 +275,40 @@ Return JSON array with title, description, searchVolume (2M-5M), priority: "high
       { code: 'IN', name: 'India' }
     ];
 
+    // Try to get at least some data from any region
+    let successfulRegions = 0;
+    const maxRegions = 2; // Limit to prevent too many API calls
+
     for (const region of regions) {
+      if (successfulRegions >= maxRegions) break;
+
       try {
         const regionTopics = await this.getYouTubeTrendingTopics(region.code, '27'); // Education category
-        topics.push(...regionTopics.map(topic => ({
-          ...topic,
-          category: 'geography',
-          region: region.name
-        })));
+        if (regionTopics.length > 0) {
+          topics.push(...regionTopics.slice(0, 2).map(topic => ({
+            ...topic,
+            category: 'geography',
+            trending_data: {
+              ...topic.trending_data,
+              region: region.name
+            }
+          })));
+          successfulRegions++;
+          console.log(`✅ Successfully got ${regionTopics.length} topics from ${region.name}`);
+        }
       } catch (error) {
-        console.error(`❌ Failed to get trending topics for region ${region.name}:`, error);
+        console.log(`⚠️ Failed to get trending topics for region ${region.name}:`, error.message);
+        continue;
       }
     }
 
-    return topics;
+    // If no YouTube data available, fall back to Gemini
+    if (topics.length === 0) {
+      console.log('🔄 No YouTube data available, falling back to Gemini geography trending');
+      return await this.getGeminiGeographyTrending();
+    }
+
+    return topics.slice(0, 4); // Return top 4 geography topics
   }
 
   private async getGeminiSpaceTrending(): Promise<InsertTrendingTopic[]> {
