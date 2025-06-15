@@ -112,8 +112,9 @@ export class TrendingAnalyzer {
 
   private async getSpaceAndScienceContent(query: string, category: string): Promise<InsertTrendingTopic[]> {
     try {
-      console.log(`🔍 SCANNING SPACE & SCIENCE SOURCES for: ${query}`);
+      console.log(`🔍 SCANNING SPACE & SCIENCE ARTICLES for: ${query}`);
       console.log(`📰 Target category: ${category}`);
+      console.log(`🎯 MINIMUM TARGET: 10 specific article posts from last 24 hours`);
 
       // Get current date and time for precise 24-hour filtering
       const now = new Date();
@@ -123,104 +124,232 @@ export class TrendingAnalyzer {
       console.log(`⏰ FILTERING FROM: ${twentyFourHoursAgo.toISOString()}`);
       console.log(`📅 EXACT 24H WINDOW: Last 24 hours only`);
 
-      // SPACE & SCIENCE SPECIFIC SEARCH - Only target scientific and space sources
-      const spaceAndScienceQuery = `${query} site:nasa.gov OR site:space.com OR site:spacenews.com OR site:spaceflightnow.com OR site:esa.int OR site:sciencenews.org OR site:newscientist.com OR site:scientificamerican.com OR site:smithsonianmag.com OR site:nationalgeographic.com/science OR site:phys.org OR site:science.org OR site:nature.com OR site:sciencedaily.com OR site:astronomy.com OR site:universetoday.com OR site:spacex.com OR site:jpl.nasa.gov`;
+      // Enhanced query to find SPECIFIC ARTICLES, not homepage URLs
+      const specificArticleQuery = `${query} "article" OR "news" OR "story" OR "report" OR "research" OR "study" OR "breakthrough" OR "discovery" -"home" -"category" -"tag" -"index" filetype:html`;
+      
+      // SPACE & SCIENCE SPECIFIC SEARCH with article-focused terms
+      const spaceAndScienceQuery = `${specificArticleQuery} (site:nasa.gov/news OR site:nasa.gov/missions OR site:space.com/news OR site:spacenews.com OR site:spaceflightnow.com/news OR site:esa.int/ESA_Multimedia/Videos OR site:sciencenews.org/article OR site:newscientist.com/article OR site:scientificamerican.com/article OR site:smithsonianmag.com/science-nature OR site:nationalgeographic.com/science/article OR site:phys.org/news OR site:science.org/content/article OR site:nature.com/articles OR site:sciencedaily.com/releases OR site:astronomy.com/news OR site:universetoday.com OR site:spacex.com/updates OR site:jpl.nasa.gov/news)`;
 
-      console.log(`🎯 SPACE & SCIENCE SEARCH QUERY: ${spaceAndScienceQuery}`);
-
-      const response = await this.customSearch.cse.list({
-        cx: process.env.GOOGLE_CUSTOM_SEARCH_ENGINE_ID,
-        q: spaceAndScienceQuery,
-        num: 10,
-        sort: 'date',
-        dateRestrict: 'd1' // Strict last 24 hours only
-      });
+      console.log(`🎯 SPECIFIC ARTICLE SEARCH QUERY: ${spaceAndScienceQuery.substring(0, 200)}...`);
 
       const topics: InsertTrendingTopic[] = [];
+      let totalProcessed = 0;
+      let validArticles = 0;
 
-      if (response.data.items && response.data.items.length > 0) {
-        console.log(`📊 Found ${response.data.items.length} results from space & science sources`);
+      // Try multiple searches with different approaches to get at least 10 posts
+      const searchAttempts = [
+        { query: spaceAndScienceQuery, num: 10 },
+        { query: `${query} recent space news article 2025 -"home" -"category"`, num: 10 },
+        { query: `${query} space discovery article today -"index" -"tag"`, num: 10 }
+      ];
 
-        for (const item of response.data.items) {
-          console.log(`\n🔍 PROCESSING SPACE/SCIENCE CONTENT: ${item.title}`);
-          console.log(`🌐 SOURCE: ${item.link}`);
-          console.log(`📝 SNIPPET: ${item.snippet?.substring(0, 100)}...`);
+      for (const searchAttempt of searchAttempts) {
+        if (validArticles >= 10) break; // Stop if we have enough articles
 
-          // Strict 24-hour date validation
-          const publishDate = this.extractPublishDate(item);
-          if (!this.isWithinLast24Hours(publishDate, twentyFourHoursAgo)) {
-            console.log(`❌ CONTENT TOO OLD - Published: ${publishDate?.toISOString() || 'unknown'}`);
-            continue;
-          }
+        console.log(`\n🔍 SEARCH ATTEMPT: ${searchAttempt.query.substring(0, 100)}...`);
 
-          // Verify this is actually space/science content
-          if (!this.isValidSpaceOrScienceContent(item.title, item.snippet || '', item.link)) {
-            console.log(`❌ NOT SPACE/SCIENCE CONTENT - Skipping`);
-            continue;
-          }
+        try {
+          const response = await this.customSearch.cse.list({
+            cx: process.env.GOOGLE_CUSTOM_SEARCH_ENGINE_ID,
+            q: searchAttempt.query,
+            num: searchAttempt.num,
+            sort: 'date',
+            dateRestrict: 'd1', // Strict last 24 hours only
+            cr: 'countryUS', // Focus on US sources for English content
+            lr: 'lang_en' // English language results
+          });
 
-          // Enhanced content extraction for space/science content
-          const contentData = await this.extractSpaceAndScienceContent(item.link, item.snippet || '', item.title);
+          if (response.data.items && response.data.items.length > 0) {
+            console.log(`📊 Found ${response.data.items.length} potential articles from space & science sources`);
 
-          // Calculate real search volume based on trending factors
-          const searchVolume = await this.calculateRealSearchVolume(item.title, contentData, category);
-          
-          // Only include high search volume content (minimum 500K searches)
-          if (searchVolume < 500000) {
-            console.log(`❌ LOW SEARCH VOLUME: ${searchVolume.toLocaleString()} - Skipping`);
-            continue;
-          }
+            for (const item of response.data.items) {
+              totalProcessed++;
+              console.log(`\n🔍 PROCESSING ARTICLE ${totalProcessed}: ${item.title}`);
+              console.log(`🌐 URL: ${item.link}`);
+              console.log(`📝 SNIPPET: ${item.snippet?.substring(0, 100)}...`);
 
-          if (contentData.isGoodContent && contentData.isSpaceOrScience) {
-            console.log(`✅ HIGH-QUALITY SPACE/SCIENCE CONTENT EXTRACTED`);
-            console.log(`  📏 Length: ${contentData.fullText.length} characters`);
-            console.log(`  🎯 Space/Science Ready: ${contentData.spaceReadyContent ? 'YES' : 'NO'}`);
-            console.log(`  ⭐ Engagement Score: ${contentData.engagementScore}/10`);
-            console.log(`  🔥 Search Volume: ${searchVolume.toLocaleString()}`);
-            console.log(`  📅 Published: ${publishDate?.toISOString() || 'within 24h'}`);
+              // STRICT URL VALIDATION - Must be a specific article, not homepage
+              if (!this.isSpecificArticleUrl(item.link)) {
+                console.log(`❌ NOT A SPECIFIC ARTICLE URL - Homepage/Category detected: ${item.link}`);
+                continue;
+              }
 
-            topics.push({
-              title: this.optimizeForSpace(item.title, category),
-              description: contentData.description,
-              searchVolume: searchVolume,
-              priority: searchVolume >= 1000000 ? 'high' : 'medium',
-              category: category,
-              source: 'space_science',
-              trending_data: {
-                date: now.toISOString().split('T')[0],
-                timestamp: now.toISOString(),
-                timeframe: 'last_24_hours',
-                sourceUrl: item.link,
-                realTime: true,
-                dataFreshness: 'current',
-                fullContent: contentData.fullText,
-                spaceOptimized: true,
-                engagementScore: contentData.engagementScore,
-                contentQuality: contentData.isGoodContent ? 'high' : 'medium',
-                extractedAt: now.toISOString(),
-                sourceDomain: this.extractDomain(item.link),
-                wordCount: contentData.wordCount,
-                isSpaceScience: true,
-                publishDate: publishDate?.toISOString(),
-                searchVolumeAnalyzed: true,
-                withinLast24Hours: true
-              },
-              status: 'pending'
-            });
+              // Strict 24-hour date validation
+              const publishDate = this.extractPublishDate(item);
+              if (!this.isWithinLast24Hours(publishDate, twentyFourHoursAgo)) {
+                console.log(`❌ CONTENT TOO OLD - Published: ${publishDate?.toISOString() || 'unknown'}`);
+                continue;
+              }
+
+              // Verify this is actually space/science content
+              if (!this.isValidSpaceOrScienceContent(item.title, item.snippet || '', item.link)) {
+                console.log(`❌ NOT SPACE/SCIENCE CONTENT - Skipping`);
+                continue;
+              }
+
+              // Enhanced content extraction for space/science content
+              const contentData = await this.extractSpaceAndScienceContent(item.link, item.snippet || '', item.title);
+
+              // Calculate real search volume based on trending factors
+              const searchVolume = await this.calculateRealSearchVolume(item.title, contentData, category);
+              
+              // More lenient search volume for article discovery
+              if (searchVolume < 200000) {
+                console.log(`❌ LOW SEARCH VOLUME: ${searchVolume.toLocaleString()} - Skipping`);
+                continue;
+              }
+
+              if (contentData.isGoodContent && contentData.isSpaceOrScience) {
+                validArticles++;
+                console.log(`✅ VALID ARTICLE ${validArticles}: HIGH-QUALITY SPACE/SCIENCE CONTENT`);
+                console.log(`  📏 Length: ${contentData.fullText.length} characters`);
+                console.log(`  🎯 Space/Science Ready: ${contentData.spaceReadyContent ? 'YES' : 'NO'}`);
+                console.log(`  ⭐ Engagement Score: ${contentData.engagementScore}/10`);
+                console.log(`  🔥 Search Volume: ${searchVolume.toLocaleString()}`);
+                console.log(`  📅 Published: ${publishDate?.toISOString() || 'within 24h'}`);
+                console.log(`  🔗 Article URL: ${item.link}`);
+
+                topics.push({
+                  title: this.optimizeForSpace(item.title, category),
+                  description: contentData.description,
+                  searchVolume: searchVolume,
+                  priority: searchVolume >= 1000000 ? 'high' : 'medium',
+                  category: category,
+                  source: 'space_science_article',
+                  trending_data: {
+                    date: now.toISOString().split('T')[0],
+                    timestamp: now.toISOString(),
+                    timeframe: 'last_24_hours',
+                    sourceUrl: item.link,
+                    realTime: true,
+                    dataFreshness: 'current',
+                    fullContent: contentData.fullText,
+                    spaceOptimized: true,
+                    engagementScore: contentData.engagementScore,
+                    contentQuality: contentData.isGoodContent ? 'high' : 'medium',
+                    extractedAt: now.toISOString(),
+                    sourceDomain: this.extractDomain(item.link),
+                    wordCount: contentData.wordCount,
+                    isSpaceScience: true,
+                    publishDate: publishDate?.toISOString(),
+                    searchVolumeAnalyzed: true,
+                    withinLast24Hours: true,
+                    articleType: 'specific_post',
+                    publishDateFormatted: publishDate ? this.formatPublishDate(publishDate) : 'Today'
+                  },
+                  status: 'pending'
+                });
+              } else {
+                console.log(`❌ POOR QUALITY OR NON-SPACE CONTENT - Skipping`);
+              }
+            }
           } else {
-            console.log(`❌ POOR QUALITY OR NON-SPACE CONTENT - Skipping`);
+            console.log(`⚠️ No results found for search attempt`);
           }
+        } catch (error) {
+          console.error(`❌ Search attempt failed:`, error.message);
+          continue;
         }
-      } else {
-        console.log(`⚠️ No results found for: ${query}`);
       }
 
-      console.log(`📈 SPACE CATEGORY RESULTS: ${topics.length} high-quality space/science topics for ${category}`);
+      console.log(`📈 ARTICLE DISCOVERY COMPLETE:`);
+      console.log(`  📊 Total URLs processed: ${totalProcessed}`);
+      console.log(`  ✅ Valid articles found: ${validArticles}`);
+      console.log(`  🎯 Target met: ${validArticles >= 10 ? 'YES' : 'NO'} (need 10, got ${validArticles})`);
+      console.log(`  📰 Category: ${category}`);
+      
       return topics;
 
     } catch (error) {
-      console.error(`❌ Error getting space/science content for ${category}:`, error.message);
+      console.error(`❌ Error getting space/science articles for ${category}:`, error.message);
       return [];
+    }
+  }
+
+  private isSpecificArticleUrl(url: string): boolean {
+    try {
+      const urlObj = new URL(url);
+      const pathname = urlObj.pathname.toLowerCase();
+      
+      // Exclude homepage and category URLs
+      const excludePatterns = [
+        /^\/$/, // Root homepage
+        /^\/$/,
+        /^\/index/, // Index pages
+        /^\/category/, // Category pages
+        /^\/tag/, // Tag pages
+        /^\/topics/, // Topic pages
+        /^\/section/, // Section pages
+        /^\/home/, // Home pages
+        /^\/news\/$/, // News category page
+        /^\/science\/$/, // Science category page
+        /^\/space\/$/, // Space category page
+        /\/category\//, // Any category path
+        /\/humans-in-space\/$/, // NASA category
+        /\/science-nature\/$/ // Smithsonian category
+      ];
+
+      // Check if URL matches exclusion patterns
+      const isExcluded = excludePatterns.some(pattern => pattern.test(pathname));
+      if (isExcluded) {
+        console.log(`🚫 EXCLUDED URL PATTERN: ${pathname}`);
+        return false;
+      }
+
+      // Must have specific article indicators
+      const articleIndicators = [
+        /\/news\//, // News article
+        /\/article\//, // Article
+        /\/story\//, // Story
+        /\/report\//, // Report
+        /\/research\//, // Research
+        /\/releases\//, // Press releases
+        /\/missions\//, // Mission updates
+        /\/updates\//, // Updates
+        /\/content\/article/, // Science.org format
+        /\/articles\//, // Nature format
+        /\d{4}\/\d{2}\//, // Date in URL (2025/01/)
+        /\d{4}-\d{2}-\d{2}/, // Date format (2025-01-15)
+        /-\d{8}$/, // Ending with date
+        /[a-z]+-[a-z]+-[a-z]+/ // Multiple words with hyphens (typical article URLs)
+      ];
+
+      const hasArticleIndicator = articleIndicators.some(pattern => pattern.test(pathname));
+      
+      // Also check for minimum path depth (specific articles usually have deeper paths)
+      const pathDepth = pathname.split('/').filter(p => p.length > 0).length;
+      const hasMinimumDepth = pathDepth >= 2;
+
+      const isSpecificArticle = hasArticleIndicator && hasMinimumDepth;
+      
+      console.log(`📊 URL ANALYSIS: ${url}`);
+      console.log(`  📂 Path: ${pathname}`);
+      console.log(`  🎯 Has article indicator: ${hasArticleIndicator}`);
+      console.log(`  📏 Path depth: ${pathDepth} (min 2)`);
+      console.log(`  ✅ Is specific article: ${isSpecificArticle}`);
+
+      return isSpecificArticle;
+    } catch (error) {
+      console.error(`Error analyzing URL: ${url}`, error.message);
+      return false;
+    }
+  }
+
+  private formatPublishDate(date: Date): string {
+    const now = new Date();
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) {
+      return 'Just now';
+    } else if (diffInHours < 24) {
+      return `${diffInHours} hour${diffInHours === 1 ? '' : 's'} ago`;
+    } else {
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
     }
   }
 

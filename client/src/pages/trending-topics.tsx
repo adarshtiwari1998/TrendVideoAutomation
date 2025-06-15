@@ -254,6 +254,11 @@ export default function TrendingTopicsPage() {
                       <span className="text-sm text-muted-foreground">
                         {topic.searchVolume.toLocaleString()} searches
                       </span>
+                      {topic.trending_data?.publishDateFormatted && (
+                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                          📅 {topic.trending_data.publishDateFormatted}
+                        </Badge>
+                      )}
                     </div>
                     {topic.trending_data?.tags && (
                       <div className="flex flex-wrap gap-1 mb-3">
@@ -346,6 +351,16 @@ export default function TrendingTopicsPage() {
                 <span className="text-sm text-muted-foreground">
                   {viewingTopic.searchVolume.toLocaleString()} searches
                 </span>
+                {viewingTopic.trending_data?.publishDateFormatted && (
+                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                    📅 Published: {viewingTopic.trending_data.publishDateFormatted}
+                  </Badge>
+                )}
+                {viewingTopic.trending_data?.timeframe && (
+                  <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                    ⏰ {viewingTopic.trending_data.timeframe.replace('_', ' ')}
+                  </Badge>
+                )}
               </div>
 
               {/* Source URL if available */}
