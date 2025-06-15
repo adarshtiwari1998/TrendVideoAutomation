@@ -83,9 +83,32 @@ export class VideoCreator {
       const outputPath = path.join(this.outputDir, `minimal_video_${jobId}.mp4`);
       const dimensions = isShort ? '1080x1920' : '1920x1080';
       
+      // Clean and truncate script text for safe FFmpeg usage
+      let cleanScript = script;
+      
+      // Remove JSON formatting if present
+      if (cleanScript.includes('```json')) {
+        const jsonMatch = cleanScript.match(/```json\s*\{[\s\S]*?"script":\s*"([^"]*)"[\s\S]*?\}/);
+        if (jsonMatch && jsonMatch[1]) {
+          cleanScript = jsonMatch[1];
+        }
+      }
+      
+      // Clean and escape text for FFmpeg
+      cleanScript = cleanScript
+        .substring(0, 150) // Limit length
+        .replace(/[`'"\\]/g, '') // Remove problematic characters
+        .replace(/\n|\r/g, ' ') // Replace newlines with spaces
+        .replace(/\s+/g, ' ') // Normalize whitespace
+        .trim();
+      
+      if (!cleanScript) {
+        cleanScript = 'Video Content Loading...';
+      }
+      
       // Create a minimal video with text overlay and proper duration
       const command = `ffmpeg -f lavfi -i "color=c=#1a1a2e:size=${dimensions}:duration=${duration}:rate=30" ` +
-        `-vf "drawtext=text='${script.substring(0, 200).replace(/'/g, "\\'")}...':` +
+        `-vf "drawtext=text='${cleanScript}...':` +
         `fontsize=48:fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/2:` +
         `bordercolor=black:borderw=2" ` +
         `-c:v libx264 -preset fast -crf 23 ` +
