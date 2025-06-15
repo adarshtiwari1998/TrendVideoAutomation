@@ -524,7 +524,7 @@ export class ProfessionalVideoCreator {
     jobId: number
   ): Promise<string> {
     const outputPath = path.join(this.outputDir, `professional_render_${jobId}.mp4`);
-    const dimensions = isShort ? '1080:1920' : '1920:1080';
+    const dimensions = isShort ? '1080x1920' : '1920x1080';
     
     console.log(`🎥 Using ultra-simple rendering for ${scenes.length} scenes`);
     
@@ -537,29 +537,30 @@ export class ProfessionalVideoCreator {
     // Combine all scene texts into one
     const allText = scenes.map(scene => scene.segments[0].text).join(' ');
     
-    // Ultra-safe text cleaning - remove everything except letters, numbers, spaces
+    // Ultra-safe text cleaning - remove everything except letters, numbers, spaces, periods
     const safeText = allText
-      .replace(/[^a-zA-Z0-9\s]/g, ' ')
-      .replace(/\s+/g, ' ')
+      .replace(/['"]/g, '')  // Remove quotes
+      .replace(/[^\w\s.]/g, ' ')  // Keep only word chars, spaces, and periods
+      .replace(/\s+/g, ' ')  // Normalize spaces
       .trim()
-      .substring(0, 50) || 'Video Content';
+      .substring(0, 40) || 'Video Content';  // Shorter text for reliability
     
-    // Single, simple FFmpeg command
+    // Single, simple FFmpeg command with corrected dimensions format
     const command = `ffmpeg -loop 1 -i "${backgroundImage}" ` +
-      `-vf "scale=${dimensions}:force_original_aspect_ratio=increase,crop=${dimensions},` +
-      `drawtext=text='${safeText}':` +
+      `-vf "scale=${dimensions.replace('x', ':')}:force_original_aspect_ratio=increase,crop=${dimensions.replace('x', ':')},` +
+      `drawtext=text=${safeText}:` +  // Remove quotes around text parameter
       `fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:` +
       `fontsize=${fontSize}:fontcolor=white:x=(w-text_w)/2:y=h*0.8:` +
       `bordercolor=black:borderw=2" ` +
-      `-t ${duration} -r 30 -c:v libx264 -preset fast -crf 23 ` +
+      `-t ${Math.min(duration, 300)} -r 30 -c:v libx264 -preset fast -crf 23 ` +  // Limit max duration
       `-pix_fmt yuv420p "${outputPath}" -y`;
     
     console.log('🎬 Executing ultra-simple video command...');
-    console.log(`Command: ${command}`);
+    console.log(`Command: ${command.substring(0, 150)}...`);
     
     try {
       // Add timeout to prevent hanging
-      await execAsync(command, { timeout: 60000 }); // 60 second timeout
+      await execAsync(command, { timeout: 120000 }); // 2 minute timeout
       
       // Verify output file exists and has content
       const stats = await fs.stat(outputPath);
@@ -580,13 +581,13 @@ export class ProfessionalVideoCreator {
 
   private async createFallbackVideo(duration: number, isShort: boolean, jobId: number, text: string): Promise<string> {
     const outputPath = path.join(this.outputDir, `fallback_video_${jobId}.mp4`);
-    const dimensions = isShort ? '1080:1920' : '1920:1080';
+    const dimensions = isShort ? '1080x1920' : '1920x1080';
     
     console.log('🔧 Creating fallback video with minimal settings...');
     
     try {
       // Create the most basic video possible - just a colored background
-      const fallbackCommand = `ffmpeg -f lavfi -i "color=c=#1a365d:size=${dimensions}" ` +
+      const fallbackCommand = `ffmpeg -f lavfi -i "color=color=#1a365d:size=${dimensions}" ` +
         `-t ${Math.min(duration, 30)} -r 15 -c:v libx264 -preset ultrafast -crf 30 ` +
         `-pix_fmt yuv420p "${outputPath}" -y`;
       
