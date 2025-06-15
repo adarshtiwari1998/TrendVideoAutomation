@@ -546,8 +546,7 @@ export class ProfessionalVideoCreator {
     
     // Single, simple FFmpeg command
     const command = `ffmpeg -loop 1 -i "${backgroundImage}" ` +
-      `-vf "scale=${dimensions}:force_original_aspect_ratio=increase,crop=${dimensions}," +
-      `drawtext=text='${safeText}':` +
+      `-vf "scale=${dimensions}:force_original_aspect_ratio=increase,crop=${dimensions}," + `drawtext=text='${safeText}':` +
       `fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:` +
       `fontsize=${fontSize}:fontcolor=white:x=(w-text_w)/2:y=h*0.8:` +
       `bordercolor=black:borderw=2" ` +
