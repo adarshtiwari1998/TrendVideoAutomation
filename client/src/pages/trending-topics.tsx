@@ -30,18 +30,6 @@ export default function TrendingTopicsPage() {
   const [selectedTopics, setSelectedTopics] = useState<number[]>([]);
   const [viewingTopic, setViewingTopic] = useState<TrendingTopic | null>(null);
 
-  // Check URL for view parameter
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const viewId = urlParams.get('view');
-    if (viewId && topics.length > 0) {
-      const topicToView = topics.find((t: TrendingTopic) => t.id === parseInt(viewId));
-      if (topicToView) {
-        setViewingTopic(topicToView);
-      }
-    }
-  }, [topics]);
-
   const { data: topics = [], isLoading } = useQuery({
     queryKey: ['trending-topics'],
     queryFn: async () => {
@@ -51,6 +39,18 @@ export default function TrendingTopicsPage() {
     },
     refetchInterval: 30000
   });
+
+  // Check URL for view parameter
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const viewId = urlParams.get('view');
+    if (viewId && topics && topics.length > 0) {
+      const topicToView = topics.find((t: TrendingTopic) => t.id === parseInt(viewId));
+      if (topicToView) {
+        setViewingTopic(topicToView);
+      }
+    }
+  }, [topics]);
 
   const generateContentMutation = useMutation({
     mutationFn: async ({ topicId, videoType }: { topicId: number; videoType: string }) => {

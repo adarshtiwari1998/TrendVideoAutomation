@@ -11,16 +11,13 @@ export class TrendingAnalyzer {
   private customSearch: any;
 
   constructor() {
-    const geminiKey = process.env.GEMINI_API_KEY;
     const youtubeKey = process.env.YOUTUBE_API_KEY;
     const customSearchKey = process.env.GOOGLE_CUSTOM_SEARCH_API_KEY;
     const customSearchEngineId = process.env.GOOGLE_CUSTOM_SEARCH_ENGINE_ID;
 
-    if (!geminiKey) {
-      throw new Error('GEMINI_API_KEY is required for content analysis');
+    if (!customSearchKey || !customSearchEngineId) {
+      throw new Error('GOOGLE_CUSTOM_SEARCH_API_KEY and GOOGLE_CUSTOM_SEARCH_ENGINE_ID are required for trending analysis');
     }
-
-    this.gemini = new GoogleGenerativeAI(geminiKey);
 
     // Initialize YouTube Data API
     if (youtubeKey) {
@@ -55,7 +52,7 @@ export class TrendingAnalyzer {
       // Step 1: Clean up old topics
       await this.cleanupOldTopics();
 
-      // Step 2: Get REAL current trending topics using advanced prompts
+      // Step 2: Get REAL current trending topics using Google Custom Search only
       const [
         spaceTrending,
         geographyTrending,
@@ -63,11 +60,11 @@ export class TrendingAnalyzer {
         natureTrending,
         geographyFactsTrending
       ] = await Promise.all([
-        this.getRealTimeGlobalTrending(), // Now focuses on space
-        this.getRealTimeGeographyTrending(),
-        this.getRealTimeScienceTrending(),
-        this.getRealTimeNatureTrending(),
-        this.getRealTimeGeographyFactsTrending()
+        this.getGoogleSearchTrending('space news discovery today astronomy recent'),
+        this.getGoogleSearchTrending('geography world facts countries discoveries recent'),
+        this.getGoogleSearchTrending('science breakthrough discovery research recent'),
+        this.getGoogleSearchTrending('nature wildlife environment discoveries recent'),
+        this.getGoogleSearchTrending('world geography facts amazing discoveries recent')
       ]);
 
       const allTopics = [
@@ -116,22 +113,7 @@ export class TrendingAnalyzer {
     }
   }
 
-  private async getRealTimeGlobalTrending(): Promise<InsertTrendingTopic[]> {
-    const topics: InsertTrendingTopic[] = [];
-
-    // Get trending from Google Search with space focus
-    if (this.customSearch) {
-      const spaceSearchTrending = await this.getGoogleSearchTrending('space news discovery today astronomy');
-      topics.push(...spaceSearchTrending.slice(0, 1));
-    }
-
-    // If no real data, fallback to Gemini
-    if (topics.length === 0) {
-      return await this.getGeminiSpaceTrending();
-    }
-
-    return topics.slice(0, 2);
-  }
+  
 
   private async getYouTubeTrendingTopics(region: string = 'IN', categoryId: string = '28'): Promise<InsertTrendingTopic[]> {
     try {
@@ -229,12 +211,24 @@ export class TrendingAnalyzer {
           // Extract full content from the article
           const fullContent = await this.extractFullArticleContent(item.link, item.snippet);
           
+          // Determine category based on query keywords
+          let category = 'global_news';
+          if (query.includes('space') || query.includes('astronomy')) {
+            category = 'space_news';
+          } else if (query.includes('geography') || query.includes('world')) {
+            category = 'geography_facts';
+          } else if (query.includes('science')) {
+            category = 'science_facts';
+          } else if (query.includes('nature') || query.includes('wildlife')) {
+            category = 'nature_facts';
+          }
+
           topics.push({
             title: item.title,
             description: fullContent.description,
             searchVolume: Math.floor(Math.random() * 3000000) + 1000000, // Estimated
             priority: 'high',
-            category: 'global_news',
+            category: category,
             source: 'google_search',
             trending_data: {
               date: currentDate.toISOString().split('T')[0],
@@ -287,7 +281,7 @@ export class TrendingAnalyzer {
       // Remove unwanted elements
       $('script, style, nav, header, footer, aside, .advertisement, .ads, .social-share').remove();
 
-      // Try multiple selectors to find article content
+      // Try multiple selectors to find article content (enhanced list)
       const contentSelectors = [
         'article',
         '[role="main"]',
@@ -301,7 +295,22 @@ export class TrendingAnalyzer {
         '.main-content',
         '#main-content',
         '.article-text',
-        '.story-content'
+        '.story-content',
+        '.post-body',
+        '.entry-text',
+        '.article-wrapper',
+        '.content-body',
+        '.text-content',
+        '.story-text',
+        '.article-inner',
+        '[data-testid="article-body"]',
+        '[data-module="ArticleBody"]',
+        '.story-content__inner',
+        '.article-content__body',
+        '.entry__content',
+        '.field-item',
+        '.node-content',
+        '.view-content'
       ];
 
       let extractedText = '';
@@ -326,6 +335,27 @@ export class TrendingAnalyzer {
       if (!foundContent) {
         const allParagraphs = $('p').map((_, el) => $(el).text().trim()).get();
         extractedText = allParagraphs.filter(p => p.length > 20).join(' ').trim();
+      }
+
+      // Additional fallback: try div elements with substantial text content
+      if (!foundContent && extractedText.length < 200) {
+        const divElements = $('div').filter((_, el) => {
+          const text = $(el).text().trim();
+          return text.length > 100 && text.length < 5000; // Reasonable content length
+        }).map((_, el) => $(el).text().trim()).get();
+        
+        if (divElements.length > 0) {
+          extractedText = divElements.join(' ').trim();
+        }
+      }
+
+      // Final fallback: extract from body but filter out navigation, ads, etc.
+      if (extractedText.length < 100) {
+        $('body').find('nav, header, footer, aside, .navigation, .menu, .sidebar, .ad, .advertisement, .social, .share, .related, .comments').remove();
+        const bodyText = $('body').text().trim();
+        if (bodyText.length > 200) {
+          extractedText = bodyText;
+        }
       }
 
       // Clean up the extracted text
@@ -356,19 +386,6 @@ export class TrendingAnalyzer {
       console.error(`❌ Error extracting content from ${url}:`, error.message);
       return { description: fallbackSnippet, fullText: fallbackSnippet };
     }
-  }
-
-  private async getGeminiGlobalTrending(): Promise<InsertTrendingTopic[]> {
-    const currentDate = new Date();
-    const yesterdayDate = new Date();
-    yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-
-    const prompt = `Get 2 REAL trending global news topics from the last 24 hours (since ${yesterdayDate.toDateString()}). 
-Focus on breaking news, viral content, major events happening RIGHT NOW on ${currentDate.toDateString()}.
-
-Return JSON array with title, description, searchVolume (2M-5M), priority: "high", category: "global_news"`;
-
-    return await this.makeGeminiRequest(prompt, 'global_news', 2);
   }
 
   private async getRealTimeGeographyTrending(): Promise<InsertTrendingTopic[]> {
@@ -410,170 +427,16 @@ Return JSON array with title, description, searchVolume (2M-5M), priority: "high
       }
     }
 
-    // If no YouTube data available, fall back to Gemini
+    // If no YouTube data available, fall back to Google Search
     if (topics.length === 0) {
-      console.log('🔄 No YouTube data available, falling back to Gemini geography trending');
-      return await this.getGeminiGeographyTrending();
+      console.log('🔄 No YouTube data available, falling back to Google Search geography trending');
+      return await this.getGoogleSearchTrending('geography world facts countries recent');
     }
 
     return topics.slice(0, 4); // Return top 4 geography topics
   }
 
-  private async getGeminiSpaceTrending(): Promise<InsertTrendingTopic[]> {
-    const currentDate = new Date();
-    const prompt = `Get 2 REAL trending space and astronomy topics from last 24 hours on ${currentDate.toDateString()}.
-Focus on: Space missions, astronomical discoveries, planetary science, space technology, cosmic events happening RIGHT NOW.
-Return JSON array with title, description, searchVolume (1.5M-4M), priority: "high", category: "space_news"`;
-
-    return await this.makeGeminiRequest(prompt, 'space_news', 2);
-  }
-
-  private async getGeminiGeographyTrending(): Promise<InsertTrendingTopic[]> {
-    const currentDate = new Date();
-    const prompt = `Get 2 REAL trending geography topics from last 24 hours on ${currentDate.toDateString()}.
-Focus on: Geographical discoveries, world facts, country insights, natural landmarks, territorial changes happening RIGHT NOW.
-Return JSON array with title, description, searchVolume (800K-2.5M), priority: "medium", category: "geography_news"`;
-
-    return await this.makeGeminiRequest(prompt, 'geography_news', 2);
-  }
-
-  private async getRealTimeScienceTrending(): Promise<InsertTrendingTopic[]> {
-    const currentDate = new Date();
-
-    const prompt = `You are a science facts and discovery analyzer. Today's date is ${currentDate.toDateString()}.
-
-Find 2 current SCIENCE trending topics from the last 24 hours:
-- Latest scientific discoveries and breakthroughs
-- Space exploration news and astronomy discoveries
-- Physics, chemistry, biology breakthrough facts
-- Environmental science and climate discoveries
-- Medical and health science breakthroughs
-- Fascinating science facts that are trending
-
-Return ONLY a JSON array:
-[
-  {
-    "title": "[Current science discovery/fact title]",
-    "description": "Latest scientific discovery or fascinating fact explanation",
-    "searchVolume": [realistic number 800000-2500000],
-    "priority": "high",
-    "category": "science_facts",
-    "source": "real_time_analysis",
-    "sourceUrl": "https://science-news.com/current-discovery",
-    "timeframe": "last_24_hours"
-  }
-]
-
-Focus on: Current scientific breakthroughs, space discoveries, and fascinating science facts.`;
-
-    return await this.makeGeminiRequest(prompt, 'science_facts', 2);
-  }
-
-  private async getRealTimeNatureTrending(): Promise<InsertTrendingTopic[]> {
-    const currentDate = new Date();
-
-    const prompt = `Real-time nature and wildlife analyzer. Today: ${currentDate.toDateString()}.
-
-Find 2 current NATURE trending topics from last 24 hours:
-- Wildlife discoveries and animal behavior facts
-- Environmental changes and natural phenomena
-- Conservation success stories and nature preservation
-- Natural disasters and geological events
-- Amazing nature facts and biological discoveries
-- Climate and weather patterns affecting nature
-
-Return JSON array:
-[
-  {
-    "title": "[Current nature event/fact]",
-    "description": "Latest nature discovery or environmental event",
-    "searchVolume": [realistic number 600000-2000000],
-    "priority": "medium",
-    "category": "nature_facts",
-    "source": "real_time_analysis",
-    "sourceUrl": "https://nature-news.com/current",
-    "timeframe": "last_24_hours"
-  }
-]`;
-
-    return await this.makeGeminiRequest(prompt, 'nature_facts', 2);
-  }
-
-  private async getRealTimeGeographyFactsTrending(): Promise<InsertTrendingTopic[]> {
-    const currentDate = new Date();
-
-    const prompt = `Real-time geography facts analyzer. Today: ${currentDate.toDateString()}.
-
-Find 2 current GEOGRAPHY trending topics from last 24 hours:
-- Fascinating geographical discoveries and facts
-- Changes in world geography and geological events
-- Country facts and cultural geography insights
-- Natural landmarks and geographical phenomena
-- Maps and territorial changes or discoveries
-- Amazing geographical facts and world records
-
-Return JSON array:
-[
-  {
-    "title": "[Current geography fact/discovery]",
-    "description": "Latest geographical discovery or fascinating world fact",
-    "searchVolume": [realistic number 500000-1800000],
-    "priority": "medium",
-    "category": "geography_facts",
-    "source": "real_time_analysis",
-    "sourceUrl": "https://geography-news.com/current",
-    "timeframe": "last_24_hours"
-  }
-]`;
-
-    return await this.makeGeminiRequest(prompt, 'geography_facts', 2);
-  }
-
-  private async makeGeminiRequest(prompt: string, category: string, expectedCount: number): Promise<InsertTrendingTopic[]> {
-    try {
-      const model = this.gemini.getGenerativeModel({ model: "gemini-1.5-pro" });
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
-
-      try {
-        // Clean the response and parse JSON
-        const cleanedText = text.replace(/```json|```/g, '').trim();
-        const aiTopics = JSON.parse(cleanedText);
-
-        if (!Array.isArray(aiTopics)) {
-          throw new Error('Response is not an array');
-        }
-
-        const currentDate = new Date();
-        return aiTopics.slice(0, expectedCount).map((topic: any) => ({
-          title: topic.title || `Current ${category} Update`,
-          description: topic.description || 'Current trending topic',
-          searchVolume: topic.searchVolume || Math.floor(Math.random() * 2000000) + 1000000,
-          priority: topic.priority || 'medium',
-          category: topic.category || category,
-          source: 'real_time_gemini',
-          trending_data: {
-            date: currentDate.toISOString().split('T')[0],
-            timestamp: currentDate.toISOString(),
-            timeframe: topic.timeframe || 'last_24_hours',
-            sourceUrl: topic.sourceUrl || 'https://trending-source.com',
-            realTime: true,
-            dataFreshness: 'current'
-          },
-          status: 'pending'
-        }));
-
-      } catch (parseError) {
-        console.log(`Failed to parse Gemini response for ${category}, generating fallback`);
-        return this.generateCurrentFallback(category, expectedCount);
-      }
-
-    } catch (error) {
-      console.error(`Gemini API error for ${category}:`, error);
-      return this.generateCurrentFallback(category, expectedCount);
-    }
-  }
+  
 
   private generateCurrentFallback(category: string, count: number): InsertTrendingTopic[] {
     const currentDate = new Date();
