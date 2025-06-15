@@ -94,6 +94,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/pipeline/logs/:jobId", async (req, res) => {
     try {
       const jobId = parseInt(req.params.jobId);
+      if (isNaN(jobId)) {
+        return res.status(400).json({ error: 'Invalid job ID' });
+      }
       const logs = await storage.getPipelineLogsByJob(jobId);
       res.json(logs);
     } catch (error) {

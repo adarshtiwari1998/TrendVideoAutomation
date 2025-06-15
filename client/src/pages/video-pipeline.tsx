@@ -28,7 +28,9 @@ export default function VideoPipelinePage() {
       if (!response.ok) throw new Error('Failed to fetch pipeline');
       return response.json();
     },
-    refetchInterval: 5000
+    refetchInterval: 1000, // Faster refresh for real-time updates
+    staleTime: 0, // Always refetch for latest data
+    cacheTime: 0 // Don't cache to ensure fresh data
   });
 
   const getStatusIcon = (status: string) => {
@@ -98,11 +100,11 @@ export default function VideoPipelinePage() {
                       </p>
                       {selectedJobId === job.id ? (
                         <p className="text-xs text-primary mt-2">
-                          ✓ Viewing detailed logs - Click to show all logs
+                          ✓ Showing logs for this job only - Click to show all logs
                         </p>
                       ) : (
                         <p className="text-xs text-muted-foreground mt-2">
-                          Click to view detailed logs →
+                          Click to filter logs for this job only →
                         </p>
                       )}
                     </div>

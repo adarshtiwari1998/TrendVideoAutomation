@@ -32,7 +32,9 @@ interface PipelineData {
 export function AutomationPipeline() {
   const { data: pipelineData, isLoading, error } = useQuery({
     queryKey: ['/api/dashboard/active-pipeline'],
-    refetchInterval: 10000, // Refresh every 10 seconds
+    refetchInterval: 1000, // Refresh every 1 second for real-time updates
+    staleTime: 0, // Always refetch for latest data
+    cacheTime: 0 // Don't cache to ensure fresh data
   });
 
   if (isLoading) {

@@ -49,8 +49,10 @@ export function PipelinePreviewLogs({ selectedJobId }: PipelinePreviewLogsProps)
       if (!response.ok) throw new Error('Failed to fetch logs');
       return response.json();
     },
-    refetchInterval: 2000, // Refresh every 2 seconds for real-time updates
-    enabled: true // Always enabled, but URL changes based on selectedJobId
+    refetchInterval: 1000, // Refresh every 1 second for faster real-time updates
+    enabled: true,
+    staleTime: 0, // Always refetch to ensure real-time updates
+    cacheTime: 0 // Don't cache to ensure fresh data
   });
 
   const getStepIcon = (step: string, status: string) => {
@@ -116,7 +118,7 @@ export function PipelinePreviewLogs({ selectedJobId }: PipelinePreviewLogsProps)
           <Sparkles className="h-5 w-5" />
           Pipeline Preview Logs
           {selectedJobId && selectedJobId > 0 ? (
-            <Badge variant="default">Filtering: Job #{selectedJobId}</Badge>
+            <Badge variant="default">Job #{selectedJobId} Only</Badge>
           ) : (
             <Badge variant="outline">All Jobs</Badge>
           )}
