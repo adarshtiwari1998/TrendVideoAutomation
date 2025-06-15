@@ -163,39 +163,28 @@ export class TextToSpeechService {
     console.log(`📝 Cleaning text for speech. Original length: ${text.length}`);
     console.log(`📝 First 200 chars: "${text.substring(0, 200)}..."`);
     
-    // Remove production instructions and model pollution BEFORE enhancement
+    // Clean and preserve ALL content for TTS
     let cleaned = text
-      // Remove model instructions that pollute TTS
-      .replace(/^Upbeat.*?intro.*?logo\s*/i, '')
-      .replace(/^.*?music.*?intro.*?animated.*?logo\s*/i, '')
+      // Remove only problematic formatting that breaks TTS
       .replace(/^\[.*?\]\s*/gm, '') // Remove stage directions
-      .replace(/^.*?background.*?music.*?\s*/i, '')
-      .replace(/^.*?fade.*?in.*?out.*?\s*/i, '')
-      .replace(/^.*?visual.*?effect.*?\s*/i, '')
-      .replace(/^.*?transition.*?\s*/i, '')
-      .replace(/^.*?animation.*?\s*/i, '')
-      .replace(/^.*?sound.*?effect.*?\s*/i, '')
-      // Clean up formatting only
-      .replace(/\n{3,}/g, '\n\n')
-      .replace(/\s+/g, ' ')
+      .replace(/\n{3,}/g, ' ') // Convert multiple newlines to single space
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .replace(/[^\w\s.,!?'-]/g, ' ') // Remove special characters that break TTS
+      .replace(/\s+/g, ' ') // Final whitespace cleanup
       .trim();
 
-    console.log(`📝 Cleaned text length after removing instructions: ${cleaned.length}`);
+    console.log(`📝 Cleaned text length: ${cleaned.length}`);
     
-    // Only enhance if we have substantial content
+    // Ensure we have substantial content
     if (cleaned.length < 100) {
-      console.warn('⚠️ Text too short after cleaning instructions');
-      throw new Error('Insufficient content after removing model instructions');
+      console.warn('⚠️ Text too short after cleaning');
+      throw new Error('Insufficient content for TTS');
     }
     
-    // Apply minimal enhancement for natural speech
-    const enhanced = this.enhanceScriptForNaturalSpeech(cleaned);
-
-    console.log(`📝 Final enhanced text length: ${enhanced.length}`);
-    console.log(`📝 Final text preview: "${enhanced.substring(0, 300)}..."`);
-    console.log(`🎤 Expected TTS duration: ~${Math.ceil(enhanced.length / 150)} minutes`);
+    console.log(`📝 Final text for TTS: "${cleaned.substring(0, 200)}..."`);
+    console.log(`🎤 Expected TTS duration: ~${Math.ceil(cleaned.length / 15)} seconds (${Math.ceil(cleaned.length / 900)} minutes)`);
     
-    return enhanced;
+    return cleaned;
   }
 
   private async generateAndCombineChunks(chunks: string[], outputPath: string, voice: string, speed: number, pitch: number): Promise<string> {
@@ -456,17 +445,24 @@ export class TextToSpeechService {
   }
 
   private splitTextIntoChunks(text: string, maxLength: number): string[] {
-    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    console.log(`📝 Splitting text into chunks. Total length: ${text.length}, Max chunk: ${maxLength}`);
+    
+    // For very long scripts, use smaller chunks to ensure complete processing
+    const chunkSize = Math.min(maxLength, 3000); // Smaller chunks for reliability
+    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 10);
     const chunks: string[] = [];
     let currentChunk = '';
 
     for (const sentence of sentences) {
       const trimmedSentence = sentence.trim();
-      if (currentChunk.length + trimmedSentence.length + 1 <= maxLength) {
-        currentChunk += (currentChunk ? '. ' : '') + trimmedSentence;
+      const testChunk = currentChunk ? `${currentChunk}. ${trimmedSentence}` : trimmedSentence;
+      
+      if (testChunk.length <= chunkSize) {
+        currentChunk = testChunk;
       } else {
         if (currentChunk) {
           chunks.push(currentChunk + '.');
+          console.log(`📝 Created chunk ${chunks.length}: ${currentChunk.length} chars`);
         }
         currentChunk = trimmedSentence;
       }
@@ -474,9 +470,13 @@ export class TextToSpeechService {
 
     if (currentChunk) {
       chunks.push(currentChunk + '.');
+      console.log(`📝 Created final chunk ${chunks.length}: ${currentChunk.length} chars`);
     }
 
-    return chunks.length > 0 ? chunks : [text];
+    const totalChunks = chunks.length || 1;
+    console.log(`📝 Split into ${totalChunks} chunks for TTS processing`);
+    
+    return chunks.length > 0 ? chunks : [text.substring(0, chunkSize)];
   }
 
   private createNaturalSSML(text: string, voice: string): string {

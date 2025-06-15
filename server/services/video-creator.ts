@@ -488,43 +488,11 @@ export class ProfessionalVideoCreator {
     jobId: number
   ): Promise<string> {
     const outputPath = path.join(this.outputDir, `professional_render_${jobId}.mp4`);
-    const dimensions = isShort ? '1080x1920' : '1920x1080';
 
     console.log(`🎥 Rendering professional video: ${scenes.length} scenes`);
 
-    // For videos with many scenes, use a simpler but more reliable approach
-    if (scenes.length > 15) {
-      return await this.renderLongVideoSimple(scenes, backgroundAssets, duration, isShort, jobId);
-    }
-
-    // Create complex filter for professional video
-    let filterComplex = '';
-    let inputs = '';
-
-    // Add all background images as inputs
-    backgroundAssets.forEach((asset, index) => {
-      inputs += `-loop 1 -i "${asset}" `;
-    });
-
-    // Create sophisticated filter chain
-    filterComplex = this.buildProfessionalFilterChain(scenes, backgroundAssets.length, duration, isShort);
-
-    const command = `ffmpeg ${inputs} ` +
-      `-filter_complex "${filterComplex}" ` +
-      `-map "[final]" ` +
-      `-c:v libx264 -preset medium -crf 20 ` +
-      `-pix_fmt yuv420p ` +
-      `-t ${duration} ` +
-      `-r 30 ` +
-      `"${outputPath}" -y`;
-
-    console.log(`🔧 Executing professional render command...`);
-    await execAsync(command);
-
-    const stats = await fs.stat(outputPath);
-    console.log(`✅ Professional video rendered: ${Math.round(stats.size / 1024)}KB`);
-
-    return outputPath;
+    // ALWAYS use simple rendering for maximum reliability
+    return await this.renderLongVideoSimple(scenes, backgroundAssets, duration, isShort, jobId);
   }
 
   private async renderLongVideoSimple(
@@ -638,46 +606,37 @@ export class ProfessionalVideoCreator {
 
   private createTextAnimation(segment: VideoSegment, isShort: boolean, startTime: number, duration: number): string {
     // Professional text settings
-    const fontSize = isShort ? 54 : 42; // Slightly smaller for better fit
-    const textColor = '#FFFFFF';
-    const borderColor = '#000000';
-    const maxWidth = isShort ? 'w*0.8' : 'w*0.9'; // Limit text width
+    const fontSize = isShort ? 48 : 36; // Smaller for better compatibility
+    const textColor = 'white';
+    const borderColor = 'black';
 
     // Always center text for professional appearance
     const x = '(w-text_w)/2';
     const y = isShort ? 'h*0.75' : 'h*0.8';
 
-    // Clean text for display (remove problematic characters)
+    // CRITICAL: Clean text thoroughly to prevent FFmpeg command failures
     const cleanText = segment.text
-      .replace(/'/g, '')
-      .replace(/"/g, '')
-      .replace(/[^\w\s.,!?-]/g, ' ')
-      .replace(/\s+/g, ' ')
+      .replace(/['"]/g, '') // Remove quotes completely
+      .replace(/[()[\]{}]/g, '') // Remove all brackets
+      .replace(/[&|<>$`\\]/g, '') // Remove shell metacharacters
+      .replace(/[^\w\s.,!?-]/g, ' ') // Keep only safe characters
+      .replace(/\s+/g, ' ') // Normalize spaces
       .trim();
 
-    // Ensure text doesn't exceed maximum width by wrapping
+    // Limit text length to prevent command line issues
     const words = cleanText.split(' ');
-    const maxWordsPerLine = isShort ? 8 : 12;
-    let displayText = '';
-    
-    if (words.length > maxWordsPerLine) {
-      displayText = words.slice(0, maxWordsPerLine).join(' ') + '...';
-    } else {
-      displayText = cleanText;
-    }
+    const maxWords = isShort ? 6 : 8; // Shorter text for reliability
+    const displayText = words.length > maxWords 
+      ? words.slice(0, maxWords).join(' ') + '...' 
+      : cleanText;
 
-    // Simple fade in animation only (no complex animations that can overlap)
-    const fadeEffect = `:alpha='if(lt(t,${startTime}),0,if(lt(t,${startTime+1}),t-${startTime},1))'`;
-
-    return `drawtext=text='${displayText}':` +
+    // Use simple text overlay without complex effects to avoid FFmpeg errors
+    return `drawtext=text=${displayText}:` +
       `fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:` +
       `fontsize=${fontSize}:fontcolor=${textColor}:` +
       `x=${x}:y=${y}:` +
-      `bordercolor=${borderColor}:borderw=4:` +
-      `shadowcolor=#000000:shadowx=2:shadowy=2:` +
-      `box=1:boxcolor=black@0.5:boxborderw=10:` + // Add semi-transparent background box
-      `enable='between(t,${startTime},${startTime + duration})'` +
-      fadeEffect + ',';
+      `bordercolor=${borderColor}:borderw=3:` +
+      `enable=between\\(t\\,${startTime}\\,${startTime + duration}\\),`;
   }
 
   private createSceneTransition(transition: VideoScene['transition'], sceneIndex: number, duration: number): string {
