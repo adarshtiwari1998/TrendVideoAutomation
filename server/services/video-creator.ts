@@ -9,14 +9,7 @@ import { FFmpegInstaller } from './ffmpeg-installer';
 // Graceful canvas import with fallback
 let createCanvas: any = null;
 let Canvas: any = null;
-try {
-  Canvas = require('canvas');
-  createCanvas = Canvas.createCanvas;
-  console.log('✅ Canvas library loaded successfully');
-} catch (error) {
-  console.warn('⚠️ Canvas library not available, using fallback methods');
-  console.warn('Canvas error:', error.message);
-}
+let canvasInitialized = false;
 
 const execAsync = promisify(exec);
 
@@ -26,6 +19,27 @@ export class VideoCreator {
 
   constructor() {
     this.ensureDirectories();
+    this.initializeCanvas();
+  }
+
+  private async initializeCanvas(): Promise<void> {
+    if (canvasInitialized) return;
+
+    try {
+      // Try dynamic import for ES modules compatibility
+      const canvasModule = await import('canvas').catch(() => null);
+      if (canvasModule) {
+        Canvas = canvasModule.default || canvasModule;
+        createCanvas = Canvas.createCanvas;
+        canvasInitialized = true;
+        console.log('✅ Canvas library loaded successfully');
+      } else {
+        throw new Error('Canvas module not available');
+      }
+    } catch (error) {
+      console.warn('⚠️ Canvas library not available, using fallback methods');
+      canvasInitialized = false;
+    }
   }
 
   private async ensureDirectories(): Promise<void> {
@@ -59,22 +73,22 @@ export class VideoCreator {
     const outputPath = path.join(this.outputDir, `professional_${jobId}.mp4`);
     const isShort = jobData.videoType === 'short';
     const dimensions = isShort ? '1080x1920' : '1920x1080';
-    
+
     // Step 1: Generate high-quality audio
     const audioPath = await this.generateAudio(jobData.script, jobId);
-    
+
     // Step 2: Get audio duration
     const audioDuration = await this.getAudioDuration(audioPath);
-    
+
     // Step 3: Create video background with motion graphics
     const backgroundPath = await this.createAnimatedBackground(jobId, audioDuration, isShort, jobData.title);
-    
+
     // Step 4: Add text animations and overlays
     const textOverlayPath = await this.addTextAnimations(backgroundPath, jobData, audioDuration, isShort);
-    
+
     // Step 5: Combine with audio using Python/Node.js
     const finalPath = await this.combineAudioVideoAdvanced(textOverlayPath, audioPath, outputPath);
-    
+
     console.log(`✅ Professional video created: ${finalPath}`);
     return finalPath;
   }
@@ -82,17 +96,17 @@ export class VideoCreator {
   private async createAlternativeVideo(jobData: any, jobId: number): Promise<string> {
     const outputPath = path.join(this.outputDir, `alternative_${jobId}.mp4`);
     const isShort = jobData.videoType === 'short';
-    
+
     // Generate audio first
     const audioPath = await this.generateAudio(jobData.script, jobId);
     const audioDuration = await this.getAudioDuration(audioPath);
-    
+
     // Create video using Node.js canvas/image processing
     const videoPath = await this.createVideoWithNodeJS(jobData, audioDuration, isShort, jobId);
-    
+
     // Combine with audio
     const finalPath = await this.mergeAudioVideo(videoPath, audioPath, outputPath);
-    
+
     return finalPath;
   }
 
@@ -102,9 +116,9 @@ export class VideoCreator {
       const jobData = await storage.getContentJobById(jobId);
       const isShort = jobData?.videoType === 'short';
       const duration = isShort ? 120 : 600; // 2 minutes for shorts, 10 minutes for long-form
-      
+
       console.log(`🔄 Creating fallback video: ${duration}s duration for ${jobData?.videoType}`);
-      
+
       // Create a proper video file instead of text-only
       return await this.createMinimalVideo(script, jobId, duration, isShort);
     } catch (error) {
@@ -119,63 +133,66 @@ export class VideoCreator {
     const height = isShort ? 1920 : 1080;
     const fps = 30;
     const totalFrames = Math.floor(duration * fps);
-    
-    if (!createCanvas) {
+
+    // Ensure Canvas is initialized
+    await this.initializeCanvas();
+
+    if (!createCanvas || !canvasInitialized) {
       console.warn('Canvas not available, using FFmpeg-only background creation');
       return await this.createFFmpegBackground(jobId, duration, isShort, title);
     }
-    
+
     try {
       const canvas = createCanvas(width, height);
       const ctx = canvas.getContext('2d');
       const frames = [];
-      
+
       console.log(`🎨 Creating ${totalFrames} animated frames...`);
-      
+
       for (let frame = 0; frame < totalFrames; frame++) {
         const progress = frame / totalFrames;
-        
+
         // Create animated gradient background
         const gradient = ctx.createLinearGradient(0, 0, width, height);
         const hue1 = (progress * 360) % 360;
         const hue2 = ((progress * 360) + 120) % 360;
-        
+
         gradient.addColorStop(0, `hsl(${hue1}, 70%, 20%)`);
         gradient.addColorStop(1, `hsl(${hue2}, 70%, 40%)`);
-        
+
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, width, height);
-        
+
         // Add animated particles
         for (let i = 0; i < 50; i++) {
           const x = (Math.sin(progress * Math.PI * 2 + i) * 100) + width/2;
           const y = (Math.cos(progress * Math.PI * 2 + i * 1.5) * 50) + height/2;
-          
+
           ctx.fillStyle = `rgba(255, 255, 255, ${0.1 + Math.sin(progress * Math.PI * 4 + i) * 0.1})`;
           ctx.beginPath();
           ctx.arc(x, y, 3, 0, Math.PI * 2);
           ctx.fill();
         }
-        
+
         // Save frame
         const frameBuffer = canvas.toBuffer('image/png');
         const framePath = path.join(this.outputDir, `frame_${jobId}_${frame.toString().padStart(6, '0')}.png`);
         await fs.writeFile(framePath, frameBuffer);
         frames.push(framePath);
-        
+
         if (frame % 100 === 0) {
           console.log(`Generated ${frame}/${totalFrames} frames`);
         }
       }
-      
+
       // Convert frames to video using ffmpeg alternative
       await this.framesToVideo(frames, outputPath, fps);
-      
+
       // Cleanup frames
       for (const framePath of frames) {
         await fs.unlink(framePath).catch(() => {});
       }
-      
+
       return outputPath;
     } catch (error) {
       console.error('Animated background creation failed:', error);
@@ -187,38 +204,38 @@ export class VideoCreator {
     const outputPath = path.join(this.outputDir, `with_text_${jobData.id}.mp4`);
     const width = isShort ? 1080 : 1920;
     const height = isShort ? 1920 : 1080;
-    
+
     if (!createCanvas || !Canvas) {
       console.warn('Canvas not available for text animations, using FFmpeg text overlay');
       return await this.addFFmpegTextOverlay(backgroundPath, jobData, duration, isShort);
     }
-    
+
     try {
       // Split script into segments for animated display
       const sentences = jobData.script.split(/[.!?]+/).filter(s => s.trim().length > 0);
       const segmentDuration = duration / sentences.length;
-      
+
       // Create text overlay frames
       const canvas = createCanvas(width, height);
       const ctx = canvas.getContext('2d');
-      
+
       // Set up text styling
       ctx.font = `bold ${isShort ? 48 : 64}px Arial`;
       ctx.textAlign = 'center';
       ctx.fillStyle = '#FFFFFF';
       ctx.strokeStyle = '#000000';
       ctx.lineWidth = 3;
-      
+
       // Add title at the top
       const titleY = isShort ? height * 0.15 : height * 0.1;
       ctx.strokeText(jobData.title.substring(0, 50), width/2, titleY);
       ctx.fillText(jobData.title.substring(0, 50), width/2, titleY);
-      
+
       const textOverlay = canvas.toBuffer('image/png');
       await fs.writeFile(outputPath.replace('.mp4', '_overlay.png'), textOverlay);
-      
+
       return backgroundPath; // Return background for now, proper compositing would require ffmpeg
-      
+
     } catch (canvasError) {
       console.error('Canvas text animation failed:', canvasError.message);
       return await this.addFFmpegTextOverlay(backgroundPath, jobData, duration, isShort);
@@ -227,11 +244,11 @@ export class VideoCreator {
 
   private async addFFmpegTextOverlay(backgroundPath: string, jobData: any, duration: number, isShort: boolean): Promise<string> {
     const outputPath = path.join(this.outputDir, `with_ffmpeg_text_${jobData.id}.mp4`);
-    
+
     try {
       // Escape title for FFmpeg
       const escapedTitle = jobData.title.replace(/'/g, "\\'").replace(/"/g, '\\"').substring(0, 50);
-      
+
       const command = `ffmpeg -i "${backgroundPath}" ` +
         `-vf "drawtext=text='${escapedTitle}':fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:` +
         `fontsize=${isShort ? 48 : 64}:fontcolor=#FFFFFF:` +
@@ -241,7 +258,7 @@ export class VideoCreator {
 
       await execAsync(command);
       return outputPath;
-      
+
     } catch (error) {
       console.error('FFmpeg text overlay failed:', error);
       return backgroundPath; // Return original if text overlay fails
@@ -252,14 +269,14 @@ export class VideoCreator {
     try {
       // Try with fluent-ffmpeg if available
       const ffmpeg = require('fluent-ffmpeg');
-      
+
       await new Promise((resolve, reject) => {
         const command = ffmpeg();
-        
+
         frames.forEach((frame, index) => {
           command.input(frame);
         });
-        
+
         command
           .inputFPS(fps)
           .videoCodec('libx264')
@@ -269,7 +286,7 @@ export class VideoCreator {
           .on('error', reject)
           .run();
       });
-      
+
     } catch (ffmpegError) {
       console.warn('FFmpeg not available, creating simple video file...');
       // Create a simple MP4 structure as fallback
@@ -285,13 +302,13 @@ export class VideoCreator {
       0x69, 0x73, 0x6F, 0x6D, 0x69, 0x73, 0x6F, 0x32,
       0x61, 0x76, 0x63, 0x31, 0x6D, 0x70, 0x34, 0x31
     ]);
-    
+
     // Create dummy video data
     const videoData = Buffer.alloc(Math.floor(duration * 100000)); // Rough calculation
     for (let i = 0; i < videoData.length; i++) {
       videoData[i] = Math.floor(Math.random() * 256);
     }
-    
+
     const completeVideo = Buffer.concat([mp4Header, videoData]);
     await fs.writeFile(outputPath, completeVideo);
   }
@@ -300,14 +317,14 @@ export class VideoCreator {
     try {
       // Try different methods to get audio duration
       const stats = await fs.stat(audioPath);
-      
+
       // Estimate duration based on file size (rough calculation)
       // For MP3 at 192kbps: duration ≈ fileSize / (192000/8)
       const estimatedDuration = stats.size / (192000 / 8);
-      
+
       // Ensure reasonable bounds
       return Math.max(30, Math.min(600, estimatedDuration));
-      
+
     } catch (error) {
       console.warn('Could not determine audio duration, using default');
       return 120; // Default 2 minutes
@@ -319,14 +336,14 @@ export class VideoCreator {
       // Advanced audio-video combination
       const videoData = await fs.readFile(videoPath);
       const audioData = await fs.readFile(audioPath);
-      
+
       // Create combined MP4 structure (simplified)
       const combinedData = Buffer.concat([videoData, audioData]);
       await fs.writeFile(outputPath, combinedData);
-      
+
       console.log('✅ Advanced audio-video combination completed');
       return outputPath;
-      
+
     } catch (error) {
       console.error('Advanced combination failed:', error);
       // Fallback to just copying video
@@ -339,54 +356,58 @@ export class VideoCreator {
     const outputPath = path.join(this.outputDir, `nodejs_video_${jobId}.mp4`);
     const width = isShort ? 1080 : 1920;
     const height = isShort ? 1920 : 1080;
-    
-    if (!createCanvas || !Canvas) {
-      console.warn('Canvas not available, using FFmpeg-only video creation');
-      return await this.createFFmpegOnlyVideo(jobData, duration, isShort, jobId);
-    }
-    
+
     try {
-      // Create professional video using Canvas
-      const canvas = createCanvas(width, height);
-      const ctx = canvas.getContext('2d');
-      
-      // Professional gradient background
-      const gradient = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, Math.max(width, height)/2);
-      gradient.addColorStop(0, '#1a1a2e');
-      gradient.addColorStop(0.5, '#16213e');
-      gradient.addColorStop(1, '#0f172a');
-      
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, width, height);
-      
-      // Add title with professional styling
-      ctx.font = `bold ${isShort ? 72 : 84}px Arial`;
-      ctx.textAlign = 'center';
-      ctx.fillStyle = '#FFD700';
-      ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 4;
-      
-      const title = jobData.title.substring(0, isShort ? 35 : 50);
-      const titleY = isShort ? height * 0.2 : height * 0.15;
-      
-      ctx.strokeText(title, width/2, titleY);
-      ctx.fillText(title, width/2, titleY);
-      
-      // Add news ticker style elements
-      ctx.font = `${isShort ? 32 : 42}px Arial`;
-      ctx.fillStyle = '#FF4444';
-      ctx.fillText('BREAKING NEWS', width/2, titleY + 100);
-      
-      // Save as image first, then convert to video
-      const imageBuffer = canvas.toBuffer('image/jpeg', { quality: 0.9 });
-      const imagePath = outputPath.replace('.mp4', '.jpg');
-      await fs.writeFile(imagePath, imageBuffer);
-      
-      // Create video from static image
-      await this.imageToVideo(imagePath, outputPath, duration);
-      
-      return outputPath;
-      
+      // Ensure Canvas is initialized
+      await this.initializeCanvas();
+
+      // Use Canvas if available for better quality
+      if (createCanvas && canvasInitialized) {
+        // Create professional video using Canvas
+        const canvas = createCanvas(width, height);
+        const ctx = canvas.getContext('2d');
+
+        // Professional gradient background
+        const gradient = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, Math.max(width, height)/2);
+        gradient.addColorStop(0, '#1a1a2e');
+        gradient.addColorStop(0.5, '#16213e');
+        gradient.addColorStop(1, '#0f172a');
+
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, width, height);
+
+        // Add title with professional styling
+        ctx.font = `bold ${isShort ? 72 : 84}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#FFD700';
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 4;
+
+        const title = jobData.title.substring(0, isShort ? 35 : 50);
+        const titleY = isShort ? height * 0.2 : height * 0.15;
+
+        ctx.strokeText(title, width/2, titleY);
+        ctx.fillText(title, width/2, titleY);
+
+        // Add news ticker style elements
+        ctx.font = `${isShort ? 32 : 42}px Arial`;
+        ctx.fillStyle = '#FF4444';
+        ctx.fillText('BREAKING NEWS', width/2, titleY + 100);
+
+        // Save as image first, then convert to video
+        const imageBuffer = canvas.toBuffer('image/jpeg', { quality: 0.9 });
+        const imagePath = outputPath.replace('.mp4', '.jpg');
+        await fs.writeFile(imagePath, imageBuffer);
+
+        // Create video from static image
+        await this.imageToVideo(imagePath, outputPath, duration);
+
+        return outputPath;
+      } else {
+        console.warn('Canvas not available, using FFmpeg-only video creation');
+        return await this.createFFmpegOnlyVideo(jobData, duration, isShort, jobId);
+      }
+
     } catch (canvasError) {
       console.error('Canvas operation failed:', canvasError.message);
       console.warn('Falling back to FFmpeg-only video creation');
@@ -398,25 +419,25 @@ export class VideoCreator {
     try {
       // Create MP4 from static image (simplified approach)
       const imageData = await fs.readFile(imagePath);
-      
+
       // Basic MP4 wrapper around image data
       const mp4Header = Buffer.from([
         0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6F, 0x6D,
         0x00, 0x00, 0x02, 0x00, 0x69, 0x73, 0x6F, 0x6D, 0x69, 0x73, 0x6F, 0x32,
         0x61, 0x76, 0x63, 0x31, 0x6D, 0x70, 0x34, 0x31
       ]);
-      
+
       // Repeat image data for video duration
       const frames = Math.floor(duration * 30); // 30 fps
       const videoData = Buffer.alloc(imageData.length * frames);
-      
+
       for (let i = 0; i < frames; i++) {
         imageData.copy(videoData, i * imageData.length);
       }
-      
+
       const completeVideo = Buffer.concat([mp4Header, videoData]);
       await fs.writeFile(outputPath, completeVideo);
-      
+
     } catch (error) {
       console.error('Image to video conversion failed:', error);
       // Fallback: just copy image as "video"
@@ -427,7 +448,7 @@ export class VideoCreator {
   private async createFFmpegBackground(jobId: number, duration: number, isShort: boolean, title: string): Promise<string> {
     const outputPath = path.join(this.outputDir, `ffmpeg_bg_${jobId}.mp4`);
     const dimensions = isShort ? '1080x1920' : '1920x1080';
-    
+
     try {
       // Create animated background using FFmpeg only - fixed geq syntax
       const command = `ffmpeg -f lavfi -i "color=c=#1a1a2e:size=${dimensions}:duration=${duration}:rate=30" ` +
@@ -450,11 +471,11 @@ export class VideoCreator {
   private async createFFmpegOnlyVideo(jobData: any, duration: number, isShort: boolean, jobId: number): Promise<string> {
     const outputPath = path.join(this.outputDir, `ffmpeg_only_${jobId}.mp4`);
     const dimensions = isShort ? '1080x1920' : '1920x1080';
-    
+
     try {
       // Create professional video using FFmpeg only - simplified approach
       const escapedTitle = jobData.title.replace(/'/g, "\\'").replace(/"/g, '\\"').substring(0, 60);
-      
+
       const command = `ffmpeg -f lavfi -i "color=c=#1a1a2e:size=${dimensions}:duration=${duration}:rate=30" ` +
         `-vf "` +
         `noise=alls=5:allf=t+u,` +
@@ -480,11 +501,11 @@ export class VideoCreator {
   private async createSimpleColorBackground(jobId: number, duration: number, isShort: boolean): Promise<string> {
     const outputPath = path.join(this.outputDir, `simple_bg_${jobId}.mp4`);
     const dimensions = isShort ? '1080x1920' : '1920x1080';
-    
+
     try {
       const command = `ffmpeg -f lavfi -i "color=c=#1a1a2e:size=${dimensions}:duration=${duration}:rate=30" ` +
         `-c:v libx264 -preset ultrafast -crf 30 "${outputPath}" -y`;
-      
+
       await execAsync(command);
       return outputPath;
     } catch (error) {
@@ -497,11 +518,11 @@ export class VideoCreator {
     try {
       const videoData = await fs.readFile(videoPath);
       const audioData = await fs.readFile(audioPath);
-      
+
       // Simple concatenation for MP4 structure
       const mergedData = Buffer.concat([videoData, audioData]);
       await fs.writeFile(outputPath, mergedData);
-      
+
       return outputPath;
     } catch (error) {
       console.error('Audio-video merge failed:', error);
@@ -514,17 +535,17 @@ export class VideoCreator {
     try {
       const outputPath = path.join(this.outputDir, `minimal_video_${jobId}.mp4`);
       const dimensions = isShort ? '1080x1920' : '1920x1080';
-      
+
       // First generate audio
       console.log(`🎵 Generating audio for job ${jobId}...`);
       const audioPath = await this.generateAudio(script, jobId);
-      
+
       // Get actual audio duration
       const { stdout: audioDuration } = await execAsync(`ffprobe -v quiet -show_entries format=duration -of csv=p=0 "${audioPath}"`);
       const actualDuration = parseFloat(audioDuration.trim());
-      
+
       console.log(`📹 Creating professional video with audio: ${actualDuration}s duration, ${dimensions} resolution`);
-      
+
       // Create professional animated background
       const backgroundCommand = `ffmpeg -f lavfi -i "color=c=#0f172a:size=${dimensions}:duration=${actualDuration}:rate=30" ` +
         `-f lavfi -i "color=c=#1e293b:size=${dimensions}:duration=${actualDuration}:rate=30" ` +
@@ -540,31 +561,31 @@ export class VideoCreator {
         `"${this.outputDir}/background_${jobId}.mp4" -y`;
 
       await execAsync(backgroundCommand);
-      
+
       // Combine with audio
       const finalCommand = `ffmpeg -i "${this.outputDir}/background_${jobId}.mp4" -i "${audioPath}" ` +
         `-c:v libx264 -c:a aac -b:a 192k -ar 48000 ` +
         `-shortest -movflags +faststart "${outputPath}" -y`;
 
       await execAsync(finalCommand);
-      
+
       // Verify audio is embedded
       const { stdout: videoInfo } = await execAsync(`ffprobe -v quiet -print_format json -show_streams "${outputPath}"`);
       const streams = JSON.parse(videoInfo).streams;
       const hasAudio = streams.some(stream => stream.codec_type === 'audio');
-      
+
       if (!hasAudio) {
         throw new Error('Audio embedding verification failed');
       }
-      
+
       // Cleanup temporary files
       await fs.unlink(`${this.outputDir}/background_${jobId}.mp4`).catch(() => {});
-      
+
       const stats = await fs.stat(outputPath);
       console.log(`✅ Created professional video with audio: ${outputPath} (${Math.round(stats.size / 1024)}KB)`);
-      
+
       return outputPath;
-      
+
     } catch (error) {
       console.error('Professional video creation failed:', error);
       // Fallback to basic video with audio
@@ -576,14 +597,14 @@ export class VideoCreator {
     try {
       const outputPath = path.join(this.outputDir, `basic_video_${jobId}.mp4`);
       const dimensions = isShort ? '1080x1920' : '1920x1080';
-      
+
       // Generate audio first
       const audioPath = await this.generateAudio(script, jobId);
-      
+
       // Get audio duration
       const { stdout: audioDuration } = await execAsync(`ffprobe -v quiet -show_entries format=duration -of csv=p=0 "${audioPath}"`);
       const actualDuration = parseFloat(audioDuration.trim());
-      
+
       // Create simple video with audio
       const command = `ffmpeg -f lavfi -i "color=c=#1a1a2e:size=${dimensions}:duration=${actualDuration}:rate=30" ` +
         `-i "${audioPath}" ` +
@@ -591,12 +612,12 @@ export class VideoCreator {
         `-c:v libx264 -c:a aac -shortest "${outputPath}" -y`;
 
       await execAsync(command);
-      
+
       const stats = await fs.stat(outputPath);
       console.log(`✅ Created basic video with audio: ${outputPath} (${Math.round(stats.size / 1024)}KB)`);
-      
+
       return outputPath;
-      
+
     } catch (error) {
       console.error('Basic video with audio creation failed:', error);
       return await this.createTextOnlyVideo(script, jobId);
@@ -606,12 +627,12 @@ export class VideoCreator {
   private async createTextOnlyVideo(script: string, jobId: number): Promise<string> {
     try {
       const outputPath = path.join(this.outputDir, `text_only_${jobId}.txt`);
-      
+
       // Create a text file with the script content
       const content = `Video Script for Job ${jobId}\n\n${script}\n\nNote: This is a text-only fallback due to video generation failure.`;
-      
+
       await fs.writeFile(outputPath, content, 'utf8');
-      
+
       console.log('📝 Created text-only content as final fallback');
       return outputPath;
     } catch (error) {
@@ -634,7 +655,7 @@ export class VideoCreator {
       // Validate the generated audio file
       const stats = await fs.stat(audioPath);
       console.log(`📊 Generated audio file size: ${Math.round(stats.size / 1024)}KB`);
-      
+
       if (stats.size < 100000) { // Less than 100KB indicates corrupted file
         console.warn('Audio file validation failed, recreating...');
         throw new Error('Generated audio file too small, indicates invalid content');
@@ -644,23 +665,23 @@ export class VideoCreator {
       try {
         const { stdout } = await execAsync(`ffprobe -v quiet -show_entries format=duration -of csv=p=0 "${audioPath}"`);
         const duration = parseFloat(stdout.trim());
-        
+
         console.log(`🎵 Audio duration: ${duration} seconds`);
-        
+
         if (isNaN(duration) || duration < 20) {
           console.warn('Audio duration too short, indicates system text was processed');
           throw new Error('Audio file invalid or too short, recreating...');
         }
-        
+
         // Check if duration makes sense for script length
         const wordCount = script.split(' ').length;
         const expectedDuration = (wordCount / 150) * 60; // 150 WPM
-        
+
         if (duration < expectedDuration * 0.3) { // Duration way too short
           console.warn(`Audio duration ${duration}s too short for ${wordCount} words (expected ~${expectedDuration}s)`);
           throw new Error('Audio duration inconsistent with script length');
         }
-        
+
       } catch (probeError) {
         console.warn('Audio file validation failed:', probeError.message);
         throw new Error('Audio file validation failed, recreating...');
@@ -693,12 +714,12 @@ export class VideoCreator {
 
   private async createValidAudio(script: string, jobId: number): Promise<string> {
     const audioPath = path.join(this.outputDir, `fallback_audio_${jobId}.mp3`);
-    
+
     try {
       // Calculate reasonable duration
       const wordCount = script.split(' ').length;
       const duration = Math.max(60, Math.min(600, (wordCount / 150) * 60));
-      
+
       // Generate a simple but valid audio file
       const command = `ffmpeg -f lavfi -i "sine=frequency=440:duration=${duration}" ` +
         `-f lavfi -i "sine=frequency=554:duration=${duration}" ` +
@@ -706,10 +727,10 @@ export class VideoCreator {
         `-c:a libmp3lame -b:a 128k -ar 44100 "${audioPath}" -y`;
 
       await execAsync(command);
-      
+
       const stats = await fs.stat(audioPath);
       console.log(`✅ Created fallback audio: ${audioPath} (${Math.round(stats.size / 1024)}KB, ${duration}s)`);
-      
+
       return audioPath;
     } catch (fallbackError) {
       console.error('Fallback audio creation failed:', fallbackError);
@@ -786,7 +807,7 @@ export class VideoCreator {
 
   private async addProfessionalTextOverlays(backgroundPath: string, job: any, duration: number, isShort: boolean): Promise<string> {
     const outputPath = path.join(this.outputDir, `professional_text_${job.id}.mp4`);
-    
+
     // Split script into meaningful segments
     const sentences = job.script.split(/[.!?]+/).filter(s => s.trim().length > 0);
     const segmentDuration = duration / sentences.length;
@@ -835,20 +856,20 @@ export class VideoCreator {
     const effectsFilter = [
       // Subtle zoom and pan for engagement
       `zoompan=z='if(lte(zoom,1.0),1.5,max(1.001,zoom-0.0015))':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'`,
-      
+
       // Professional color grading
       `curves=psfile=/dev/stdin:interp=cubic`,
       `colorbalance=rs=0.1:gs=0.0:bs=-0.1:rm=0.05:gm=0.0:bm=-0.05`,
-      
+
       // Broadcast-style sharpening
       `unsharp=luma_msize_x=5:luma_msize_y=5:luma_amount=1.2:chroma_msize_x=3:chroma_msize_y=3:chroma_amount=0.8`,
-      
+
       // Professional noise reduction
       `hqdn3d=2:1:2:1`,
-      
+
       // Subtle vignette for focus
       `vignette=PI/6`,
-      
+
       // Final color enhancement
       `eq=contrast=1.15:brightness=0.02:saturation=1.25:gamma=0.95`
     ].join(',');
@@ -974,7 +995,7 @@ export class VideoCreator {
       // First, get audio duration to match video length
       const { stdout: audioDuration } = await execAsync(`ffprobe -v quiet -show_entries format=duration -of csv=p=0 "${audioPath}"`);
       const duration = parseFloat(audioDuration.trim());
-      
+
       console.log(`🎵 Audio duration: ${duration}s, creating ${isShort ? 'short' : 'long-form'} video`);
 
       // Professional video with proper audio sync
@@ -994,26 +1015,26 @@ export class VideoCreator {
         `"${outputPath}" -y`;
 
       await execAsync(command);
-      
+
       // Verify audio is properly embedded
       const { stdout: videoInfo } = await execAsync(`ffprobe -v quiet -print_format json -show_streams "${outputPath}"`);
       const streams = JSON.parse(videoInfo).streams;
       const hasAudio = streams.some(stream => stream.codec_type === 'audio');
-      
+
       if (!hasAudio) {
         throw new Error('Audio embedding failed - no audio track found in output');
       }
-      
+
       console.log('✅ Professional video created with embedded audio');
       return outputPath;
-      
+
     } catch (error) {
       console.error('Professional editing failed, trying simpler approach:', error.message);
-      
+
       // Fallback: Simple audio-video combination
       const fallbackCommand = `ffmpeg -i "${visualPath}" -i "${audioPath}" ` +
         `-c:v libx264 -c:a aac -shortest "${outputPath}" -y`;
-      
+
       await execAsync(fallbackCommand);
       return outputPath;
     }
