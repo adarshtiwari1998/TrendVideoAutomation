@@ -117,12 +117,6 @@ export class TrendingAnalyzer {
   private async getRealTimeGlobalTrending(): Promise<InsertTrendingTopic[]> {
     const topics: InsertTrendingTopic[] = [];
 
-    // Get trending from YouTube with science focus
-    if (this.youtube) {
-      const youtubeTrending = await this.getYouTubeTrendingTopics('global', '28'); // Science & Technology category
-      topics.push(...youtubeTrending.slice(0, 1));
-    }
-
     // Get trending from Google Search with space focus
     if (this.customSearch) {
       const spaceSearchTrending = await this.getGoogleSearchTrending('space news discovery today astronomy');
@@ -249,24 +243,29 @@ Return JSON array with title, description, searchVolume (2M-5M), priority: "high
   private async getRealTimeGeographyTrending(): Promise<InsertTrendingTopic[]> {
     const topics: InsertTrendingTopic[] = [];
 
-    // Get trending geography content from YouTube
-    if (this.youtube) {
-      const youtubeTrending = await this.getYouTubeTrendingTopics('global', '27'); // Education category
-      topics.push(...youtubeTrending.slice(0, 1));
+    // Get trending from multiple regions for geography content
+    const regions = [
+      { code: 'US', name: 'United States' },
+      { code: 'GB', name: 'United Kingdom' },
+      { code: 'CA', name: 'Canada' },
+      { code: 'AU', name: 'Australia' },
+      { code: 'IN', name: 'India' }
+    ];
+
+    for (const region of regions) {
+      try {
+        const regionTopics = await this.getYouTubeTrendingTopics(region.code, '27'); // Education category
+        topics.push(...regionTopics.map(topic => ({
+          ...topic,
+          category: 'geography',
+          region: region.name
+        })));
+      } catch (error) {
+        console.error(`❌ Failed to get trending topics for region ${region.name}:`, error);
+      }
     }
 
-    // Get trending geography news from Google Search
-    if (this.customSearch) {
-      const searchTrending = await this.getGoogleSearchTrending('geography facts world discovery continent');
-      topics.push(...searchTrending.slice(0, 1));
-    }
-
-    // If no real data, fallback to Gemini
-    if (topics.length === 0) {
-      return await this.getGeminiGeographyTrending();
-    }
-
-    return topics.slice(0, 2);
+    return topics;
   }
 
   private async getGeminiSpaceTrending(): Promise<InsertTrendingTopic[]> {
