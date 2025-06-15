@@ -206,14 +206,7 @@ export function TrendingTopics({ onRefresh }: TrendingTopicsProps) {
     return topic.description;
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'bg-red-500';
-      case 'medium': return 'bg-yellow-500';
-      case 'low': return 'bg-green-500';
-      default: return 'bg-gray-500';
-    }
-  };
+  
 
   return (
     <Card className="bg-card rounded-xl shadow-sm border border-border">
