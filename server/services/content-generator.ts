@@ -149,26 +149,44 @@ You are a YouTube content creator making a ${duration} video about "${topic.titl
 Topic details: ${topic.description}
 Category: ${topic.category}
 
-Start speaking directly to your audience right now. Begin with an engaging hook and provide the actual content they came to learn about.
+CRITICAL REQUIREMENTS:
+1. Use SIMPLE language that even a 2-year-old child can understand
+2. Break down complex topics into easy, bite-sized explanations
+3. Use everyday examples and simple comparisons
+4. Avoid technical jargon - explain everything in basic terms
+5. Make it conversational and engaging like talking to a friend
+6. Cover ALL important points without skipping anything
+7. Ensure complete information coverage so viewers get full understanding
 
 ${videoType === 'long_form' ? `
-Your video should be 600-800 words covering:
-- Compelling opening hook
-- Detailed explanation with facts and examples  
-- Real-world applications and impact
-- Engaging conclusion with call to action
+Your video should be 600-800 words with this SIMPLE structure:
+- Start with a friendly greeting and simple explanation of what happened
+- Break down the main story into 3-4 easy-to-understand parts
+- Explain WHY this matters using simple examples
+- Tell people HOW this affects their daily life in simple terms
+- Explain what might happen next in easy language
+- End with encouraging words and call to action
 
-Make it educational, entertaining, and valuable for viewers interested in ${topic.category}.
+Use simple sentences. Explain like you're talking to your younger sibling. Use words like "imagine if...", "it's like when...", "think of it this way...".
 ` : `
-Your video should be 150-200 words covering:
-- Immediate attention-grabbing opening
-- Key facts and insights quickly delivered
-- Strong, memorable conclusion
+Your video should be 150-200 words with this SIMPLE structure:
+- Quick friendly greeting and simple explanation
+- Main point explained in the easiest way possible
+- Why it matters in simple terms
+- Quick ending with call to action
 
-Make it fast-paced, informative, and perfect for short-form content.
+Keep sentences short. Use simple words. Make it super easy to understand.
 `}
 
-Write the complete script as if you're speaking directly to your YouTube audience. Use natural conversational tone that works well for Indian English speakers.
+LANGUAGE STYLE:
+- Use simple, everyday words (avoid complex vocabulary)
+- Short, clear sentences
+- Friendly, conversational tone
+- Use analogies from daily life
+- Explain technical terms immediately in simple language
+- Speak as if explaining to a curious child
+
+Write the complete script as if you're speaking directly to your YouTube audience. Make it so simple that anyone can understand, but so complete that they learn everything important about the topic.
     `;
   }
 
@@ -177,69 +195,80 @@ Write the complete script as if you're speaking directly to your YouTube audienc
     const { title, description, category } = topic;
     
     if (videoType === 'short') {
-      return `Breaking news about ${title}! 
+      return `Hello friends! Today something really interesting happened. Let me tell you about ${title} in a super simple way.
 
-This development in ${category} is absolutely significant. ${description}
+So basically, what happened is this: ${description}. But what does this mean for us? Let me explain it like this.
 
-Here's what makes this important: This breakthrough affects millions of people and represents a major advancement in the field.
+Imagine you have a big puzzle, and scientists just found a very important piece! This piece helps us understand ${category} much better than before.
 
-The implications are far-reaching. Industry experts are calling this a game-changer that could transform how we approach ${category}.
+Why should you care? Well, think of it like this - when smart people discover new things, it can make our lives better in many ways. This discovery might help solve problems we face every day.
 
-What's particularly exciting is the potential for real-world applications. This discovery opens up new possibilities and solutions to existing challenges.
+Here's the cool part: This could change how we do things in the future. It's like when someone invented the smartphone - it changed everything!
 
-This is just the beginning. We're witnessing history in the making with ${title}.
+The best part is, this is just the beginning. More amazing discoveries are coming, and they will make our world even better.
 
-What are your thoughts on this development? Share in the comments below! Don't forget to like and subscribe for more breaking news and trending topics!`;
+What do you think about this? Tell me in the comments! And don't forget to like this video and subscribe for more simple explanations of amazing discoveries!`;
     } else {
-      return `Welcome back! Today we're diving deep into something truly remarkable: ${title}.
+      return `Hello everyone! Welcome back to our channel. Today I'm going to tell you about something really amazing that happened recently. It's about ${title}, and I'm going to explain it in the simplest way possible.
 
-This breakthrough in ${category} represents a significant advancement that deserves our attention. ${description}
+First, let me tell you what actually happened. ${description}. Now, I know this might sound complicated, but let me break it down for you step by step.
 
-Let me break this down for you. The significance of this development cannot be overstated. It's the result of years of research and represents a major step forward in our understanding.
+Think of it like this - you know how sometimes you learn something new that changes how you see the world? That's exactly what happened here. Scientists and researchers discovered something in ${category} that nobody knew before.
 
-The technical aspects are fascinating. Researchers have made discoveries that challenge conventional thinking and open up entirely new possibilities. This isn't just theoretical - it has real-world applications that could benefit millions of people.
+But why is this important? Let me give you a simple example. Imagine you've been trying to solve a really hard puzzle for years. Then suddenly, you find the missing piece that makes everything clear. That's what this discovery is like.
 
-From a global perspective, this development comes at a crucial time. With the challenges we face today, innovations like this offer hope and concrete solutions.
+Now, let's talk about what this means for you and me. This breakthrough could change many things in our daily lives. It's like when the internet was invented - nobody knew back then how much it would change everything we do.
 
-Industry experts are already discussing the potential impact. We're looking at applications in multiple sectors, from technology to healthcare to environmental solutions.
+Here's what makes this discovery so special. First, it solves problems that people have been working on for a very long time. Second, it opens up new possibilities that we never thought were possible before. And third, it could make life better for millions of people around the world.
 
-The economic implications alone are significant. This could create new markets, reduce costs, and generate substantial opportunities for growth and development.
+Let me explain how this might affect you personally. In the future, because of this discovery, things that are difficult today might become much easier. Problems that seem impossible to solve might have simple solutions.
 
-Looking ahead, the next few years will be critical. The transition from research to practical implementation will determine how quickly we can realize the benefits of this breakthrough.
+The amazing thing is, this is just the beginning. When scientists make one big discovery, it usually leads to many more discoveries. It's like opening a door to a room full of treasures.
 
-What excites me most is the potential for unexpected applications. Often, the most impactful uses of new discoveries are ones nobody initially predicted.
+From a bigger picture, this discovery comes at a perfect time. Our world faces many challenges today, and new discoveries like this give us hope and new ways to solve these challenges.
 
-This represents more than just scientific progress - it's a testament to human ingenuity and our capacity for innovation.
+The people who study this field are very excited. They say this could lead to new inventions, new ways of doing things, and new opportunities for everyone.
 
-The implications extend far beyond ${category}, potentially affecting how we approach challenges across multiple fields.
+What's really exciting is thinking about what comes next. The next few years are going to be very interesting as we see how this discovery gets used in real life.
 
-I encourage you to stay informed about developments in this area. The pace of progress is accelerating, and new discoveries are happening regularly.
+But here's the best part - often, the most amazing uses of new discoveries are things nobody even thought of at first. So there might be surprises waiting for us that are even better than what we can imagine now.
 
-What are your thoughts on this breakthrough? How do you think it might affect your life or work? I'd love to hear your perspectives in the comments.
+This discovery shows us something important about humans - we never stop learning, we never stop trying to make things better, and we never give up on solving difficult problems.
 
-If you found this analysis valuable, please give this video a thumbs up. And if you haven't already, subscribe and hit the notification bell for more in-depth coverage of science and innovation.
+The effects of this discovery will probably go far beyond just ${category}. It might change how we think about many different things and help us solve problems in areas we haven't even thought of yet.
 
-Thank you for watching, and I'll see you in the next video!`;
+I really encourage you to keep learning about this topic. The world of science and discovery is moving very fast these days, and there are always new and exciting things happening.
+
+So, what do you think about all this? Do you think this discovery will make a big difference in your life? How do you think it might change things in the future? I really want to hear your thoughts, so please share them in the comments below.
+
+If this explanation helped you understand this topic better, please give this video a thumbs up. It really helps me know that you're enjoying the content. And if you want to see more videos where I explain complicated things in simple ways, please subscribe to our channel and ring the notification bell.
+
+Thank you so much for watching today. I really appreciate you taking the time to learn something new with me. I'll see you in the next video with more amazing discoveries explained simply!`;
     }
   }
 
   private getSystemPrompt(videoType: 'long_form' | 'short'): string {
-    return `You are a professional YouTube content creator specializing in ${videoType} videos for Indian and global audiences. 
+    return `You are a master content creator who specializes in making complex news and information extremely simple and easy to understand. Your unique skill is taking complicated topics and explaining them so clearly that even a young child can follow along.
 
-Your expertise:
-- Creating viral, engaging content that resonates with Indian viewers
-- Understanding cultural nuances and current trends
-- Crafting scripts that work well with AI video generation
-- Optimizing for YouTube algorithm and audience retention
-- Balancing entertainment with information
+Your core principles:
+- SIMPLICITY FIRST: Use the simplest words possible
+- COMPLETE COVERAGE: Never skip important information, but explain it simply
+- CHILD-FRIENDLY: Write as if explaining to a curious 2-year-old
+- COMPREHENSIVE: Cover all key points without overwhelming
+- ENGAGING: Keep it interesting and conversational
+- CLEAR AUDIO: Perfect for text-to-speech conversion
 
-Writing style:
-- Conversational and relatable
-- Use storytelling techniques
-- Include cultural references when appropriate
-- Avoid overly formal or academic language
-- Natural flow that sounds human when converted to speech
-- Strategic placement of pauses for visual elements`;
+Your writing style:
+- Use everyday language and simple vocabulary
+- Break complex ideas into bite-sized pieces
+- Use analogies from daily life (like comparing things to toys, food, family)
+- Short, clear sentences that flow naturally
+- Friendly, warm tone like talking to a younger sibling
+- Explain technical terms immediately in simple words
+- Use phrases like "imagine if...", "it's like when...", "think about..."
+- Perfect rhythm for audio narration
+
+Your mission: Transform any complex news story into a simple, complete, and engaging explanation that preserves all important information while being accessible to everyone.`;
   }
 
   private getFallbackScript(topic: TrendingTopic, videoType: 'long_form' | 'short'): string {
