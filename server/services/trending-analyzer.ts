@@ -123,8 +123,8 @@ export class TrendingAnalyzer {
       console.log(`⏰ FILTERING FROM: ${twentyFourHoursAgo.toISOString()}`);
       console.log(`📅 EXACT 24H WINDOW: Last 24 hours only`);
 
-      // SPACE & SCIENCE SPECIFIC SEARCH - Only target scientific and space sources
-      const spaceAndScienceQuery = `${query} site:nasa.gov OR site:space.com OR site:spacenews.com OR site:spaceflightnow.com OR site:esa.int OR site:sciencenews.org OR site:newscientist.com OR site:scientificamerican.com OR site:smithsonianmag.com OR site:nationalgeographic.com/science OR site:phys.org OR site:science.org OR site:nature.com OR site:sciencedaily.com OR site:astronomy.com OR site:universetoday.com OR site:spacex.com OR site:jpl.nasa.gov`;
+      // SPACE & SCIENCE SPECIFIC SEARCH - Only target scientific and space sources with specific article exclusions
+      const spaceAndScienceQuery = `${query} site:nasa.gov OR site:space.com OR site:spacenews.com OR site:spaceflightnow.com OR site:esa.int OR site:sciencenews.org OR site:newscientist.com OR site:scientificamerican.com OR site:smithsonianmag.com OR site:nationalgeographic.com/science OR site:phys.org OR site:science.org OR site:nature.com OR site:sciencedaily.com OR site:astronomy.com OR site:universetoday.com OR site:spacex.com OR site:jpl.nasa.gov -site:space.com/category -site:nasa.gov/category -inurl:category -inurl:page -inurl:tag -inurl:archive`;
 
       console.log(`🎯 SPACE & SCIENCE SEARCH QUERY: ${spaceAndScienceQuery}`);
 
@@ -133,7 +133,8 @@ export class TrendingAnalyzer {
         q: spaceAndScienceQuery,
         num: 10,
         sort: 'date',
-        dateRestrict: 'd1' // Strict last 24 hours only
+        dateRestrict: 'd1', // Strict last 24 hours only
+        filter: '1' // Enable duplicate filtering
       });
 
       const topics: InsertTrendingTopic[] = [];
@@ -153,9 +154,15 @@ export class TrendingAnalyzer {
             continue;
           }
 
-          // Verify this is actually space/science content
+          // Verify this is actually space/science content and not a category page
           if (!this.isValidSpaceOrScienceContent(item.title, item.snippet || '', item.link)) {
             console.log(`❌ NOT SPACE/SCIENCE CONTENT - Skipping`);
+            continue;
+          }
+
+          // Check if this is a specific article URL, not a category or index page
+          if (!this.isSpecificArticleUrl(item.link)) {
+            console.log(`❌ CATEGORY/INDEX PAGE URL - Skipping: ${item.link}`);
             continue;
           }
 
@@ -201,9 +208,11 @@ export class TrendingAnalyzer {
                 sourceDomain: this.extractDomain(item.link),
                 wordCount: contentData.wordCount,
                 isSpaceScience: true,
-                publishDate: publishDate?.toISOString(),
+                publishDate: publishDate?.toISOString() || now.toISOString(),
                 searchVolumeAnalyzed: true,
-                withinLast24Hours: true
+                withinLast24Hours: true,
+                originalSnippet: item.snippet,
+                googleDisplayLink: item.displayLink || this.extractDomain(item.link)
               },
               status: 'pending'
             });
@@ -257,6 +266,57 @@ export class TrendingAnalyzer {
     const isValidDomain = validDomains.some(domain => url.includes(domain));
 
     return hasSpaceContent && !hasExcludedContent && isValidDomain;
+  }
+
+  private isSpecificArticleUrl(url: string): boolean {
+    const urlLower = url.toLowerCase();
+    
+    // Exclude category, index, and general pages
+    const excludePatterns = [
+      '/category/',
+      '/categories/',
+      '/tag/',
+      '/tags/',
+      '/archive/',
+      '/page/',
+      '/humans-in-space/',
+      '/search',
+      '?page=',
+      '?category=',
+      '?tag=',
+      'space.com/',
+      'nasa.gov/',
+      'science.nasa.gov/category',
+      'phys.org/journals',
+      'nature.com/subjects',
+      'sciencedaily.com/news',
+      '/index.html',
+      '/index.php'
+    ];
+
+    // Check if URL contains any exclude patterns
+    const isExcluded = excludePatterns.some(pattern => urlLower.includes(pattern.toLowerCase()));
+    
+    if (isExcluded) {
+      return false;
+    }
+
+    // Ensure URL has meaningful content indicators
+    const hasGoodIndicators = (
+      urlLower.includes('/news/') ||
+      urlLower.includes('/article/') ||
+      urlLower.includes('/story/') ||
+      urlLower.includes('/discovery/') ||
+      urlLower.includes('/mission/') ||
+      urlLower.includes('/research/') ||
+      urlLower.includes('/breakthrough/') ||
+      urlLower.includes('-') || // Most article URLs have hyphens
+      /\/\d{4}\//.test(urlLower) || // Year in URL path
+      /\/\d{8}/.test(urlLower) || // Date in URL
+      urlLower.split('/').length >= 5 // Deep enough URL structure
+    );
+
+    return hasGoodIndicators;
   }
 
   private async extractSpaceAndScienceContent(url: string, fallbackSnippet: string, title: string): Promise<{

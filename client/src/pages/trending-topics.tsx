@@ -1,258 +1,194 @@
-import { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Loader2, RefreshCw, Play, TrendingUp, Trash2, ExternalLink, Eye, X } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { useState } from "react";
+import { 
+  TrendingUp, 
+  RotateCcw, 
+  AlertCircle,
+  Play,
+  Eye,
+  Trash2,
+  Clock,
+  X,
+  ExternalLink,
+  Calendar
+} from "lucide-react";
 
 interface TrendingTopic {
   id: number;
   title: string;
   description: string;
   searchVolume: number;
-  priority: string;
+  priority: 'high' | 'medium' | 'low';
   category: string;
   source: string;
+  status: string;
   createdAt: string;
   trending_data?: {
     tags?: string[];
     sourceUrl?: string;
     timestamp?: string;
     contentType?: string;
+    fullContent?: string;
+    publishDate?: string;
+    extractedAt?: string;
+    timeframe?: string;
   };
 }
 
-export default function TrendingTopicsPage() {
+export function TrendingTopicsPage() {
+  const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [selectedTopics, setSelectedTopics] = useState<number[]>([]);
-  const [viewingTopic, setViewingTopic] = useState<TrendingTopic | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<TrendingTopic | null>(null);
 
-  const { data: topicsData = [], isLoading } = useQuery({
-    queryKey: ['trending-topics'],
-    queryFn: async () => {
-      const response = await fetch('/api/dashboard/trending-topics');
-      if (!response.ok) throw new Error('Failed to fetch trending topics');
-      return response.json();
-    },
-    refetchInterval: 30000
+  // Fetch trending topics
+  const { data: topics = [], isLoading, error, refetch } = useQuery({
+    queryKey: ["trending-topics"],
+    queryFn: () => apiRequest("/api/dashboard/trending-topics"),
+    refetchInterval: 30000, // Refetch every 30 seconds
   });
 
-  const topics = topicsData || [];
+  // Format date helper function
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
 
-  // Check URL for view parameter
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const viewId = urlParams.get('view');
-    if (viewId && topics && topics.length > 0) {
-      const topicToView = topics.find((t: TrendingTopic) => t.id === parseInt(viewId));
-      if (topicToView) {
-        setViewingTopic(topicToView);
+      if (diffInHours < 1) {
+        return "Just now";
+      } else if (diffInHours < 24) {
+        return `${diffInHours} hours ago`;
+      } else {
+        return date.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
       }
+    } catch {
+      return "Recently";
     }
-  }, [topics]);
+  };
 
-  const generateContentMutation = useMutation({
-    mutationFn: async ({ topicId, videoType }: { topicId: number; videoType: string }) => {
-      const response = await fetch('/api/content/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topicId, videoType })
+  // Generate script mutation
+  const generateScriptMutation = useMutation({
+    mutationFn: (topicId: number) => 
+      apiRequest(`/api/content/generate/${topicId}`, { method: "POST" }),
+    onSuccess: () => {
+      toast({
+        title: "Script Generated",
+        description: "Script has been generated successfully",
       });
-      if (!response.ok) throw new Error('Failed to generate content');
-      return response.json();
+      queryClient.invalidateQueries({ queryKey: ["trending-topics"] });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['trending-topics'] });
-    }
-  });
-
-  const refreshMutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch('/api/trending/refresh', { method: 'POST' });
-      if (!response.ok) throw new Error('Failed to refresh trending topics');
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['trending-topics'] });
-    }
-  });
-
-  const bulkDeleteMutation = useMutation({
-    mutationFn: async (topicIds: number[]) => {
-      const response = await fetch('/api/trending/bulk-delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topicIds })
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to generate script",
+        variant: "destructive",
       });
-      if (!response.ok) throw new Error('Failed to delete topics');
-      return response.json();
     },
-    onSuccess: () => {
-      setSelectedTopics([]);
-      queryClient.invalidateQueries({ queryKey: ['trending-topics'] });
-    }
-  });
-
-  const handleGenerateContent = (topicId: number, videoType: string) => {
-    generateContentMutation.mutate({ topicId, videoType });
-  };
-
-  const handleSelectTopic = (topicId: number, checked: boolean) => {
-    setSelectedTopics(prev => 
-      checked 
-        ? [...prev, topicId]
-        : prev.filter(id => id !== topicId)
-    );
-  };
-
-  const handleSelectAll = (checked: boolean) => {
-    setSelectedTopics(checked ? topics.map((t: TrendingTopic) => t.id) : []);
-  };
-
-  const handleBulkDelete = () => {
-    if (selectedTopics.length > 0) {
-      bulkDeleteMutation.mutate(selectedTopics);
-    }
-  };
-
-  const handleViewFullContent = (topic: TrendingTopic) => {
-    setViewingTopic(topic);
-    // Update URL
-    const url = new URL(window.location.href);
-    url.searchParams.set('view', topic.id.toString());
-    window.history.pushState({}, '', url);
-  };
-
-  const handleCloseFullContent = () => {
-    setViewingTopic(null);
-    // Remove view parameter from URL
-    const url = new URL(window.location.href);
-    url.searchParams.delete('view');
-    window.history.pushState({}, '', url);
-  };
-
-  const getFullContent = (topic: TrendingTopic) => {
-    // Try to get full content from trending_data
-    if (topic.trending_data && typeof topic.trending_data === 'object') {
-      const trendingData = topic.trending_data as any;
-      if (trendingData.fullContent && trendingData.fullContent.length > topic.description.length) {
-        return trendingData.fullContent;
-      }
-    }
-    return topic.description;
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'bg-red-500';
-      case 'medium': return 'bg-yellow-500';
-      case 'low': return 'bg-green-500';
-      default: return 'bg-gray-500';
-    }
-  };
-
-   const handleTopicClick = (topic: TrendingTopic) => {
-    setSelectedTopic(topic);
-  };
-
-  const handleCloseModal = () => {
-    setSelectedTopic(null);
-  };
-
-  const filteredTopics = topics.filter(topic => {
-    return true;
   });
 
   return (
     <div className="container mx-auto p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
-          <TrendingUp className="h-6 w-6" />
-          <h1 className="text-2xl font-bold">Trending Topics</h1>
-          {topics.length > 0 && (
-            <Badge variant="secondary">{topics.length} topics</Badge>
-          )}
+      <div className="mb-8 flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <TrendingUp className="h-5 w-5 text-gray-700" />
+          <h1 className="text-2xl font-semibold">Trending Topics</h1>
         </div>
-        <div className="flex items-center gap-2">
-          {selectedTopics.length > 0 && (
-            <Button
-              variant="destructive"
-              onClick={handleBulkDelete}
-              disabled={bulkDeleteMutation.isPending}
-              className="flex items-center gap-2"
-            >
-              {bulkDeleteMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Trash2 className="h-4 w-4" />
-              )}
-              Delete {selectedTopics.length} topics
-            </Button>
-          )}
-          <Button
-            onClick={() => refreshMutation.mutate()}
-            disabled={refreshMutation.isPending}
-            className="flex items-center gap-2"
-          >
-            {refreshMutation.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4" />
-            )}
-            Refresh Topics
-          </Button>
-        </div>
+        <button
+          onClick={() => refetch()}
+          className="rounded-md border bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gray-950 disabled:pointer-events-none disabled:opacity-50"
+        >
+          <RotateCcw className="mr-2 h-4 w-4" />
+          Refresh
+        </button>
       </div>
-
-      {topics.length > 0 && (
-        <div className="flex items-center gap-4 mb-4 p-4 bg-muted/30 rounded-lg">
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="select-all"
-              checked={selectedTopics.length === topics.length}
-              onCheckedChange={handleSelectAll}
-            />
-            <label htmlFor="select-all" className="text-sm font-medium">
-              Select all topics
-            </label>
-          </div>
-          <Badge variant="outline">
-            {selectedTopics.length} of {topics.length} selected
-          </Badge>
+      {error && (
+        <div className="rounded-md border border-destructive bg-destructive/15 p-3 text-sm text-destructive">
+          <AlertCircle className="mr-2 h-4 w-4" />
+          Failed to load trending topics.
         </div>
       )}
-
-      {isLoading ? (
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
-      ) : (
-        <div className="grid gap-4">
-          {topics.map((topic: TrendingTopic) => (
-            <Card key={topic.id} className={`hover:shadow-md transition-shadow ${selectedTopics.includes(topic.id) ? 'ring-2 ring-primary' : ''}`}>
-              <CardHeader>
-                <div className="flex items-start gap-4">
-                  <Checkbox
-                    checked={selectedTopics.includes(topic.id)}
-                    onCheckedChange={(checked) => handleSelectTopic(topic.id, checked as boolean)}
-                    className="mt-1"
-                  />
-                  <div className="flex-1">
-                    <CardTitle className="text-lg mb-2">{topic.title}</CardTitle>
-                    <p className="text-sm text-muted-foreground mb-3">
+      <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+        {isLoading ? (
+          <>
+            {[...Array(6)].map((_, i) => (
+              <div
+                key={i}
+                className="group relative space-y-3 rounded-md border p-4"
+              >
+                <div className="animate-pulse">
+                  <div className="mb-2 h-5 w-3/4 bg-gray-200"></div>
+                  <div className="h-3 w-5/6 bg-gray-200"></div>
+                  <div className="mt-4 flex justify-between">
+                    <div className="h-8 w-20 bg-gray-200"></div>
+                    <div className="h-8 w-20 bg-gray-200"></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </>
+        ) : (
+          topics?.map((topic) => (
+            <div
+              key={topic.id}
+              className="group relative space-y-3 rounded-md border p-4"
+            >
+              <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold text-gray-900 line-clamp-2">
+                        {topic.title}
+                      </h3>
+                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <TrendingUp className="h-4 w-4" />
+                        <span className="font-medium">
+                          {topic.searchVolume?.toLocaleString() || 'N/A'} searches
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-gray-600 text-sm line-clamp-3">
                       {topic.description}
                     </p>
-                    <div className="flex items-center gap-2 flex-wrap mb-3">
-                      <Badge className={getPriorityColor(topic.priority)}>
-                        {topic.priority}
-                      </Badge>
-                      <Badge variant="outline">{topic.category}</Badge>
-                      <Badge variant="secondary">{topic.source}</Badge>
-                      <span className="text-sm text-muted-foreground">
-                        {topic.searchVolume.toLocaleString()} searches
+
+                    {/* Date and Time Display */}
+                    <div className="flex items-center gap-4 text-xs text-gray-500">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        <span>
+                          Published: {topic.trending_data?.publishDate 
+                            ? formatDate(topic.trending_data.publishDate)
+                            : formatDate(topic.createdAt)
+                          }
+                        </span>
+                      </div>
+                      {topic.trending_data?.extractedAt && (
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          <span>
+                            Extracted: {formatDate(topic.trending_data.extractedAt)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        topic.priority === 'high' 
+                          ? 'bg-red-100 text-red-800'
+                          : topic.priority === 'medium'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-green-100 text-green-800'
+                      }`}>
+                        {topic.priority} priority
+                      </span>
+                      <span className="text-xs text-gray-500 capitalize">
+                        {topic.category?.replace(/_/g, ' ')}
                       </span>
                     </div>
                     {topic.trending_data?.tags && (
@@ -270,133 +206,87 @@ export default function TrendingTopicsPage() {
                           href={topic.trending_data.sourceUrl} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                          className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1 truncate"
+                          title={topic.trending_data.sourceUrl}
                         >
-                          <ExternalLink className="h-3 w-3" />
-                          View Source
+                          <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                          <span className="truncate">
+                            {topic.trending_data.sourceUrl.length > 50 
+                              ? `${topic.trending_data.sourceUrl.substring(0, 50)}...`
+                              : topic.trending_data.sourceUrl
+                            }
+                          </span>
                         </a>
                       </div>
                     )}
                   </div>
-                  <div className="flex flex-col gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleViewFullContent(topic)}
-                      className="flex items-center gap-1 bg-purple-50 hover:bg-purple-100 border-purple-200"
-                    >
-                      <Eye className="h-3 w-3" />
-                      View Full
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => handleGenerateContent(topic.id, 'long_form')}
-                      disabled={generateContentMutation.isPending}
-                      className="flex items-center gap-1"
-                    >
-                      <Play className="h-3 w-3" />
-                      Long Video
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleGenerateContent(topic.id, 'short')}
-                      disabled={generateContentMutation.isPending}
-                      className="flex items-center gap-1"
-                    >
-                      <Play className="h-3 w-3" />
-                      Short
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {/* Full Content Dialog */}
-      <Dialog open={!!viewingTopic} onOpenChange={handleCloseFullContent}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <div className="flex items-start justify-between">
-              <DialogTitle className="text-xl font-bold pr-8">
-                {viewingTopic?.title}
-              </DialogTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleCloseFullContent}
-                className="h-6 w-6 p-0"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </DialogHeader>
-
-          {viewingTopic && (
-            <div className="space-y-4">
-              {/* Topic metadata */}
-              <div className="flex items-center gap-2 flex-wrap">
-                <Badge className={getPriorityColor(viewingTopic.priority)}>
-                  {viewingTopic.priority}
-                </Badge>
-                <Badge variant="outline">{viewingTopic.category}</Badge>
-                <Badge variant="secondary">{viewingTopic.source}</Badge>
-                <span className="text-sm text-muted-foreground">
-                  {viewingTopic.searchVolume.toLocaleString()} searches
-                </span>
+              <div className="absolute bottom-4 right-4 flex space-x-2">
+                <button
+                  onClick={() => setSelectedTopic(topic)}
+                  className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-slate-50"
+                >
+                  <Eye className="mr-2 h-4 w-4" />
+                  <span className="hidden sm:block">View</span>
+                </button>
+                <button
+                  onClick={() => generateScriptMutation.mutate(topic.id)}
+                  className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-slate-50"
+                  disabled={generateScriptMutation.isLoading}
+                >
+                  {generateScriptMutation.isLoading ? (
+                    <>
+                      <RotateCcw className="mr-2 h-4 w-4 animate-spin" />
+                      Generating
+                    </>
+                  ) : (
+                    <>
+                      <Play className="mr-2 h-4 w-4" />
+                      Generate
+                    </>
+                  )}
+                </button>
               </div>
-
-              {/* Source URL if available */}
-              {viewingTopic.trending_data?.sourceUrl && (
-                <div className="flex items-center gap-2">
-                  <a 
-                    href={viewingTopic.trending_data.sourceUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-800 flex items-center gap-1 text-sm"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                    View Original Source
-                  </a>
-                </div>
+            </div>
+          ))
+        )}
+      </div>
+      {selectedTopic && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="relative w-full max-w-2xl rounded-lg bg-white p-6">
+            <button
+              className="absolute top-2 right-2 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
+              onClick={() => setSelectedTopic(null)}
+            >
+              <X className="h-4 w-4" />
+              <span className="sr-only">Close</span>
+            </button>
+            <h3 className="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0">
+              {selectedTopic.title}
+            </h3>
+            <div className="mt-4 space-y-2">
+              <p className="text-gray-700">{selectedTopic.description}</p>
+              {selectedTopic.trending_data?.sourceUrl && (
+                <a
+                  href={selectedTopic.trending_data.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800"
+                >
+                  View Source
+                </a>
               )}
-
-              {/* Full content */}
-              <div className="space-y-3">
-                <h3 className="text-lg font-semibold">Full Content</h3>
-                <div className="bg-muted/30 p-4 rounded-lg">
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                    {getFullContent(viewingTopic)}
+              {selectedTopic.trending_data?.fullContent && (
+                <div className="mt-4">
+                  <h4 className="text-lg font-semibold">Full Content</h4>
+                  <p className="text-gray-800">
+                    {selectedTopic.trending_data.fullContent}
                   </p>
                 </div>
-              </div>
-
-              {/* Action buttons */}
-              <div className="flex gap-2 pt-4 border-t">
-                <Button
-                  onClick={() => handleGenerateContent(viewingTopic.id, 'long_form')}
-                  disabled={generateContentMutation.isPending}
-                  className="flex items-center gap-2"
-                >
-                  <Play className="h-4 w-4" />
-                  Generate Long Video
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => handleGenerateContent(viewingTopic.id, 'short')}
-                  disabled={generateContentMutation.isPending}
-                  className="flex items-center gap-2"
-                >
-                  <Play className="h-4 w-4" />
-                  Generate Short Video
-                </Button>
-              </div>
+              )}
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
