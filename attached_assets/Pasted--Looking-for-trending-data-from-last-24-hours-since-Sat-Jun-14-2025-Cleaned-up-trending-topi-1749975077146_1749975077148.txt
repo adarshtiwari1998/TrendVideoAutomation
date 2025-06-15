@@ -1,0 +1,184 @@
+📅 Looking for trending data from last 24 hours (since Sat Jun 14 2025)
+🧹 Cleaned up trending topics older than 24 hours
+❌ YouTube API error: GaxiosError: The <code>regionCode</code> parameter specifies an invalid region code.
+    at Gaxios._request (/home/runner/workspace/node_modules/gaxios/src/gaxios.ts:146:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async TrendingAnalyzer.getYouTubeTrendingTopics (/home/runner/workspace/server/services/trending-analyzer.ts:142:24)
+    at async TrendingAnalyzer.getRealTimeGeographyTrending (/home/runner/workspace/server/services/trending-analyzer.ts:254:31)
+    at async Promise.all (index 1)
+    at async TrendingAnalyzer.analyzeTrendingTopics (/home/runner/workspace/server/services/trending-analyzer.ts:63:11)
+    at async AutomationScheduler.triggerTrendingAnalysis (/home/runner/workspace/server/automation/scheduler.ts:407:5)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:185:7) {
+  config: {
+    url: 'https://youtube.googleapis.com/youtube/v3/videos?part=snippet&part=statistics&chart=mostPopular&regionCode=global&maxResults=10&videoCategoryId=27&key=AIzaSyAQKBa5u-sGcZByqzJ1QrkKQDnKT_1Kzhw',
+    method: 'GET',
+    apiVersion: '',
+    userAgentDirectives: [ [Object] ],
+    paramsSerializer: [Function (anonymous)],
+    headers: {
+      'x-goog-api-client': 'gdcl/7.2.0 gl-node/20.18.1',
+      'Accept-Encoding': 'gzip',
+      'User-Agent': 'google-api-nodejs-client/7.2.0 (gzip)'
+    },
+    params: {
+      part: [Array],
+      chart: 'mostPopular',
+      regionCode: 'global',
+      maxResults: 10,
+      videoCategoryId: '27',
+      key: 'AIzaSyAQKBa5u-sGcZByqzJ1QrkKQDnKT_1Kzhw'
+    },
+    validateStatus: [Function (anonymous)],
+    retry: true,
+    responseType: 'unknown',
+    errorRedactor: [Function: defaultErrorRedactor],
+    retryConfig: {
+      currentRetryAttempt: 0,
+      retry: 3,
+      httpMethodsToRetry: [Array],
+      noResponseRetries: 2,
+      retryDelayMultiplier: 2,
+      timeOfFirstRequest: 1749975061938,
+      totalTimeout: 9007199254740991,
+      maxRetryDelay: 9007199254740991,
+      statusCodesToRetry: [Array]
+    }
+  },
+  response: {
+    config: {
+      url: 'https://youtube.googleapis.com/youtube/v3/videos?part=snippet&part=statistics&chart=mostPopular&regionCode=global&maxResults=10&videoCategoryId=27&key=AIzaSyAQKBa5u-sGcZByqzJ1QrkKQDnKT_1Kzhw',
+      method: 'GET',
+      apiVersion: '',
+      userAgentDirectives: [Array],
+      paramsSerializer: [Function (anonymous)],
+      headers: [Object],
+      params: [Object],
+      validateStatus: [Function (anonymous)],
+      retry: true,
+      responseType: 'unknown',
+      errorRedactor: [Function: defaultErrorRedactor]
+    },
+    data: { error: [Object] },
+    headers: {
+      'content-encoding': 'gzip',
+      'content-type': 'application/json; charset=UTF-8',
+      date: 'Sun, 15 Jun 2025 08:11:01 GMT',
+      server: 'scaffolding on HTTPServer2',
+      'transfer-encoding': 'chunked',
+      vary: 'Origin, X-Origin, Referer',
+      'x-content-type-options': 'nosniff',
+      'x-frame-options': 'SAMEORIGIN',
+      'x-xss-protection': '0'
+    },
+    status: 400,
+    statusText: 'Bad Request',
+    request: {
+      responseURL: 'https://youtube.googleapis.com/youtube/v3/videos?part=snippet&part=statistics&chart=mostPopular&regionCode=global&maxResults=10&videoCategoryId=27&key=AIzaSyAQKBa5u-sGcZByqzJ1QrkKQDnKT_1Kzhw'
+    }
+  },
+  error: undefined,
+  status: 400,
+  code: 400,
+  errors: [
+    {
+      message: 'The <code>regionCode</code> parameter specifies an invalid region code.',
+      domain: 'youtube.parameter',
+      reason: 'invalidRegionCode',
+      location: 'regionCode',
+      locationType: 'parameter'
+    }
+  ],
+  [Symbol(gaxios-gaxios-error)]: '6.7.1'
+}
+❌ YouTube API error: GaxiosError: The <code>regionCode</code> parameter specifies an invalid region code.
+    at Gaxios._request (/home/runner/workspace/node_modules/gaxios/src/gaxios.ts:146:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async TrendingAnalyzer.getYouTubeTrendingTopics (/home/runner/workspace/server/services/trending-analyzer.ts:142:24)
+    at async TrendingAnalyzer.getRealTimeGlobalTrending (/home/runner/workspace/server/services/trending-analyzer.ts:122:31)
+    at async Promise.all (index 0)
+    at async TrendingAnalyzer.analyzeTrendingTopics (/home/runner/workspace/server/services/trending-analyzer.ts:63:11)
+    at async AutomationScheduler.triggerTrendingAnalysis (/home/runner/workspace/server/automation/scheduler.ts:407:5)
+    at async <anonymous> (/home/runner/workspace/server/routes.ts:185:7) {
+  config: {
+    url: 'https://youtube.googleapis.com/youtube/v3/videos?part=snippet&part=statistics&chart=mostPopular&regionCode=global&maxResults=10&videoCategoryId=28&key=AIzaSyAQKBa5u-sGcZByqzJ1QrkKQDnKT_1Kzhw',
+    method: 'GET',
+    apiVersion: '',
+    userAgentDirectives: [ [Object] ],
+    paramsSerializer: [Function (anonymous)],
+    headers: {
+      'x-goog-api-client': 'gdcl/7.2.0 gl-node/20.18.1',
+      'Accept-Encoding': 'gzip',
+      'User-Agent': 'google-api-nodejs-client/7.2.0 (gzip)'
+    },
+    params: {
+      part: [Array],
+      chart: 'mostPopular',
+      regionCode: 'global',
+      maxResults: 10,
+      videoCategoryId: '28',
+      key: 'AIzaSyAQKBa5u-sGcZByqzJ1QrkKQDnKT_1Kzhw'
+    },
+    validateStatus: [Function (anonymous)],
+    retry: true,
+    responseType: 'unknown',
+    errorRedactor: [Function: defaultErrorRedactor],
+    retryConfig: {
+      currentRetryAttempt: 0,
+      retry: 3,
+      httpMethodsToRetry: [Array],
+      noResponseRetries: 2,
+      retryDelayMultiplier: 2,
+      timeOfFirstRequest: 1749975061956,
+      totalTimeout: 9007199254740991,
+      maxRetryDelay: 9007199254740991,
+      statusCodesToRetry: [Array]
+    }
+  },
+  response: {
+    config: {
+      url: 'https://youtube.googleapis.com/youtube/v3/videos?part=snippet&part=statistics&chart=mostPopular&regionCode=global&maxResults=10&videoCategoryId=28&key=AIzaSyAQKBa5u-sGcZByqzJ1QrkKQDnKT_1Kzhw',
+      method: 'GET',
+      apiVersion: '',
+      userAgentDirectives: [Array],
+      paramsSerializer: [Function (anonymous)],
+      headers: [Object],
+      params: [Object],
+      validateStatus: [Function (anonymous)],
+      retry: true,
+      responseType: 'unknown',
+      errorRedactor: [Function: defaultErrorRedactor]
+    },
+    data: { error: [Object] },
+    headers: {
+      'content-encoding': 'gzip',
+      'content-type': 'application/json; charset=UTF-8',
+      date: 'Sun, 15 Jun 2025 08:11:01 GMT',
+      server: 'scaffolding on HTTPServer2',
+      'transfer-encoding': 'chunked',
+      vary: 'Origin, X-Origin, Referer',
+      'x-content-type-options': 'nosniff',
+      'x-frame-options': 'SAMEORIGIN',
+      'x-xss-protection': '0'
+    },
+    status: 400,
+    statusText: 'Bad Request',
+    request: {
+      responseURL: 'https://youtube.googleapis.com/youtube/v3/videos?part=snippet&part=statistics&chart=mostPopular&regionCode=global&maxResults=10&videoCategoryId=28&key=AIzaSyAQKBa5u-sGcZByqzJ1QrkKQDnKT_1Kzhw'
+    }
+  },
+  error: undefined,
+  status: 400,
+  code: 400,
+  errors: [
+    {
+      message: 'The <code>regionCode</code> parameter specifies an invalid region code.',
+      domain: 'youtube.parameter',
+      reason: 'invalidRegionCode',
+      location: 'regionCode',
+      locationType: 'parameter'
+    }
+  ],
+  [Symbol(gaxios-gaxios-error)]: '6.7.1'
+}
+🔍 Found 5 trending search results for: geography facts world discovery continent
+🔍 Found 5 trending search results for: space news discovery today astronomy
