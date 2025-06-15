@@ -2,10 +2,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
+import { useState } from "react";
 import { 
   TrendingUp, 
   RotateCcw, 
@@ -13,7 +15,9 @@ import {
   Play,
   Eye,
   Trash2,
-  Clock
+  Clock,
+  X,
+  ExternalLink
 } from "lucide-react";
 
 interface TrendingTopic {
@@ -26,6 +30,13 @@ interface TrendingTopic {
   source: string;
   status: string;
   createdAt: string;
+  trending_data?: {
+    tags?: string[];
+    sourceUrl?: string;
+    timestamp?: string;
+    contentType?: string;
+    fullContent?: string;
+  };
 }
 
 interface TrendingTopicsProps {
@@ -36,6 +47,7 @@ export function TrendingTopics({ onRefresh }: TrendingTopicsProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
+  const [viewingTopic, setViewingTopic] = useState<TrendingTopic | null>(null);
 
   const { data: topics, isLoading, error } = useQuery({
     queryKey: ['/api/dashboard/trending-topics'],
@@ -175,6 +187,34 @@ export function TrendingTopics({ onRefresh }: TrendingTopicsProps) {
     deleteMutation.mutate(topicId);
   };
 
+  const handleViewFullContent = (topic: TrendingTopic) => {
+    setViewingTopic(topic);
+  };
+
+  const handleCloseFullContent = () => {
+    setViewingTopic(null);
+  };
+
+  const getFullContent = (topic: TrendingTopic) => {
+    // Try to get full content from trending_data
+    if (topic.trending_data && typeof topic.trending_data === 'object') {
+      const trendingData = topic.trending_data as any;
+      if (trendingData.fullContent && trendingData.fullContent.length > topic.description.length) {
+        return trendingData.fullContent;
+      }
+    }
+    return topic.description;
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'high': return 'bg-red-500';
+      case 'medium': return 'bg-yellow-500';
+      case 'low': return 'bg-green-500';
+      default: return 'bg-gray-500';
+    }
+  };
+
   return (
     <Card className="bg-card rounded-xl shadow-sm border border-border">
       <CardContent className="p-6">
@@ -202,14 +242,14 @@ export function TrendingTopics({ onRefresh }: TrendingTopicsProps) {
           </div>
         ) : (
           <>
-            <div className="space-y-3">
+            <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
               <div className="flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">Fresh daily topics • Auto-expires in 24h</p>
                 <Badge variant="secondary" className="text-xs">
                   {trendingTopics.length} topics today
                 </Badge>
               </div>
-              {trendingTopics.slice(0, 5).map((topic) => (
+              {trendingTopics.slice(0, 10).map((topic) => (
                 <div key={topic.id} className="trending-topic-item group p-3 bg-muted/10 rounded-lg hover:bg-muted/20 transition-colors border border-border/50">
                   <div className="flex items-start space-x-3">
                     <div className={`w-2 h-2 ${getPriorityDot(topic.priority)} rounded-full mt-2 flex-shrink-0`} />
@@ -245,7 +285,7 @@ export function TrendingTopics({ onRefresh }: TrendingTopicsProps) {
                         size="sm"
                         variant="outline"
                         className="h-7 px-2 text-xs bg-purple-50 hover:bg-purple-100 border-purple-200"
-                        onClick={() => setLocation(`/trending-topics?view=${topic.id}`)}
+                        onClick={() => handleViewFullContent(topic)}
                         title="View full content"
                       >
                         <Eye className="w-3 h-3 mr-1" />
@@ -301,6 +341,89 @@ export function TrendingTopics({ onRefresh }: TrendingTopicsProps) {
           </>
         )}
       </CardContent>
+
+      {/* Full Content Modal Dialog */}
+      <Dialog open={!!viewingTopic} onOpenChange={handleCloseFullContent}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-start justify-between">
+              <DialogTitle className="text-xl font-bold pr-8">
+                {viewingTopic?.title}
+              </DialogTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleCloseFullContent}
+                className="h-6 w-6 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </DialogHeader>
+          
+          {viewingTopic && (
+            <div className="space-y-4">
+              {/* Topic metadata */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge className={getPriorityColor(viewingTopic.priority)}>
+                  {viewingTopic.priority}
+                </Badge>
+                <Badge variant="outline">{viewingTopic.category}</Badge>
+                <Badge variant="secondary">{viewingTopic.source}</Badge>
+                <span className="text-sm text-muted-foreground">
+                  {viewingTopic.searchVolume.toLocaleString()} searches
+                </span>
+              </div>
+
+              {/* Source URL if available */}
+              {viewingTopic.trending_data?.sourceUrl && (
+                <div className="flex items-center gap-2">
+                  <a 
+                    href={viewingTopic.trending_data.sourceUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-800 flex items-center gap-1 text-sm"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    View Original Source
+                  </a>
+                </div>
+              )}
+
+              {/* Full content */}
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold">Full Content</h3>
+                <div className="bg-muted/30 p-4 rounded-lg">
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                    {getFullContent(viewingTopic)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex gap-2 pt-4 border-t">
+                <Button
+                  onClick={() => handleGenerateContent(viewingTopic.id, 'long_form')}
+                  disabled={generateContentMutation.isPending}
+                  className="flex items-center gap-2"
+                >
+                  <Play className="h-4 w-4" />
+                  Generate Long Video
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => handleGenerateContent(viewingTopic.id, 'short')}
+                  disabled={generateContentMutation.isPending}
+                  className="flex items-center gap-2"
+                >
+                  <Play className="h-4 w-4" />
+                  Generate Short Video
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
