@@ -114,15 +114,15 @@ export class TrendingAnalyzer {
     try {
       console.log(`🔍 SCANNING SPACE & SCIENCE ARTICLES for: ${query}`);
       console.log(`📰 Target category: ${category}`);
-      console.log(`🎯 MINIMUM TARGET: 10 specific article posts from last 24 hours`);
+      console.log(`🎯 MINIMUM TARGET: 10 specific article posts from last 48 hours`);
 
-      // Get current date and time for precise 24-hour filtering
+      // Get current date and time for precise 48-hour filtering
       const now = new Date();
-      const twentyFourHoursAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
+      const fortyEightHoursAgo = new Date(now.getTime() - (48 * 60 * 60 * 1000));
       
       console.log(`⏰ CURRENT TIME: ${now.toISOString()}`);
-      console.log(`⏰ FILTERING FROM: ${twentyFourHoursAgo.toISOString()}`);
-      console.log(`📅 EXACT 24H WINDOW: Last 24 hours only`);
+      console.log(`⏰ FILTERING FROM: ${fortyEightHoursAgo.toISOString()}`);
+      console.log(`📅 EXACT 48H WINDOW: Last 48 hours only`);
 
       // Enhanced query to find SPECIFIC ARTICLES, not homepage URLs
       const specificArticleQuery = `${query} "article" OR "news" OR "story" OR "report" OR "research" OR "study" OR "breakthrough" OR "discovery" -"home" -"category" -"tag" -"index" filetype:html`;
@@ -139,8 +139,11 @@ export class TrendingAnalyzer {
       // Try multiple searches with different approaches to get at least 10 posts
       const searchAttempts = [
         { query: spaceAndScienceQuery, num: 10 },
-        { query: `${query} recent space news article 2025 -"home" -"category"`, num: 10 },
-        { query: `${query} space discovery article today -"index" -"tag"`, num: 10 }
+        { query: `${query} recent space news article 2025 -"home" -"category" -"humans-in-space" -"science-nature"`, num: 10 },
+        { query: `${query} space discovery article today -"index" -"tag" -site:nasa.gov/category -site:space.com/category`, num: 10 },
+        { query: `${query} space breakthrough news article -"home" -"main" -"category" site:nasa.gov/news OR site:space.com/news`, num: 10 },
+        { query: `${query} astronomy science news discovery -"category" -"tag" -"section" filetype:html`, num: 10 },
+        { query: `"${query.split(' ')[0]}" news article discovery recent -"home" -"index" -"category"`, num: 10 }
       ];
 
       for (const searchAttempt of searchAttempts) {
@@ -154,7 +157,7 @@ export class TrendingAnalyzer {
             q: searchAttempt.query,
             num: searchAttempt.num,
             sort: 'date',
-            dateRestrict: 'd1', // Strict last 24 hours only
+            dateRestrict: 'd2', // Last 48 hours
             cr: 'countryUS', // Focus on US sources for English content
             lr: 'lang_en' // English language results
           });
@@ -174,9 +177,9 @@ export class TrendingAnalyzer {
                 continue;
               }
 
-              // Strict 24-hour date validation
+              // Strict 48-hour date validation
               const publishDate = this.extractPublishDate(item);
-              if (!this.isWithinLast24Hours(publishDate, twentyFourHoursAgo)) {
+              if (!this.isWithinLast48Hours(publishDate, fortyEightHoursAgo)) {
                 console.log(`❌ CONTENT TOO OLD - Published: ${publishDate?.toISOString() || 'unknown'}`);
                 continue;
               }
@@ -194,7 +197,7 @@ export class TrendingAnalyzer {
               const searchVolume = await this.calculateRealSearchVolume(item.title, contentData, category);
               
               // More lenient search volume for article discovery
-              if (searchVolume < 200000) {
+              if (searchVolume < 100000) {
                 console.log(`❌ LOW SEARCH VOLUME: ${searchVolume.toLocaleString()} - Skipping`);
                 continue;
               }
@@ -219,7 +222,7 @@ export class TrendingAnalyzer {
                   trending_data: {
                     date: now.toISOString().split('T')[0],
                     timestamp: now.toISOString(),
-                    timeframe: 'last_24_hours',
+                    timeframe: 'last_48_hours',
                     sourceUrl: item.link,
                     realTime: true,
                     dataFreshness: 'current',
@@ -233,7 +236,7 @@ export class TrendingAnalyzer {
                     isSpaceScience: true,
                     publishDate: publishDate?.toISOString(),
                     searchVolumeAnalyzed: true,
-                    withinLast24Hours: true,
+                    withinLast48Hours: true,
                     articleType: 'specific_post',
                     publishDateFormatted: publishDate ? this.formatPublishDate(publishDate) : 'Today'
                   },
@@ -286,7 +289,14 @@ export class TrendingAnalyzer {
         /^\/space\/$/, // Space category page
         /\/category\//, // Any category path
         /\/humans-in-space\/$/, // NASA category
-        /\/science-nature\/$/ // Smithsonian category
+        /\/science-nature\/$/, // Smithsonian category
+        /^\/blog\/$/, // Blog homepage
+        /^\/main/, // Main pages
+        /^\/search/, // Search pages
+        /^\/archive/, // Archive pages
+        /\/feed\/$/, // Feed pages
+        /\/rss\/$/, // RSS pages
+        /\/page\/\d+\/$/ // Pagination pages
       ];
 
       // Check if URL matches exclusion patterns
@@ -702,13 +712,13 @@ export class TrendingAnalyzer {
     }
   }
 
-  private isWithinLast24Hours(publishDate: Date | null, twentyFourHoursAgo: Date): boolean {
+  private isWithinLast48Hours(publishDate: Date | null, fortyEightHoursAgo: Date): boolean {
     if (!publishDate) {
-      // If we can't determine the date but Google's d1 filter returned it, assume it's recent
+      // If we can't determine the date but Google's d2 filter returned it, assume it's recent
       return true;
     }
     
-    return publishDate >= twentyFourHoursAgo;
+    return publishDate >= fortyEightHoursAgo;
   }
 
   private async calculateRealSearchVolume(title: string, contentData: any, category: string): Promise<number> {
@@ -788,15 +798,15 @@ export class TrendingAnalyzer {
       const trendingData = topic.trending_data as any;
       return trendingData.spaceOptimized && 
              trendingData.isSpaceScience &&
-             trendingData.engagementScore >= 4 &&
-             trendingData.wordCount >= 150 &&
-             trendingData.withinLast24Hours &&
+             trendingData.engagementScore >= 3 &&
+             trendingData.wordCount >= 100 &&
+             trendingData.withinLast48Hours &&
              trendingData.searchVolumeAnalyzed &&
-             topic.searchVolume >= 500000; // Minimum 500K search volume
+             topic.searchVolume >= 300000; // Minimum 300K search volume
     });
 
-    console.log(`🚀 HIGH-VOLUME 24H FILTER: ${filtered.length}/${topics.length} topics meet criteria`);
-    console.log(`📊 CRITERIA: Space/Science + 24h recent + 500K+ search volume + quality content`);
+    console.log(`🚀 HIGH-VOLUME 48H FILTER: ${filtered.length}/${topics.length} topics meet criteria`);
+    console.log(`📊 CRITERIA: Space/Science + 48h recent + 300K+ search volume + quality content`);
     return filtered;
   }
 
@@ -816,16 +826,16 @@ export class TrendingAnalyzer {
         // Tertiary sort: Content quality (word count)
         return (bData.wordCount || 0) - (aData.wordCount || 0);
       })
-      .slice(0, 15); // Top 15 highest search volume space/science topics from last 24h
+      .slice(0, 20); // Top 20 highest search volume space/science topics from last 48h
   }
 
   private async cleanupOldTopics(): Promise<void> {
     try {
-      const twentyFourHoursAgo = new Date();
-      twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+      const fortyEightHoursAgo = new Date();
+      fortyEightHoursAgo.setHours(fortyEightHoursAgo.getHours() - 48);
 
-      await storage.deleteOldTrendingTopics(twentyFourHoursAgo);
-      console.log('🧹 Cleaned up old trending topics');
+      await storage.deleteOldTrendingTopics(fortyEightHoursAgo);
+      console.log('🧹 Cleaned up old trending topics (older than 48 hours)');
     } catch (error) {
       console.error('Error cleaning up old topics:', error);
     }
