@@ -1,167 +1,133 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { useQuery } from "@tanstack/react-query";
-import { 
-  Video, 
-  Image, 
-  FileText, 
-  Upload, 
-  Clock, 
-  CheckCircle, 
-  AlertCircle, 
-  Loader2,
-  Play,
-  Edit,
-  Sparkles,
-  Cloud
-} from "lucide-react";
-import { useState } from "react";
+import { useQuery } from '@tanstack/react-query';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { AlertCircle, CheckCircle, Clock, XCircle, Info } from 'lucide-react';
 
 interface PipelineLog {
   id: number;
-  jobId: number;
+  job_id: number;
   step: string;
-  status: 'starting' | 'progress' | 'completed' | 'error';
+  status: 'starting' | 'completed' | 'error' | 'warning';
   message: string;
-  details?: string;
-  timestamp: string;
-  progress?: number;
+  details: string;
+  progress: number;
   metadata?: any;
+  created_at: string;
 }
 
-interface PipelinePreviewLogsProps {
-  selectedJobId?: number;
+interface ActiveJob {
+  id: number;
+  title: string;
+  videoType: 'long_form' | 'short';
+  status: string;
+  progress: number;
+  createdAt: string;
 }
 
-export function PipelinePreviewLogs({ selectedJobId }: PipelinePreviewLogsProps) {
-  const [expandedLogs, setExpandedLogs] = useState<Set<number>>(new Set());
+async function fetchPipelineLogs(): Promise<{ logs: PipelineLog[]; activeJobs: ActiveJob[] }> {
+  try {
+    // First get active jobs
+    const activeResponse = await fetch('/api/dashboard/active-pipeline');
+    if (!activeResponse.ok) {
+      throw new Error('Failed to fetch active pipeline status');
+    }
+    const activeData = await activeResponse.json();
+    const activeJobs = activeData.active || [];
 
-  const { data: logs, isLoading, error } = useQuery({
-    queryKey: selectedJobId && selectedJobId > 0 
-      ? ['/api/pipeline/logs', selectedJobId] 
-      : ['/api/pipeline/logs/recent'],
-    queryFn: async () => {
-      if (selectedJobId && selectedJobId > 0) {
-        const response = await fetch(`/api/pipeline/logs/${selectedJobId}`);
-        if (!response.ok) throw new Error('Failed to fetch job logs');
-        const data = await response.json();
-        
-        // Remove duplicates by keeping only the latest entry for each step per job
-        const uniqueLogs = data.reduce((acc: any[], log: any) => {
-          const key = `${log.job_id}-${log.step}`;
-          const existing = acc.find(l => `${l.job_id}-${l.step}` === key);
-          
-          if (!existing || new Date(log.timestamp) > new Date(existing.timestamp)) {
-            if (existing) {
-              acc.splice(acc.indexOf(existing), 1);
-            }
-            acc.push(log);
-          }
-          return acc;
-        }, []);
-        
-        return uniqueLogs.sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-      } else {
-        // Show recent logs when no active jobs
-        const response = await fetch('/api/pipeline/logs?limit=15');
-        if (!response.ok) throw new Error('Failed to fetch recent logs');
-        const data = await response.json();
-        
-        // Filter for only the latest status of each step per job
-        const latestLogs = data.reduce((acc: any[], log: any) => {
-          const key = `${log.job_id}-${log.step}`;
-          const existing = acc.find(l => `${l.job_id}-${l.step}` === key);
-          if (!existing || new Date(log.timestamp) > new Date(existing.timestamp)) {
-            if (existing) {
-              acc.splice(acc.indexOf(existing), 1);
-            }
-            acc.push(log);
-          }
-          return acc;
-        }, []);
-        
-        return latestLogs.sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-      }
-    },
+    // If no active jobs, return empty logs
+    if (activeJobs.length === 0) {
+      return { logs: [], activeJobs: [] };
+    }
+
+    // Get logs for active jobs
+    const logsResponse = await fetch('/api/pipeline/logs');
+    if (!logsResponse.ok) {
+      throw new Error('Failed to fetch pipeline logs');
+    }
+
+    const logs = await logsResponse.json();
+    return { 
+      logs: Array.isArray(logs) ? logs : [], 
+      activeJobs 
+    };
+  } catch (error) {
+    console.error('Error fetching pipeline data:', error);
+    return { logs: [], activeJobs: [] };
+  }
+}
+
+export function PipelinePreviewLogs() {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['pipeline-logs'],
+    queryFn: fetchPipelineLogs,
     refetchInterval: 2000,
-    enabled: true,
+    staleTime: 1000,
+    retry: 3,
+    retryDelay: 1000,
   });
 
-  const getStepIcon = (step: string, status: string) => {
-    if (status === 'error') return <AlertCircle className="h-4 w-4 text-red-500" />;
-    if (status === 'completed') return <CheckCircle className="h-4 w-4 text-green-500" />;
-    if (status === 'progress' || status === 'starting') return <Loader2 className="h-4 w-4 animate-spin text-blue-500" />;
+  const logs = data?.logs || [];
+  const activeJobs = data?.activeJobs || [];
+  const hasActiveJobs = activeJobs.length > 0;
 
-    switch (step) {
-      case 'script_generation': return <FileText className="h-4 w-4 text-purple-500" />;
-      case 'video_creation': return <Video className="h-4 w-4 text-blue-500" />;
-      case 'audio_generation': return <Play className="h-4 w-4 text-green-500" />;
-      case 'video_editing': return <Edit className="h-4 w-4 text-orange-500" />;
-      case 'thumbnail_generation': return <Image className="h-4 w-4 text-pink-500" />;
-      case 'file_organization': return <Cloud className="h-4 w-4 text-cyan-500" />;
-      case 'upload_scheduling': return <Upload className="h-4 w-4 text-indigo-500" />;
-      default: return <Sparkles className="h-4 w-4 text-gray-500" />;
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'starting':
+        return <Clock className="h-4 w-4 text-blue-500" />;
+      case 'completed':
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'error':
+        return <XCircle className="h-4 w-4 text-red-500" />;
+      case 'warning':
+        return <AlertCircle className="h-4 w-4 text-yellow-500" />;
+      default:
+        return <Info className="h-4 w-4 text-gray-500" />;
     }
-  };
-
-  const getStepTitle = (step: string) => {
-    const titles = {
-      'script_generation': 'Script Generation',
-      'video_creation': 'Video Creation',
-      'audio_generation': 'Audio Generation (TTS)',
-      'video_editing': 'Professional Video Editing',
-      'thumbnail_generation': 'Thumbnail Generation',
-      'file_organization': 'File Organization & Upload',
-      'upload_scheduling': 'YouTube Upload Scheduling',
-      'pipeline_start': 'Pipeline Initialization',
-      'pipeline_complete': 'Pipeline Completed'
-    };
-    return titles[step] || step.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'starting': return <Badge variant="secondary">Starting</Badge>;
-      case 'progress': return <Badge className="bg-blue-500">In Progress</Badge>;
-      case 'completed': return <Badge className="bg-green-500">Completed</Badge>;
-      case 'error': return <Badge variant="destructive">Error</Badge>;
-      default: return <Badge variant="outline">{status}</Badge>;
+    const variants = {
+      starting: 'bg-blue-100 text-blue-800 border-blue-200',
+      completed: 'bg-green-100 text-green-800 border-green-200',
+      error: 'bg-red-100 text-red-800 border-red-200',
+      warning: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+    };
+
+    return (
+      <Badge className={variants[status as keyof typeof variants] || 'bg-gray-100 text-gray-800 border-gray-200'}>
+        {status}
+      </Badge>
+    );
+  };
+
+  const formatTime = (timeStr: string) => {
+    try {
+      const date = new Date(timeStr);
+      if (isNaN(date.getTime())) return 'Invalid time';
+      return date.toLocaleTimeString();
+    } catch {
+      return 'Invalid time';
     }
   };
 
-  const toggleLogExpansion = (logId: number) => {
-    const newExpanded = new Set(expandedLogs);
-    if (newExpanded.has(logId)) {
-      newExpanded.delete(logId);
-    } else {
-      newExpanded.add(logId);
-    }
-    setExpandedLogs(newExpanded);
-  };
-
-  const formatTimestamp = (timestamp: string) => {
-    const date = new Date(timestamp);
-    if (isNaN(date.getTime())) {
-      return 'Invalid Date';
-    }
-    return date.toLocaleTimeString();
+  const formatStep = (step: string) => {
+    return step
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
   };
 
   if (isLoading) {
     return (
-      <Card className="h-[600px]">
+      <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5" />
-            Pipeline Preview Logs
-          </CardTitle>
+          <CardTitle>Pipeline Logs</CardTitle>
+          <CardDescription>Loading pipeline activity...</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin" />
-            <span className="ml-2">Loading logs...</span>
+          <div className="flex items-center justify-center h-32">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
           </div>
         </CardContent>
       </Card>
@@ -170,18 +136,15 @@ export function PipelinePreviewLogs({ selectedJobId }: PipelinePreviewLogsProps)
 
   if (error) {
     return (
-      <Card className="h-[600px]">
+      <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5" />
-            Pipeline Preview Logs
-            <Badge variant="destructive">Error</Badge>
-          </CardTitle>
+          <CardTitle>Pipeline Logs</CardTitle>
+          <CardDescription>Error loading pipeline logs</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center py-8 text-muted-foreground">
+          <div className="flex items-center justify-center h-32 text-muted-foreground">
             <AlertCircle className="h-6 w-6 mr-2" />
-            <span>Failed to load logs</span>
+            Failed to load pipeline logs
           </div>
         </CardContent>
       </Card>
@@ -189,100 +152,85 @@ export function PipelinePreviewLogs({ selectedJobId }: PipelinePreviewLogsProps)
   }
 
   return (
-    <Card className="h-[600px]">
+    <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5" />
-          Pipeline Preview Logs
-          {selectedJobId && selectedJobId > 0 ? (
-            <Badge variant="default">Job #{selectedJobId} Only</Badge>
-          ) : (
-            <Badge variant="outline">Active Jobs Only</Badge>
-          )}
-        </CardTitle>
+        <CardTitle>Pipeline Logs</CardTitle>
+        <CardDescription>
+          {hasActiveJobs 
+            ? `Real-time logs for ${activeJobs.length} active job${activeJobs.length > 1 ? 's' : ''}`
+            : 'No active pipelines running'
+          }
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="h-[500px]">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin" />
-              <span className="ml-2">Loading logs...</span>
-            </div>
-          ) : logs?.length > 0 ? (
-            <div className="space-y-3">
-              {logs.map((log: PipelineLog) => (
-                <div key={log.id} className="border rounded-lg p-3 hover:bg-muted/50 transition-colors">
-                  <div 
-                    className="flex items-start gap-3 cursor-pointer"
-                    onClick={() => toggleLogExpansion(log.id)}
-                  >
-                    {getStepIcon(log.step, log.status)}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <h4 className="font-medium text-sm">{getStepTitle(log.step)}</h4>
-                        <div className="flex items-center gap-2">
-                          {log.progress && (
-                            <span className="text-xs text-muted-foreground">
-                              {log.progress}%
-                            </span>
-                          )}
+        {!hasActiveJobs ? (
+          <div className="flex flex-col items-center justify-center h-32 text-muted-foreground">
+            <Clock className="h-8 w-8 mb-2" />
+            <p>No active pipelines</p>
+            <p className="text-sm">Start a pipeline to see real-time logs</p>
+          </div>
+        ) : (
+          <ScrollArea className="h-64 w-full">
+            <div className="space-y-2">
+              {logs.length === 0 ? (
+                <div className="flex items-center justify-center h-16 text-muted-foreground">
+                  <p className="text-sm">Waiting for pipeline logs...</p>
+                </div>
+              ) : (
+                logs
+                  .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                  .slice(0, 20)
+                  .map((log, index) => (
+                    <div
+                      key={`${log.id}-${index}`}
+                      className="flex items-start gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                    >
+                      <div className="mt-0.5">
+                        {getStatusIcon(log.status)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-sm font-medium">
+                            {formatStep(log.step)}
+                          </span>
                           {getStatusBadge(log.status)}
                           <span className="text-xs text-muted-foreground">
-                            {formatTimestamp(log.timestamp)}
+                            Job #{log.job_id}
                           </span>
                         </div>
+                        <p className="text-sm text-foreground mb-1">
+                          {log.message}
+                        </p>
+                        {log.details && (
+                          <p className="text-xs text-muted-foreground">
+                            {log.details}
+                          </p>
+                        )}
+                        <div className="flex items-center justify-between mt-2">
+                          <span className="text-xs text-muted-foreground">
+                            {formatTime(log.created_at)}
+                          </span>
+                          {log.progress > 0 && (
+                            <div className="flex items-center gap-2">
+                              <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                                <div 
+                                  className="h-full bg-primary transition-all duration-300"
+                                  style={{ width: `${log.progress}%` }}
+                                />
+                              </div>
+                              <span className="text-xs text-muted-foreground">
+                                {log.progress}%
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      <p className="text-sm text-muted-foreground mt-1">{log.message}</p>
-
-                      {/* Progress bar for in-progress items */}
-                      {log.progress && log.status === 'progress' && (
-                        <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                          <div 
-                            className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${log.progress}%` }}
-                          />
-                        </div>
-                      )}
-
-                      {/* Expanded details */}
-                      {expandedLogs.has(log.id) && (log.details || log.metadata) && (
-                        <div className="mt-3 p-3 bg-muted rounded-md">
-                          {log.details && (
-                            <div className="mb-2">
-                              <p className="text-sm font-medium mb-1">Details:</p>
-                              <p className="text-sm text-muted-foreground">{log.details}</p>
-                            </div>
-                          )}
-                          {log.metadata && (
-                            <div>
-                              <p className="text-sm font-medium mb-1">Metadata:</p>
-                              <pre className="text-xs bg-background p-2 rounded border overflow-x-auto">
-                                {JSON.stringify(log.metadata, null, 2)}
-                              </pre>
-                            </div>
-                          )}
-                        </div>
-                      )}
                     </div>
-                  </div>
-                </div>
-              ))}
+                  ))
+              )}
             </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-8 text-center">
-              <Sparkles className="h-12 w-12 text-muted-foreground mb-3" />
-              <p className="text-muted-foreground">
-                {selectedJobId ? 'No logs for this job' : 'No active pipeline jobs'}
-              </p>
-              <p className="text-sm text-muted-foreground mt-1">
-                {selectedJobId 
-                  ? 'This job may not have generated any logs yet'
-                  : 'Logs will appear here when active jobs are running'
-                }
-              </p>
-            </div>
-          )}
-        </ScrollArea>
+          </ScrollArea>
+        )}
       </CardContent>
     </Card>
   );

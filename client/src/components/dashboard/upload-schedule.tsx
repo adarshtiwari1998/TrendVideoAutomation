@@ -1,58 +1,51 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useQuery } from "@tanstack/react-query";
-import { 
-  Clock, 
-  Video, 
-  Smartphone, 
-  Calendar,
-  AlertCircle,
-  CheckCircle,
-  RotateCcw
-} from "lucide-react";
+import { useQuery } from '@tanstack/react-query';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Clock, CheckCircle, AlertCircle, Video, Calendar } from 'lucide-react';
 
 interface ScheduledVideo {
   id: number;
   title: string;
   videoType: 'long_form' | 'short';
-  scheduledTime: string | null;
-  status: string;
+  scheduledTime: string;
+  status: 'ready_for_upload' | 'uploading' | 'completed' | 'failed';
   progress: number;
+  driveUrl?: string;
+  youtubeId?: string;
 }
 
-interface UploadScheduleData {
-  scheduled: ScheduledVideo[];
-  processing: ScheduledVideo[];
+async function fetchScheduledVideos(): Promise<{ scheduled: ScheduledVideo[]; processing: number }> {
+  const response = await fetch('/api/dashboard/scheduled-videos');
+  if (!response.ok) {
+    throw new Error('Failed to fetch scheduled videos');
+  }
+  return response.json();
 }
 
 export function UploadSchedule() {
-  const { data: scheduleData, isLoading, error } = useQuery({
-    queryKey: ['/api/dashboard/scheduled-videos'],
-    refetchInterval: 30000, // Refresh every 30 seconds
+  const { data: scheduledData, isLoading, error } = useQuery({
+    queryKey: ['scheduled-videos'],
+    queryFn: fetchScheduledVideos,
+    refetchInterval: 3000,
+    staleTime: 1000,
   });
+
+  const scheduledVideos = scheduledData?.scheduled || [];
+  const processingCount = scheduledData?.processing || 0;
 
   if (isLoading) {
     return (
-      <Card className="bg-card rounded-xl shadow-sm border border-border">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <Skeleton className="h-6 w-32" />
-            <Skeleton className="h-4 w-16" />
-          </div>
-          <div className="space-y-4">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="flex items-center space-x-4 p-4 bg-muted/30 rounded-lg">
-                <Skeleton className="h-12 w-12 rounded-lg" />
-                <div className="flex-1 space-y-2">
-                  <Skeleton className="h-4 w-48" />
-                  <Skeleton className="h-3 w-32" />
-                  <Skeleton className="h-5 w-20 rounded-full" />
-                </div>
-                <Skeleton className="h-3 w-3 rounded-full" />
-              </div>
-            ))}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            Upload Schedule
+          </CardTitle>
+          <CardDescription>Loading scheduled videos...</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center h-32">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
         </CardContent>
       </Card>
@@ -61,183 +54,160 @@ export function UploadSchedule() {
 
   if (error) {
     return (
-      <Card className="bg-card rounded-xl shadow-sm border border-border">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold text-foreground">Upload Schedule</h3>
-            <Badge variant="destructive">Error</Badge>
-          </div>
-          <div className="flex items-center space-x-3 p-4 bg-destructive/10 rounded-lg border border-destructive/20">
-            <AlertCircle className="w-5 h-5 text-destructive" />
-            <div>
-              <p className="text-sm font-medium text-foreground">Failed to load schedule</p>
-              <p className="text-xs text-muted-foreground">{error.message}</p>
-            </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            Upload Schedule
+          </CardTitle>
+          <CardDescription>Error loading scheduled videos</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center h-32 text-muted-foreground">
+            <AlertCircle className="h-6 w-6 mr-2" />
+            Failed to load scheduled videos
           </div>
         </CardContent>
       </Card>
     );
   }
 
-  const schedule = scheduleData as UploadScheduleData;
-  const scheduledVideos = schedule?.scheduled || [];
-  const processingVideos = schedule?.processing || [];
-  const allVideos = [...scheduledVideos, ...processingVideos];
-
-  const formatDateTime = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const isToday = date.toDateString() === now.toDateString();
-    const isTomorrow = date.toDateString() === new Date(now.getTime() + 24 * 60 * 60 * 1000).toDateString();
-    
-    const timeString = date.toLocaleTimeString('en-US', { 
-      hour: 'numeric', 
-      minute: '2-digit',
-      hour12: true 
-    });
-    
-    if (isToday) return `Today ${timeString}`;
-    if (isTomorrow) return `Tomorrow ${timeString}`;
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'ready_for_upload':
+        return <Clock className="h-4 w-4" />;
+      case 'uploading':
+        return <Video className="h-4 w-4" />;
+      case 'completed':
+        return <CheckCircle className="h-4 w-4" />;
+      case 'failed':
+        return <AlertCircle className="h-4 w-4" />;
+      default:
+        return <Clock className="h-4 w-4" />;
+    }
   };
 
-  const getStatusBadge = (video: ScheduledVideo) => {
-    if (video.status === 'completed' && video.scheduledTime) {
-      return <Badge className="bg-success text-success-foreground">Ready</Badge>;
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'ready_for_upload':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'uploading':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'completed':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'failed':
+        return 'bg-red-100 text-red-800 border-red-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
     }
-    if (video.status === 'failed') {
-      return <Badge variant="destructive">Failed</Badge>;
-    }
-    if (video.progress > 0 && video.progress < 100) {
-      return <Badge variant="secondary">Processing {video.progress}%</Badge>;
-    }
-    return <Badge variant="outline">Queued</Badge>;
   };
 
-  const getStatusIcon = (video: ScheduledVideo) => {
-    if (video.status === 'completed' && video.scheduledTime) {
-      return <CheckCircle className="w-3 h-3 text-success" />;
-    }
-    if (video.status === 'failed') {
-      return <AlertCircle className="w-3 h-3 text-destructive" />;
-    }
-    if (video.progress > 0 && video.progress < 100) {
-      return <RotateCcw className="w-3 h-3 text-primary animate-spin" />;
-    }
-    return <Clock className="w-3 h-3 text-muted-foreground" />;
-  };
+  const formatScheduledTime = (timeStr: string) => {
+    try {
+      const date = new Date(timeStr);
+      if (isNaN(date.getTime())) return 'Invalid date';
 
-  const getVideoIcon = (videoType: string) => {
-    return videoType === 'short' ? (
-      <Smartphone className="text-warning w-5 h-5" />
-    ) : (
-      <Video className="text-primary w-5 h-5" />
-    );
-  };
+      const now = new Date();
+      const diffMs = date.getTime() - now.getTime();
+      const diffHours = Math.round(diffMs / (1000 * 60 * 60));
 
-  const getCardGradient = (videoType: string) => {
-    return videoType === 'short' 
-      ? "bg-gradient-to-r from-warning/5 to-orange-500/5 border-warning/20"
-      : "bg-gradient-to-r from-primary/5 to-purple-500/5 border-primary/20";
+      if (diffHours < 1) {
+        const diffMins = Math.round(diffMs / (1000 * 60));
+        return diffMins <= 0 ? 'Now' : `in ${diffMins}m`;
+      } else if (diffHours < 24) {
+        return `in ${diffHours}h`;
+      } else {
+        return date.toLocaleDateString();
+      }
+    } catch {
+      return 'Invalid date';
+    }
   };
 
   return (
-    <Card className="bg-card rounded-xl shadow-sm border border-border">
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-foreground">Upload Schedule</h3>
-          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-            <Calendar className="w-4 h-4" />
-            <span>IST Timezone</span>
-          </div>
-        </div>
-
-        {allVideos.length === 0 ? (
-          <div className="text-center py-8">
-            <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <h4 className="text-lg font-medium text-foreground mb-2">No Scheduled Videos</h4>
-            <p className="text-muted-foreground">Upload schedule is clear. New videos will appear here when ready.</p>
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Calendar className="h-5 w-5" />
+          Upload Schedule
+        </CardTitle>
+        <CardDescription>
+          {scheduledVideos.length > 0 
+            ? `${scheduledVideos.length} videos scheduled for upload`
+            : 'No videos scheduled for upload'
+          }
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {scheduledVideos.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-32 text-muted-foreground">
+            <Calendar className="h-8 w-8 mb-2" />
+            <p>No scheduled uploads</p>
+            <p className="text-sm">Videos will appear here when ready for upload</p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {allVideos.slice(0, 6).map((video) => (
-              <div 
-                key={video.id} 
-                className={`flex items-center space-x-4 p-4 rounded-lg border ${getCardGradient(video.videoType)}`}
+          <div className="space-y-3">
+            {scheduledVideos.map((video, index) => (
+              <div
+                key={`${video.id}-${index}`}
+                className="flex items-center justify-between p-3 rounded-lg border bg-card"
               >
-                <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                  video.videoType === 'short' ? 'bg-warning/10' : 'bg-primary/10'
-                }`}>
-                  {getVideoIcon(video.videoType)}
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-medium text-foreground">
-                    {video.videoType === 'short' ? 'YouTube Short' : 'Long Form Video'}
-                  </h4>
-                  <p className="text-sm text-muted-foreground line-clamp-1">
-                    {video.title || 'Content in production...'}
-                  </p>
-                  <div className="flex items-center space-x-4 mt-2">
-                    {video.scheduledTime ? (
-                      <div className="flex items-center space-x-1 text-xs">
-                        <Clock className="w-3 h-3 text-muted-foreground" />
-                        <span className={video.videoType === 'short' ? 'text-warning' : 'text-primary'}>
-                          {formatDateTime(video.scheduledTime)}
-                        </span>
-                      </div>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">Processing...</span>
-                    )}
-                    {getStatusBadge(video)}
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className={`p-2 rounded-full ${getStatusColor(video.status)} border`}>
+                    {getStatusIcon(video.status)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium text-sm truncate">{video.title}</h4>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge variant="outline" className="text-xs">
+                        {video.videoType === 'long_form' ? 'Long Form' : 'Short'}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {formatScheduledTime(video.scheduledTime)}
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <div className="text-right">
-                  {getStatusIcon(video)}
-                  <span className="text-xs text-muted-foreground mt-1 block">
-                    {video.scheduledTime ? 'Scheduled' : 'Processing'}
-                  </span>
+                <div className="flex items-center gap-2">
+                  <Badge className={getStatusColor(video.status)}>
+                    {video.status.replace('_', ' ')}
+                  </Badge>
+                  {video.youtubeId && (
+                    <a
+                      href={`https://youtube.com/watch?v=${video.youtubeId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:text-blue-800 text-xs"
+                    >
+                      View
+                    </a>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         )}
 
-        {/* Today's Summary */}
-        <div className="mt-6 pt-6 border-t border-border">
-          <h4 className="text-sm font-medium text-foreground mb-4">Today's Schedule Summary</h4>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="text-center">
-              <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2">
-                <Video className="w-4 h-4 text-primary" />
-              </div>
+        {/* Summary Stats */}
+        <div className="mt-4 pt-4 border-t">
+          <div className="grid grid-cols-3 gap-4 text-center">
+            <div>
               <p className="text-lg font-semibold text-foreground">
-                {scheduledVideos.filter(v => v.videoType === 'long_form').length}
+                {scheduledVideos.filter(v => v.status === 'ready_for_upload').length}
               </p>
-              <p className="text-xs text-muted-foreground">Long Videos</p>
+              <p className="text-xs text-muted-foreground">Scheduled</p>
             </div>
-            <div className="text-center">
-              <div className="w-8 h-8 bg-warning/10 rounded-full flex items-center justify-center mx-auto mb-2">
-                <Smartphone className="w-4 h-4 text-warning" />
-              </div>
+            <div>
               <p className="text-lg font-semibold text-foreground">
-                {scheduledVideos.filter(v => v.videoType === 'short').length}
+                {scheduledVideos.filter(v => v.status === 'uploading').length}
               </p>
-              <p className="text-xs text-muted-foreground">Shorts</p>
+              <p className="text-xs text-muted-foreground">Uploading</p>
             </div>
-            <div className="text-center">
-              <div className="w-8 h-8 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-2">
-                <CheckCircle className="w-4 h-4 text-success" />
-              </div>
+            <div>
               <p className="text-lg font-semibold text-foreground">
                 {scheduledVideos.filter(v => v.status === 'completed').length}
               </p>
-              <p className="text-xs text-muted-foreground">Ready</p>
+              <p className="text-xs text-muted-foreground">Completed</p>
             </div>
           </div>
         </div>
